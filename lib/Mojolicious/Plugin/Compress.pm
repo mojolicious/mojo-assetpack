@@ -81,17 +81,12 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
 use Mojo::Util qw( md5_sum slurp );
 use Fcntl ();
-use File::Spec::Functions qw( catfile tmpdir );
+use File::Spec::Functions qw( catfile );
 use File::Which;
 use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
 
 our $VERSION = '0.01';
 our %APPLICATIONS; # should consider internal usage, may change without warning
-
-sub _system {
-  warn "[compress] @_\n" if DEBUG;
-  system @_;
-}
 
 =head1 ATTRIBUTES
 
@@ -128,13 +123,10 @@ sub compress_javascripts {
         print { $out->{fh} } slurp $file;
       }
       else {
-        _system $APPLICATIONS{js} => $file => -o => $out->{temp};
-        print { $out->{fh} } slurp $out->{temp};
+        $self->_compress_js($file => $out->{fh});
       }
       print { $out->{fh} } "\n";
     }
-
-    unlink $out->{temp} if -e $out->{temp};
   }
 
   return $c->javascript($self->_abs_to_rel($c, $out->{file}));
@@ -160,17 +152,13 @@ sub compress_stylesheets {
   if($out->{fh}) {
     for my $file ($self->_input_files($c, @files)) {
       if($file =~ /\.(scss|less)$/) {
-        my $type = $1;
-        my @args = $type eq 'less' ? ('-x') : ('-t', 'compressed');
-        _system $APPLICATIONS{$type} => @args => $file => $out->{temp};
-        print { $out->{fh} } slurp $out->{temp};
+        my $method = "_compress_$1";
+        $self->$method($file => $out->{fh});
       }
       else {
         print { $out->{fh} } slurp $file;
       }
     }
-
-    unlink $out->{temp} if -e $out->{temp};
   }
 
   return $c->stylesheet($self->_abs_to_rel($c, $out->{file}));
@@ -200,7 +188,7 @@ sub expand_files {
     return b join '', map { $c->javascript($_) } @files;
   }
   else {
-    return b join '', map { $c->stylesheet($self->_convert_file($c, $_)) } @files;
+    return b join '', map { $c->stylesheet($self->_compile_css($c, $_)) } @files;
   }
 }
 
@@ -289,14 +277,15 @@ sub _abs_to_rel {
   die "$out is not found in static paths";
 }
 
-sub _convert_file {
+sub _compile_css {
   my($self, $c, $file) = @_;
 
   if($file =~ /\.(scss|less)$/) {
     eval {
       my $in = $c->app->static->file($file)->path;
       (my $out = $in) =~ s/\.(\w+)$/.css/;
-      _system $APPLICATIONS{$1} => $in => $out;
+      warn "system $APPLICATIONS{$1} $in $out\n" if DEBUG;
+      system $APPLICATIONS{$1} => $in => $out;
       $file =~ s/\.(\w+)$/.css/;
     } or do {
       $c->app->log->warn("Could not convert $file: $@");
@@ -304,6 +293,27 @@ sub _convert_file {
   }
 
   $file;
+}
+
+sub _compress_js {
+  my($self, $in, $OUT) = @_;
+
+  open my $APP, '-|', $APPLICATIONS{js} => $in or die "$APPLICATIONS{js} $in: $!";
+  print $OUT $_ while <$APP>;
+}
+
+sub _compress_less {
+  my($self, $in, $OUT) = @_;
+
+  open my $APP, '-|', $APPLICATIONS{less} => -x => $in or die "$APPLICATIONS{less} -x $in: $!";
+  print $OUT $_ while <$APP>;
+}
+
+sub _compress_scss {
+  my($self, $in, $OUT) = @_;
+
+  open my $APP, '-|', $APPLICATIONS{scss} => -t => 'compressed' => $in or die "$APPLICATIONS{scss} -t compressed $in: $!";
+  print $OUT $_ while <$APP>;
 }
 
 sub _input_files {
@@ -318,13 +328,11 @@ sub _input_files {
 
 sub _out {
   my($self, $ext) = (shift, shift);
-  my $name = md5_sum(join '', @_) .$ext;
-  my $path = catfile $self->out_dir, $name;
+  my $path = catfile $self->out_dir, md5_sum(join '', @_) .$ext;
 
   use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
   return {
     file => $path,
-    temp => catfile(tmpdir, $name),
     fh => IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY),
   };
 }

@@ -16,10 +16,9 @@ my @run;
 
 {
   $Mojolicious::Plugin::Compress::APPLICATIONS{js} = 'dummy';
-  *Mojolicious::Plugin::Compress::_system = sub {
+  *Mojolicious::Plugin::Compress::_compress_js = sub {
     push @run, [@_];
-    open my $FH, '>', $_[-1];
-    print $FH "dummy();\n";
+    print { $_[2] } "dummy();\n";
   };
 
   $t->get_ok('/js')
