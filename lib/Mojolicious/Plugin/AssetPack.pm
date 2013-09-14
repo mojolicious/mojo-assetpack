@@ -28,6 +28,10 @@ makes debugging and development easier.
 
 This is done using L</expand_moniker>.
 
+TIP! Make morbo watch your less/sass files as well:
+
+  $ morbo -w lib -w templates -w public/sass
+
 =head2 Packed directory
 
 The output directory where all the compressed files are stored will be
