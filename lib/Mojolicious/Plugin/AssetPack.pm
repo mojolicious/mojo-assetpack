@@ -10,20 +10,27 @@ Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with external too
 
 =head1 DESCRIPTION
 
-In production mode:
+=head2 Production mode
 
 This plugin will automatically compress scss, less, css and javascript with
 the help of external applications. The result will be one file with all the
-sources combined.
+sources combined. This file is stored in L</Packed directory>.
 
 This is done using L</pack_javascripts> and L</pack_stylesheets>.
 
-In development mode:
+=head2 Development mode
 
 This plugin will expand the input files to multiple cript / link tags which
 makes debugging and development easier.
 
 This is done using L</expand_moniker>.
+
+=head2 Packed directory
+
+The output directory where all the compressed files are stored will be
+"public/packed", relative to the application home:
+
+  $app->home->rel_dir('public/packed');
 
 =head1 SYNOPSIS
 
@@ -91,24 +98,14 @@ use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
 our $VERSION = '0.01';
 our %APPLICATIONS; # should consider internal usage, may change without warning
 
-=head1 ATTRIBUTES
-
-=head2 out_dir
-
-Defaults to "packed" in the first search path for static files.
-
-=cut
-
-has out_dir => '';
-
 =head1 METHODS
 
 =head2 pack_javascripts
 
   $self->pack_javascripts($moniker => \@files);
 
-This method will combine the input files to one file in the L</out_dir>, named
-"$moniker".
+This method will combine the input files to one file L</Packed directory>,
+named "$moniker".
 
 Will also run L</yuicompressor> on the input files to minify them.
 
@@ -116,7 +113,7 @@ Will also run L</yuicompressor> on the input files to minify them.
 
 sub pack_javascripts {
   my($self, $moniker, $files) = @_;
-  my $path = catfile $self->out_dir, $moniker;
+  my $path = catfile $self->{out_dir}, $moniker;
   my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
 
   unless($fh) {
@@ -141,8 +138,8 @@ sub pack_javascripts {
 
   $self->pack_stylesheets($moniker => \@files);
 
-This method will combine the input files to one file in the L</out_dir>, named
-"$moniker".
+This method will combine the input files to one file L</Packed directory>,
+named "$moniker".
 
 Will also run L</less> or L</sass> on the input files to minify them.
 
@@ -150,7 +147,7 @@ Will also run L</less> or L</sass> on the input files to minify them.
 
 sub pack_stylesheets {
   my($self, $moniker, $files) = @_;
-  my $path = catfile $self->out_dir, $moniker;
+  my $path = catfile $self->{out_dir}, $moniker;
   my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
 
   unless($fh) {
@@ -245,17 +242,17 @@ sub register {
   my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
 
   $self->find_external_apps($app, $config);
-  $self->out_dir($app->home->rel_dir('public/packed'));
-
-  mkdir $self->out_dir; # TODO: Use mkpath instead?
 
   $self->{assets} = {};
   $self->{log} = $app->log;
+  $self->{out_dir} = $app->home->rel_dir('public/packed');
   $self->{static} = $app->static;
 
+  mkdir $self->{out_dir}; # TODO: Use mkpath instead?
+
   if($enable and $config->{reset}) {
-    opendir(my $DH, $self->out_dir);
-    unlink catfile $self->out_dir, $_ for grep { /^\w/ } readdir $DH;
+    opendir(my $DH, $self->{out_dir});
+    unlink catfile $self->{out_dir}, $_ for grep { /^\w/ } readdir $DH;
   }
 
   $app->helper(asset => sub {
