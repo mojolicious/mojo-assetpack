@@ -18,6 +18,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   get '/less' => 'less';
   get '/sass' => 'sass';
   get '/css' => 'css';
+  get '/undefined' => 'undefined';
 }
 
 my $t = Test::Mojo->new;
@@ -50,6 +51,13 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{sass}) {
     ;
 }
 
+{
+  $t->get_ok('/undefined')
+    ->status_is(200)
+    ->content_like(qr{<!-- Could not expand_moniker});
+    ;
+}
+
 done_testing;
 __DATA__
 @@ js.html.ep
@@ -60,3 +68,5 @@ __DATA__
 %= asset 'sass.css'
 @@ css.html.ep
 %= asset 'app.css'
+@@ undefined.html.ep
+%= asset 'undefined.css'
