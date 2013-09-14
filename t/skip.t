@@ -30,7 +30,7 @@ my $t = Test::Mojo->new;
 
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/\w+\.js".*}m)
+    ->content_like(qr{<script src="/packed/app\.$^T\.js".*}m)
     ;
 
   is int @run, 1, 'only packed one file';
