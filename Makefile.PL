@@ -6,23 +6,21 @@ WriteMakefile(
   AUTHOR => 'Jan Henning Thorsen <jhthorsen@cpan.org>',
   LICENSE => 'perl',
   PREREQ_PM => {
-
+    'Mojolicious' => '4.30',
+    'File::Which' => '1.00',
   },
   BUILD_REQUIRES => {
-
+    'Test::More' => '0.90',
   },
   META_MERGE => {
     resources => {
       license => 'http://dev.perl.org/licenses/',
       homepage => 'https://metacpan.org/release/Mojolicious-Plugin-Compress',
       bugtracker => 'http://rt.cpan.org/NoAuth/Bugs.html?Dist=Mojolicious-Plugin-Compress',
-      repository => 'origin',
-     #MailingList => 'some-mailing@list.org',
+      repository => 'https://github.com/jhthorsen/mojolicious-plugin-compress',
     },
   },
   test => {
     TESTS => 't/*.t',
   },
-  #MIN_PERL_VERSION => 5.10,
-  #EXE_FILES => ['bin/my-app'],
 );
