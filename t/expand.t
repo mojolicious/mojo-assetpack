@@ -7,14 +7,13 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => {
-    assets => {
-      'app.js' => [ '/js/a.js', '/js/b.js' ],
-      'less.css' => [ '/css/a.less', '/css/b.less' ],
-      'sass.css' => [ '/css/a.scss', '/css/b.scss' ],
-      'app.css' => [ '/css/a.css', '/css/b.css' ],
-    },
-  },
+  plugin 'AssetPack';
+
+  app->asset('app.js' => '/js/a.js', '/js/b.js');
+  app->asset('less.css' => '/css/a.less', '/css/b.less');
+  app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
+  app->asset('app.css' => '/css/a.css', '/css/b.css');
+
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';

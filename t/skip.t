@@ -19,10 +19,8 @@ my @run;
     enable => 1,
     reset => 1,
     yuicompressor => 'dummy',
-    assets => {
-      'app.js' => [ '/js/a.js', '/js/already.min.js' ],
-    },
   };
+  app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';
 }
 

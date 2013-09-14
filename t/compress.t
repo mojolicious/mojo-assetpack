@@ -10,13 +10,13 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   plugin 'AssetPack' => {
     enable => 1,
     reset => 1,
-    assets => {
-      'app.js' => [ '/js/a.js', '/js/b.js' ],
-      'less.css' => [ '/css/a.less', '/css/b.less' ],
-      'sass.css' => [ '/css/a.scss', '/css/b.scss' ],
-      'app.css' => [ '/css/c.css', '/css/d.css' ],
-    },
   };
+
+  app->asset('app.js' => '/js/a.js', '/js/b.js');
+  app->asset('less.css' => '/css/a.less', '/css/b.less');
+  app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
+  app->asset('app.css' => '/css/c.css', '/css/d.css');
+
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';

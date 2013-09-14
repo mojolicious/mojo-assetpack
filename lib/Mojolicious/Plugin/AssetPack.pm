@@ -13,15 +13,15 @@ Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with external too
 In production mode:
 
 This plugin will automatically compress scss, less, css and javascript with
-the help of external application. The result will be one file with all the
+the help of external applications. The result will be one file with all the
 sources combined.
 
 This is done using L</pack_javascripts> and L</pack_stylesheets>.
 
 In development mode:
 
-This plugin will expand the input files to multiple javascript / link tags
-which makes debugging easier.
+This plugin will expand the input files to multiple cript / link tags which
+makes debugging and development easier.
 
 This is done using L</expand_moniker>.
 
@@ -31,12 +31,11 @@ In your application:
 
   use Mojolicious::Lite;
 
-  plugin 'AssetPack' => {
-    assets => {
-      'app.js' => [ '/js/foo.js', '/js/bar.js' ],
-      'app.css' => [ '/css/foo.less', '/css/bar.scss', '/css/main.css' ],
-    },
-  };
+  plugin 'AssetPack';
+
+  # define assets: $moniker => @real_assets
+  app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+  app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
 
   app->start;
 
@@ -44,9 +43,6 @@ In your template:
 
   %= asset 'app.js'
   %= asset 'app.css'
-
-NOTE! You need to have one line for each type, meaning you cannot combine
-javascript and css sources on one line.
 
 See also L</register>.
 
@@ -184,7 +180,7 @@ This method will return one tag for each asset defined by the "$moniker".
 Will also run L</less> or L</sass> on the files to convert them to css, which
 the browser understand.
 
-The returning bytestream will contain style or javascript tags.
+The returning bytestream will contain style or script tags.
 
 =cut
 
@@ -206,7 +202,7 @@ sub expand_moniker {
 =head2 find_external_apps
 
 This method is used to find the L</APPLICATIONS>. It will look for the apps
-usin L<File::Which> in this order: lessc, less, sass, yui-compressor,
+using L<File::Which> in this order: lessc, less, sass, yui-compressor,
 yuicompressor.
 
 =cut
@@ -232,10 +228,6 @@ sub find_external_apps {
     yuicompressor => '/path/to/yuicompressor',
     less => '/path/to/lessc',
     sass => '/path/to/sass',
-    assets => {
-      'app.js' => [ '/js/foo.js', '/js/bar.js' ],
-      'app.css' => [ '/css/foo.css', '/css/bar.css' ],
-    },
   };
 
 Will register the C<compress> helper. All arguments are optional.
@@ -257,32 +249,33 @@ sub register {
 
   mkdir $self->out_dir; # TODO: Use mkpath instead?
 
-  $self->{assets} = $config->{assets};
+  $self->{assets} = {};
   $self->{log} = $app->log;
   $self->{static} = $app->static;
 
-  if($config->{enable} and $config->{reset}) {
+  if($enable and $config->{reset}) {
     opendir(my $DH, $self->out_dir);
     unlink catfile $self->out_dir, $_ for grep { /^\w/ } readdir $DH;
   }
 
-  if($enable) {
-    $app->helper(asset => sub {
-      my($c, $file) = @_;
-      $file =~ /\.js$/ ? $c->javascript("/packed/$file") : $c->stylesheet("/packed/$file");
-    });
+  $app->helper(asset => sub {
+    return $self->_asset_pack(@_) if @_ > 2;
+    return $self->expand_moniker(@_) unless $enable;
+    return $_[0]->javascript("/packed/$_[1]") if $_[1] =~ /\.js/;
+    return $_[0]->stylesheet("/packed/$_[1]");
+  });
+}
 
-    while(my($moniker, $files) = each %{ $self->{assets} }) {
-      $moniker =~ /\.js/
-        ? $self->pack_javascripts($moniker => $files)
-        : $self->pack_stylesheets($moniker => $files)
-        ;
-    }
-  }
-  else {
-    $app->log->debug('Mojolicious::Plugin::AssetPack will expand file list');
-    $app->helper(asset => sub { $self->expand_moniker(@_) });
-  }
+sub _asset_pack {
+  my($self, $c, $moniker, @files) = @_;
+
+  $moniker =~ /\.js/
+    ? $self->pack_javascripts($moniker => \@files)
+    : $self->pack_stylesheets($moniker => \@files)
+    ;
+
+  $self->{assets}{$moniker} = [@files];
+  $self;
 }
 
 sub _compile_css {

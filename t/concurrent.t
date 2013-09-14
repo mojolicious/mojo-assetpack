@@ -15,6 +15,7 @@ my @pid;
   use Mojolicious::Lite;
   plugin 'AssetPack' => { enable => 1, reset => 1 };
   app->secret($$);
+  app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';
   push @pid, fork;
   $pid[0] or app->start('daemon', '--listen' => 'http://*:6000');
@@ -38,4 +39,4 @@ wait;
 done_testing;
 __DATA__
 @@ js.html.ep
-%= asset '/js/a.js', '/js/already.min.js'
+%= asset 'app.js'
