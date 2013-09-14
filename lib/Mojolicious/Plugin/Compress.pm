@@ -234,6 +234,7 @@ sub find_external_apps {
 
   plugin 'Compress', {
     enable => $bool,
+    reset => $bool,
     out_dir => '/abs/path/to/app/public/dir',
     less => '/path/to/lessc',
     sass => '/path/to/sass',
@@ -244,6 +245,9 @@ Will register the C<compress> helper. All arguments are optional.
 
 "enable" will default to COMPRESS_ASSETS environment variable or set to true
 if L<Mojolicious/mode> is "production".
+
+"reset" can be set to true to always rebuild the javascript one the first
+request that hit the server.
 
 =cut
 
