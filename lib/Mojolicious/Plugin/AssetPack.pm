@@ -265,7 +265,7 @@ sub register {
   }
 
   $app->helper(asset => sub {
-    return $self->_asset_pack(@_) if @_ > 2;
+    return $self->_asset_pack($enable, @_) if @_ > 2;
     return $self->expand_moniker(@_) unless $enable;
     my($name, $ext) = $_[1] =~ /^(.+)\.(\w+)$/;
     return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
@@ -283,12 +283,14 @@ sub register {
 }
 
 sub _asset_pack {
-  my($self, $c, $moniker, @files) = @_;
+  my($self, $enable, $c, $moniker, @files) = @_;
 
-  $moniker =~ /\.js/
-    ? $self->pack_javascripts($moniker => \@files)
-    : $self->pack_stylesheets($moniker => \@files)
-    ;
+  if($enable) {
+    $moniker =~ /\.js/
+      ? $self->pack_javascripts($moniker => \@files)
+      : $self->pack_stylesheets($moniker => \@files)
+      ;
+  }
 
   $self->{assets}{$moniker} = [@files];
   $self;
