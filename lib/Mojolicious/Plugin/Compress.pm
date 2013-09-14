@@ -129,8 +129,14 @@ sub compress_javascripts {
 
     for my $file (@files) {
       my $in = $static->file($file)->path;
-      _system $APPLICATIONS{js} => $in => -o => $tmp;
-      print $OUT slurp $tmp if -e $tmp;
+      if($file =~ /\bmin\b/) {
+        print $OUT slurp $in;
+      }
+      else {
+        _system $APPLICATIONS{js} => $in => -o => $tmp;
+        print $OUT slurp $tmp;
+      }
+      print $OUT "\n";
     }
 
     unlink $tmp if -e $tmp;
@@ -168,7 +174,7 @@ sub compress_stylesheets {
       my $in = $static->file($file)->path;
       my @args = $type eq 'less' ? ('-x') : ('-t', 'compressed');
       _system $APPLICATIONS{$type} => @args => $in => $tmp;
-      print $OUT slurp $tmp if -e $tmp;
+      print $OUT slurp $tmp;
     }
 
     unlink $tmp if -e $tmp;
@@ -249,6 +255,11 @@ sub register {
   $self->out_dir($config->{out_dir} || $app->home->rel_dir('public/compressed'));
 
   mkdir $self->out_dir; # TODO: Use mkpath instead?
+
+  if($config->{enable} and $config->{reset}) {
+    opendir(my $DH, $self->out_dir);
+    unlink catfile $self->out_dir, $_ for grep { /^\w/ } readdir $DH;
+  }
 
   if($enable) {
     $app->helper(compress => sub { 

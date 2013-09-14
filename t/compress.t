@@ -7,7 +7,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'Compress' => { enable => 1 };
+  plugin 'Compress' => { enable => 1, reset => 1 };
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';
@@ -16,9 +16,6 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 plan skip_all => 't/public/compressed' unless -d 't/public/compressed';
 my $t = Test::Mojo->new;
-
-opendir(my $DH, 't/public/compressed');
-unlink "t/public/compressed/$_" for grep { /^\w/ } readdir $DH;
 
 if($Mojolicious::Plugin::Compress::APPLICATIONS{js}) {
   $t->get_ok('/js')
