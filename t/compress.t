@@ -28,12 +28,13 @@ plan skip_all => 't/public/packed' unless -d 't/public/packed';
 my $t = Test::Mojo->new;
 my $ts = $^T;
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{js}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{yuicompressor}) {
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/packed/app\.$ts\.js".*}m)
     ;
+  $t->get_ok("/packed/app.$ts.js")->status_is(200);
 }
 
 if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
@@ -42,6 +43,7 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
     ->status_is(200)
     ->content_like(qr{<link href="/packed/less\.$ts\.css".*}m)
     ;
+  $t->get_ok("/packed/less.$ts.css")->status_is(200);
 }
 
 if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
@@ -49,6 +51,7 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
     ->status_is(200)
     ->content_like(qr{<link href="/packed/sass\.$ts\.css".*}m)
     ;
+  $t->get_ok("/packed/sass.$ts.css")->status_is(200);
 }
 
 {
@@ -56,6 +59,7 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
     ->status_is(200)
     ->content_like(qr{<link href="/packed/app\.$ts\.css".*}m)
     ;
+  $t->get_ok("/packed/app.$ts.css")->status_is(200);
 }
 
 done_testing;

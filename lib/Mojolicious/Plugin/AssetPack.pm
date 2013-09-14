@@ -267,6 +267,15 @@ sub register {
     return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
     return $_[0]->stylesheet("/packed/$name.$^T.$ext");
   });
+
+  $app->hook(before_dispatch => sub {
+    my $c = shift;
+    my $url = $c->req->url;
+
+    return unless $url->path =~ m!^\/?packed/(.+)\.(\d+)\.(\w+)$!;
+    return unless $self->{assets}{"$1.$3"};
+    $url->path("$1.$3");
+  });
 }
 
 sub _asset_pack {
@@ -301,6 +310,15 @@ sub _compile_css {
   $file;
 }
 
+sub _input_files {
+  my($self, $files) = @_;
+
+  return map {
+    my $file = $self->{static}->file($_);
+    $file ? $file->path : $_;
+  } @$files;
+}
+
 sub _pack_css {
   my($self, $in, $OUT) = @_;
 
@@ -327,15 +345,6 @@ sub _pack_scss {
 
   open my $APP, '-|', $APPLICATIONS{sass} => -t => 'compressed' => $in or die "$APPLICATIONS{sass} -t compressed $in: $!";
   print $OUT $_ while <$APP>;
-}
-
-sub _input_files {
-  my($self, $files) = @_;
-
-  return map {
-    my $file = $self->{static}->file($_);
-    $file ? $file->path : $_;
-  } @$files;
 }
 
 =head1 AUTHOR
