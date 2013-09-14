@@ -1,37 +1,43 @@
 NAME
-    Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with
-    external tools
+    Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass
+    and javascript files
 
 VERSION
     0.01
 
 DESCRIPTION
-    In production mode:
+  Production mode
+    This plugin will compress scss, less, css and javascript with the help
+    of external applications on startup. The result will be one file with
+    all the sources combined. This file is stored in "Packed directory".
 
-    This plugin will automatically compress scss, less, css and javascript
-    with the help of external application. The result will be one file with
-    all the sources combined.
+    The actual file requested will also contain the timestamp when this
+    server was started. This is to help refreshing cache on change.
 
     This is done using "pack_javascripts" and "pack_stylesheets".
 
-    In development mode:
-
-    This plugin will expand the input files to multiple javascript / link
-    tags which makes debugging easier.
+  Development mode
+    This plugin will expand the input files to multiple script or link tags
+    which makes debugging and development easier.
 
     This is done using "expand_moniker".
+
+  Packed directory
+    The output directory where all the compressed files are stored will be
+    "public/packed", relative to the application home:
+
+      $app->home->rel_dir('public/packed');
 
 SYNOPSIS
     In your application:
 
       use Mojolicious::Lite;
 
-      plugin 'AssetPack' => {
-        assets => {
-          'app.js' => [ '/js/foo.js', '/js/bar.js' ],
-          'app.css' => [ '/css/foo.less', '/css/bar.scss', '/css/main.css' ],
-        },
-      };
+      plugin AssetPack => { rebuild => 1 };
+
+      # define assets: $moniker => @real_assets
+      app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+      app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
 
       app->start;
 
@@ -39,9 +45,6 @@ SYNOPSIS
 
       %= asset 'app.js'
       %= asset 'app.css'
-
-    NOTE! You need to have one line for each type, meaning you cannot
-    combine javascript and css sources on one line.
 
     See also "register".
 
@@ -74,23 +77,21 @@ APPLICATIONS
       $ sudo apt-get install npm
       $ sudo npm -g i yuicompressor
 
-ATTRIBUTES
-  out_dir
-    Defaults to "packed" in the first search path for static files.
-
 METHODS
   pack_javascripts
       $self->pack_javascripts($moniker => \@files);
 
-    This method will combine the input files to one file in the "out_dir",
+    This method will combine the input files to one file "Packed directory",
     named "$moniker".
 
-    Will also run "yuicompressor" on the input files to minify them.
+    Will also run "yuicompressor" on the input files to minify them - except
+    if the name contains "min". Example "jquery.min.js" will not be minified
+    by "yuicompressor".
 
   pack_stylesheets
       $self->pack_stylesheets($moniker => \@files);
 
-    This method will combine the input files to one file in the "out_dir",
+    This method will combine the input files to one file "Packed directory",
     named "$moniker".
 
     Will also run "less" or "sass" on the input files to minify them.
@@ -104,24 +105,20 @@ METHODS
     Will also run "less" or "sass" on the files to convert them to css,
     which the browser understand.
 
-    The returning bytestream will contain style or javascript tags.
+    The returning bytestream will contain style or script tags.
 
   find_external_apps
     This method is used to find the "APPLICATIONS". It will look for the
-    apps usin File::Which in this order: lessc, less, sass, yui-compressor,
+    apps using File::Which in this order: lessc, less, sass, yui-compressor,
     yuicompressor.
 
   register
       plugin 'AssetPack', {
         enable => $bool,
-        reset => $bool,
+        rebuild => $bool,
         yuicompressor => '/path/to/yuicompressor',
         less => '/path/to/lessc',
         sass => '/path/to/sass',
-        assets => {
-          'app.js' => [ '/js/foo.js', '/js/bar.js' ],
-          'app.css' => [ '/css/foo.css', '/css/bar.css' ],
-        },
       };
 
     Will register the "compress" helper. All arguments are optional.
@@ -129,8 +126,8 @@ METHODS
     "enable" will default to COMPRESS_ASSETS environment variable or set to
     true if "mode" in Mojolicious is "production".
 
-    "reset" can be set to true to always rebuild the javascript one the
-    first request that hit the server.
+    "rebuild" can be set to true to always rebuild the compressed files when
+    the application is started. The default is to use the cached files.
 
 AUTHOR
     Jan Henning Thorsen - "jhthorsen@cpan.org"

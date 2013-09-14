@@ -13,7 +13,7 @@ my @pid;
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { enable => 1, reset => 1 };
+  plugin 'AssetPack' => { enable => 1, rebuild => 1 };
   app->secret($$);
   app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';

@@ -2,7 +2,7 @@ package Mojolicious::Plugin::AssetPack;
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with external tools
+Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javascript files
 
 =head1 VERSION
 
@@ -12,15 +12,18 @@ Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with external too
 
 =head2 Production mode
 
-This plugin will automatically compress scss, less, css and javascript with
-the help of external applications. The result will be one file with all the
+This plugin will compress scss, less, css and javascript with the help of
+external applications on startup. The result will be one file with all the
 sources combined. This file is stored in L</Packed directory>.
+
+The actual file requested will also contain the timestamp when this server was
+started. This is to help refreshing cache on change.
 
 This is done using L</pack_javascripts> and L</pack_stylesheets>.
 
 =head2 Development mode
 
-This plugin will expand the input files to multiple cript / link tags which
+This plugin will expand the input files to multiple script or link tags which
 makes debugging and development easier.
 
 This is done using L</expand_moniker>.
@@ -38,7 +41,7 @@ In your application:
 
   use Mojolicious::Lite;
 
-  plugin 'AssetPack';
+  plugin AssetPack => { rebuild => 1 };
 
   # define assets: $moniker => @real_assets
   app->asset('app.js' => '/js/foo.js', '/js/bar.js');
@@ -107,7 +110,9 @@ our %APPLICATIONS; # should consider internal usage, may change without warning
 This method will combine the input files to one file L</Packed directory>,
 named "$moniker".
 
-Will also run L</yuicompressor> on the input files to minify them.
+Will also run L</yuicompressor> on the input files to minify them - except if
+the name contains "min". Example "jquery.min.js" will not be minified by
+L</yuicompressor>.
 
 =cut
 
@@ -221,7 +226,7 @@ sub find_external_apps {
 
   plugin 'AssetPack', {
     enable => $bool,
-    reset => $bool,
+    rebuild => $bool,
     yuicompressor => '/path/to/yuicompressor',
     less => '/path/to/lessc',
     sass => '/path/to/sass',
@@ -232,8 +237,8 @@ Will register the C<compress> helper. All arguments are optional.
 "enable" will default to COMPRESS_ASSETS environment variable or set to true
 if L<Mojolicious/mode> is "production".
 
-"reset" can be set to true to always rebuild the javascript one the first
-request that hit the server.
+"rebuild" can be set to true to always rebuild the compressed files when the
+application is started. The default is to use the cached files.
 
 =cut
 
@@ -250,7 +255,7 @@ sub register {
 
   mkdir $self->{out_dir}; # TODO: Use mkpath instead?
 
-  if($enable and $config->{reset}) {
+  if($enable and $config->{rebuild}) {
     opendir(my $DH, $self->{out_dir});
     unlink catfile $self->{out_dir}, $_ for grep { /^\w/ } readdir $DH;
   }

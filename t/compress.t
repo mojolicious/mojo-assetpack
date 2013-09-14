@@ -9,7 +9,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   use Mojolicious::Lite;
   plugin 'AssetPack' => {
     enable => 1,
-    reset => 1,
+    rebuild => 1,
   };
 
   app->asset('app.js' => '/js/a.js', '/js/b.js');
