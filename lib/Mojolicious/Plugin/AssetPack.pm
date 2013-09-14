@@ -283,17 +283,18 @@ sub _asset_pack {
 
 sub _compile_css {
   my($self, $file) = @_;
+  my $original = $file;
 
-  if($file =~ /\.(scss|less)$/) {
+  if($file =~ s/\.(scss|less)$/.css/) {
     eval {
-      my $in = $self->{static}->file($file)->path;
-      (my $out = $in) =~ s/\.(\w+)$/.css/;
       my $type = $1 eq 'less' ? 'less' : 'sass';
+      my $in = $self->{static}->file($original)->path;
+      (my $out = $in) =~ s/\.\w+$/.css/;
       warn "system $APPLICATIONS{$type} $in $out\n" if DEBUG;
       system $APPLICATIONS{$type} => $in => $out;
-      $file =~ s/\.(\w+)$/.css/;
+      1;
     } or do {
-      $self->{log}->warn("Could not convert $file: $@");
+      $self->{log}->warn("Could not convert $original: $@");
     };
   }
 
