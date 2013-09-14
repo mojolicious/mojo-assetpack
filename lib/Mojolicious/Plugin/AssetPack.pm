@@ -166,7 +166,7 @@ sub pack_stylesheets {
       $self->$method($file => $fh);
     }
     else {
-      $fh->syswrite(slurp $file);
+      $self->_pack_css($file => $fh);
     }
   }
 
@@ -298,6 +298,13 @@ sub _compile_css {
   }
 
   $file;
+}
+
+sub _pack_css {
+  my($self, $in, $OUT) = @_;
+
+  open my $APP, '-|', $APPLICATIONS{yuicompressor} => $in or die "$APPLICATIONS{yuicompressor} $in: $!";
+  print $OUT $_ while <$APP>;
 }
 
 sub _pack_js {
