@@ -88,7 +88,7 @@ our $VERSION = '0.01';
 our %APPLICATIONS; # should consider internal usage, may change without warning
 
 sub _system {
-  warn "@_" if DEBUG;
+  warn "[compress] @_\n" if DEBUG;
   system @_;
 }
 
@@ -164,8 +164,10 @@ sub compress_stylesheets {
 
     for my $file (@files) {
       $file =~ /\.(scss|less)$/ or next;
+      my $type = $1;
       my $in = $static->file($file)->path;
-      _system $APPLICATIONS{$1} => $in => $tmp;
+      my @args = $type eq 'less' ? ('-x') : ('-t', 'compressed');
+      _system $APPLICATIONS{$type} => @args => $in => $tmp;
       print $OUT slurp $tmp if -e $tmp;
     }
 

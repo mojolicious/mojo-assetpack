@@ -14,7 +14,11 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   get '/css' => 'css';
 }
 
+plan skip_all => 't/public/compressed' unless -d 't/public/compressed';
 my $t = Test::Mojo->new;
+
+opendir(my $DH, 't/public/compressed');
+unlink "t/public/compressed/$_" for grep { /^\w/ } readdir $DH;
 
 if($Mojolicious::Plugin::Compress::APPLICATIONS{js}) {
   $t->get_ok('/js')
