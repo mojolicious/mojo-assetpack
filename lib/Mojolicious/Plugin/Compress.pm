@@ -25,6 +25,24 @@ which makes debugging easier.
 
 This is done using L</expand_files>.
 
+=head1 SYNOPSIS
+
+In your application:
+
+  use Mojolicious::Lite;
+  plugin 'Compress';
+  app->start;
+
+In your template:
+
+  %= compress '/js/jquery.min.js', '/js/app.js';
+  %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+
+NOTE! You need to have one line for each type, meaning you cannot combine
+javascript and css sources on one line.
+
+See also L</register>.
+
 =head1 APPLICATIONS
 
 =head2 less
@@ -56,24 +74,6 @@ Installation on Ubuntu and Debian:
 
   $ sudo apt-get install npm
   $ sudo npm -g i yuicompressor
-
-=head1 SYNOPSIS
-
-In your application:
-
-  use Mojolicious::Lite;
-  plugin 'Compress';
-  app->start;
-
-In your template:
-
-  %= compress '/js/jquery.min.js', '/js/app.js';
-  %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
-
-NOTE! You need to have one line for each type, meaning you cannot combine
-javascript and css sources on one line.
-
-See also L</register>.
 
 =cut
 

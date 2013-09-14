@@ -21,6 +21,23 @@ DESCRIPTION
 
     This is done using "expand_files".
 
+SYNOPSIS
+    In your application:
+
+      use Mojolicious::Lite;
+      plugin 'Compress';
+      app->start;
+
+    In your template:
+
+      %= compress '/js/jquery.min.js', '/js/app.js';
+      %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+
+    NOTE! You need to have one line for each type, meaning you cannot
+    combine javascript and css sources on one line.
+
+    See also "register".
+
 APPLICATIONS
   less
     LESS extends CSS with dynamic behavior such as variables, mixins,
@@ -49,23 +66,6 @@ APPLICATIONS
 
       $ sudo apt-get install npm
       $ sudo npm -g i yuicompressor
-
-SYNOPSIS
-    In your application:
-
-      use Mojolicious::Lite;
-      plugin 'Compress';
-      app->start;
-
-    In your template:
-
-      %= compress '/js/jquery.min.js', '/js/app.js';
-      %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
-
-    NOTE! You need to have one line for each type, meaning you cannot
-    combine javascript and css sources on one line.
-
-    See also "register".
 
 ATTRIBUTES
   out_dir
