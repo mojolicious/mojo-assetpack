@@ -1,19 +1,55 @@
 NAME
     Mojolicious::Plugin::Compress - Compress css, scss and javascript with
-    external scripts
+    external tools
 
 VERSION
     0.01
 
 DESCRIPTION
+    In production mode:
+
     This plugin will automatically compress scss, less, css and javascript
     with the help of external application. The result will be one file with
     all the sources combined.
 
+    This is done using "compress_javascripts" and "compress_stylesheets".
+
+    In development mode:
+
+    This plugin will expand the input files to multiple javascript / link
+    tags which makes debugging easier.
+
+    This is done using "expand_files".
+
 APPLICATIONS
   less
+    LESS extends CSS with dynamic behavior such as variables, mixins,
+    operations and functions. See <http://lesscss.org> for more details.
+
+    Installation on Ubuntu and Debian:
+
+      $ sudo apt-get install npm
+      $ sudo npm install -g less
+
   sass
+    Sass makes CSS fun again. Sass is an extension of CSS3, adding nested
+    rules, variables, mixins, selector inheritance, and more. See
+    <http://sass-lang.com> for more information.
+
+    Installation on Ubuntu and Debian:
+
+      $ sudo apt-get install rubygems
+      $ sudo gem install sass
+
   yuicompressor
+    <http://yui.github.io/yuicompressor> is used to compress javascript and
+    css.
+
+    Installation on Ubuntu and Debian:
+
+      $ sudo apt-get install npm
+      $ sudo npm -g i yuicompressor
+
 SYNOPSIS
     In your application:
 
@@ -29,8 +65,63 @@ SYNOPSIS
     NOTE! You need to have one line for each type, meaning you cannot
     combine javascript and css sources on one line.
 
+    See also "register".
+
+ATTRIBUTES
+  out_dir
+    Defaults to "compressed" in the first search path for static files.
+
 METHODS
-  startup
+  compress_javascripts
+      $bytestream = $self->compress_javascripts($c, @rel_files);
+
+    This method will compress the input files to a file in the "out_dir"
+    with the name of the MD5 sum of the @files.
+
+    Will also run "yuicompressor" on the input files to minify them.
+
+    The returning bytestream will contain a javascript tag.
+
+  compress_stylesheets
+      $bytestream = $self->compress_stylesheets($c, @rel_files);
+
+    This method will compress the input files to a file in the "out_dir"
+    with the name of the MD5 sum of the @files.
+
+    Will also run "less" or "sass" on the input files to minify them.
+
+    The returning bytestream will contain a style tag.
+
+  expand_files
+      $bytestream = $self->expand_files($c, @rel_files);
+
+    This method will return one tag pr. input file which holds the
+    uncompressed version of the sources.
+
+    Will also run "less" or "sass" on the input files to convert them to
+    css, which the browser understand.
+
+    The returning bytestream will contain style or javascript tags.
+
+  find_external_apps
+    This method is used to find the "APPLICATIONS". It will look for the
+    apps usin File::Which in this order: lessc, less, sass, yui-compressor,
+    yuicompressor.
+
+  register
+      plugin 'Compress', {
+        enable => $bool,
+        out_dir => '/abs/path/to/app/public/dir',
+        less => '/path/to/lessc',
+        sass => '/path/to/sass',
+        js => '/path/to/yuicompressor',
+      };
+
+    Will register the "compress" helper. All arguments are optional.
+
+    "enable" will default to COMPRESS_ASSETS environment variable or set to
+    true if "mode" in Mojolicious is "production".
+
 AUTHOR
     Jan Henning Thorsen - "jhthorsen@cpan.org"
 
