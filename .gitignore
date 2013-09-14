@@ -8,6 +8,7 @@
 /Makefile
 /Makefile.old
 /.sass-cache/
+/t/public/compressed
 *.old
 *.swp
 ~$

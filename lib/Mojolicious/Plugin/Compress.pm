@@ -42,21 +42,61 @@ javascript and css sources on one line.
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
+use Mojo::Util qw/ md5_sum slurp /;
+use File::Spec::Functions qw/ catfile tmpdir /;
 use File::Which;
 use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
 
 our $VERSION = '0.01';
 our %APPLICATIONS; # should consider internal usage, may change without warning
 
-=head1 METHODS
+=head1 ATTRIBUTES
 
-=head2 find_external_apps
+=head2 out_dir
 
-Will locate the L</APPLICATIONS> using L<File::Which/which>.
+Defaults to "compressed" in the first search path for static files.
 
 =cut
 
-sub find_external_apps {
+has out_dir => '';
+
+=head1 METHODS
+
+=head2 register
+
+Will register the C<compress> helper.
+
+=cut
+
+sub register {
+  my($self, $app, $config) = @_;
+  my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
+
+  $self->_find_external_apps($app, $config);
+  $self->out_dir($config->{out_dir} || $app->home->rel_dir('public/compressed'));
+
+  mkdir $self->out_dir; # TODO: Use mkpath instead?
+
+  if($enable) {
+    $app->helper(compress => sub { $self->_compress_files(@_) });
+  }
+  else {
+    $app->log->debug('Mojolicious::Plugin::Compress will expand file list');
+    $app->helper(compress => sub { $self->_expand_files(@_) });
+  }
+}
+
+sub _abs_to_rel {
+  my($self, $c, $out) = @_;
+
+  for my $p (@{ $c->app->static->paths }) {
+    return $out if $out =~ s!^$p!!;
+  }
+  
+  die "$out is not found in static paths";
+}
+
+sub _find_external_apps {
   my($self, $app, $config) = @_;
 
   $APPLICATIONS{less} = $config->{less} || which('lessc') || which('less');
@@ -69,32 +109,61 @@ sub find_external_apps {
   }
 }
 
-=head2 register
-
-Will register the C<compress> helper and L</find_external_apps>.
-
-=cut
-
-sub register {
-  my($self, $app, $config) = @_;
-  my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
-
-  $self->find_external_apps($app, $config);
-
-  if($enable) {
-    $app->helper(compress => sub { $self->_compress_files(@_) });
-  }
-  else {
-    $app->log->debug('Mojolicious::Plugin::Compress will expand file list');
-    $app->helper(compress => sub { $self->_expand_files(@_) });
-  }
-}
-
 sub _compress_files {
   my($self, $c, @files) = @_;
   my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
 
-  die "TODO";
+  if($type eq 'js') {
+    return $self->_compress_javascripts($c, @files);
+  }
+  else {
+    return $self->_compress_stylesheets($c, @files);
+  }
+}
+
+sub _compress_javascripts {
+  my($self, $c, @files) = @_;
+  my $static = $c->app->static;
+  my $file = md5_sum(join '', @files) .'.js';
+  my $out = catfile $self->out_dir, $file;
+  my $tmp = catfile tmpdir(), $file;
+
+  unless(-e $out) {
+    open my $OUT, '>', $out or die "Write $out: $!";
+
+    for my $file (@files) {
+      my $in = $static->file($file)->path;
+      system $APPLICATIONS{js} => $in => -o => $tmp;
+      print $OUT slurp $tmp if -e $tmp;
+    }
+
+    unlink $tmp if -e $tmp;
+  }
+
+  return $c->javascript($self->_abs_to_rel($c, $out));
+}
+
+sub _compress_stylesheets {
+  my($self, $c, @files) = @_;
+  my $static = $c->app->static;
+  my $file = md5_sum(join '', @files) .'.css';
+  my $out = catfile $self->out_dir, $file;
+  my $tmp = catfile tmpdir(), $file;
+
+  unless(-e $out) {
+    open my $OUT, '>', $out or die "Write $out: $!";
+
+    for my $file (@files) {
+      $file =~ /\.(scss|less)$/ or next;
+      my $in = $static->file($file)->path;
+      system $APPLICATIONS{$1} => $in => $tmp;
+      print $OUT slurp $tmp if -e $tmp;
+    }
+
+    unlink $tmp if -e $tmp;
+  }
+
+  return $c->stylesheet($self->_abs_to_rel($c, $out));
 }
 
 sub _convert_file {
