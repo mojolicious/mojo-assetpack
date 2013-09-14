@@ -7,7 +7,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'Compress';
+  plugin 'AssetPack';
 }
 
 my $t = Test::Mojo->new;
@@ -16,9 +16,9 @@ my $sass = qx{which sass}; chomp $sass;
 my $yuicompressor = qx{which yuicompressor}; chomp $yuicompressor;
 
 {
-  is $Mojolicious::Plugin::Compress::APPLICATIONS{less}, $less, 'found less';
-  is $Mojolicious::Plugin::Compress::APPLICATIONS{scss}, $sass, 'found sass';
-  is $Mojolicious::Plugin::Compress::APPLICATIONS{js}, $yuicompressor, 'found yuicompressor';
+  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{less}, $less, 'found less';
+  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}, $sass, 'found sass';
+  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{js}, $yuicompressor, 'found yuicompressor';
 }
 
 done_testing;

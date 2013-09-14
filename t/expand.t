@@ -7,7 +7,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'Compress';
+  plugin 'AssetPack';
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';
@@ -16,14 +16,14 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 my $t = Test::Mojo->new;
 
-if($Mojolicious::Plugin::Compress::APPLICATIONS{js}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{js}) {
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}m)
     ;
 }
 
-if($Mojolicious::Plugin::Compress::APPLICATIONS{less}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
   $t->get_ok('/less')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
@@ -32,7 +32,7 @@ if($Mojolicious::Plugin::Compress::APPLICATIONS{less}) {
   unlink 't/public/css/a.css', 't/public/css/b.css';
 }
 
-if($Mojolicious::Plugin::Compress::APPLICATIONS{scss}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
@@ -51,10 +51,10 @@ if($Mojolicious::Plugin::Compress::APPLICATIONS{scss}) {
 done_testing;
 __DATA__
 @@ js.html.ep
-%= compress '/js/a.js', '/js/b.js'
+%= asset '/js/a.js', '/js/b.js'
 @@ less.html.ep
-%= compress '/css/a.less', '/css/b.less'
+%= asset '/css/a.less', '/css/b.less'
 @@ sass.html.ep
-%= compress '/css/a.scss', '/css/b.scss'
+%= asset '/css/a.scss', '/css/b.scss'
 @@ css.html.ep
-%= compress '/css/a.css', '/css/b.css'
+%= asset '/css/a.css', '/css/b.css'

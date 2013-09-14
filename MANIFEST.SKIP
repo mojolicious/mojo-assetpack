@@ -7,4 +7,4 @@
 ^cover_db/
 ^Makefile$
 ^MANIFEST.*
-^Mojolicious-Plugin-Compress
+^Mojolicious-Plugin-AssetPack

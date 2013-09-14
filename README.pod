@@ -1,1 +1,1 @@
-lib/Mojolicious/Plugin/Compress.pm
+lib/Mojolicious/Plugin/AssetPack.pm

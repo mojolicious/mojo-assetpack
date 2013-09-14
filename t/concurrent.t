@@ -6,14 +6,14 @@ plan skip_all => 'CONCURRENT=1 prove t/concurrent.t' unless $ENV{CONCURRENT};
 
 #
 # I have no idea how to make this into a proper unittest.
-# The idea is to see that only one child compress the files.
+# The idea is to see that only one child asset the files.
 #
 
 my @pid;
 
 {
   use Mojolicious::Lite;
-  plugin 'Compress' => { enable => 1, reset => 1 };
+  plugin 'AssetPack' => { enable => 1, reset => 1 };
   app->secret($$);
   get '/js' => 'js';
   push @pid, fork;
@@ -38,4 +38,4 @@ wait;
 done_testing;
 __DATA__
 @@ js.html.ep
-%= compress '/js/a.js', '/js/already.min.js'
+%= asset '/js/a.js', '/js/already.min.js'

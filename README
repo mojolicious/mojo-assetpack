@@ -1,5 +1,5 @@
 NAME
-    Mojolicious::Plugin::Compress - Compress css, scss and javascript with
+    Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with
     external tools
 
 VERSION
@@ -12,7 +12,7 @@ DESCRIPTION
     with the help of external application. The result will be one file with
     all the sources combined.
 
-    This is done using "compress_javascripts" and "compress_stylesheets".
+    This is done using "pack_javascripts" and "pack_stylesheets".
 
     In development mode:
 
@@ -25,13 +25,13 @@ SYNOPSIS
     In your application:
 
       use Mojolicious::Lite;
-      plugin 'Compress';
+      plugin 'AssetPack';
       app->start;
 
     In your template:
 
-      %= compress '/js/jquery.min.js', '/js/app.js';
-      %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+      %= asset '/js/jquery.min.js', '/js/app.js';
+      %= asset '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
 
     NOTE! You need to have one line for each type, meaning you cannot
     combine javascript and css sources on one line.
@@ -69,11 +69,11 @@ APPLICATIONS
 
 ATTRIBUTES
   out_dir
-    Defaults to "compressed" in the first search path for static files.
+    Defaults to "packed" in the first search path for static files.
 
 METHODS
-  compress_javascripts
-      $bytestream = $self->compress_javascripts($c, @rel_files);
+  pack_javascripts
+      $bytestream = $self->pack_javascripts($c, @rel_files);
 
     This method will compress the input files to a file in the "out_dir"
     with the name of the MD5 sum of the @files.
@@ -82,8 +82,8 @@ METHODS
 
     The returning bytestream will contain a javascript tag.
 
-  compress_stylesheets
-      $bytestream = $self->compress_stylesheets($c, @rel_files);
+  pack_stylesheets
+      $bytestream = $self->pack_stylesheets($c, @rel_files);
 
     This method will compress the input files to a file in the "out_dir"
     with the name of the MD5 sum of the @files.
@@ -109,8 +109,9 @@ METHODS
     yuicompressor.
 
   register
-      plugin 'Compress', {
+      plugin 'AssetPack', {
         enable => $bool,
+        reset => $bool,
         out_dir => '/abs/path/to/app/public/dir',
         less => '/path/to/lessc',
         sass => '/path/to/sass',
@@ -121,6 +122,9 @@ METHODS
 
     "enable" will default to COMPRESS_ASSETS environment variable or set to
     true if "mode" in Mojolicious is "production".
+
+    "reset" can be set to true to always rebuild the javascript one the
+    first request that hit the server.
 
 AUTHOR
     Jan Henning Thorsen - "jhthorsen@cpan.org"

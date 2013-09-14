@@ -1,8 +1,8 @@
-package Mojolicious::Plugin::Compress;
+package Mojolicious::Plugin::AssetPack;
 
 =head1 NAME
 
-Mojolicious::Plugin::Compress - Compress css, scss and javascript with external tools
+Mojolicious::Plugin::AssetPack - Pack css, scss and javascript with external tools
 
 =head1 VERSION
 
@@ -16,7 +16,7 @@ This plugin will automatically compress scss, less, css and javascript with
 the help of external application. The result will be one file with all the
 sources combined.
 
-This is done using L</compress_javascripts> and L</compress_stylesheets>.
+This is done using L</pack_javascripts> and L</pack_stylesheets>.
 
 In development mode:
 
@@ -30,13 +30,13 @@ This is done using L</expand_files>.
 In your application:
 
   use Mojolicious::Lite;
-  plugin 'Compress';
+  plugin 'AssetPack';
   app->start;
 
 In your template:
 
-  %= compress '/js/jquery.min.js', '/js/app.js';
-  %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+  %= asset '/js/jquery.min.js', '/js/app.js';
+  %= asset '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
 
 NOTE! You need to have one line for each type, meaning you cannot combine
 javascript and css sources on one line.
@@ -92,7 +92,7 @@ our %APPLICATIONS; # should consider internal usage, may change without warning
 
 =head2 out_dir
 
-Defaults to "compressed" in the first search path for static files.
+Defaults to "packed" in the first search path for static files.
 
 =cut
 
@@ -100,9 +100,9 @@ has out_dir => '';
 
 =head1 METHODS
 
-=head2 compress_javascripts
+=head2 pack_javascripts
 
-  $bytestream = $self->compress_javascripts($c, @rel_files);
+  $bytestream = $self->pack_javascripts($c, @rel_files);
 
 This method will compress the input files to a file in the L</out_dir>
 with the name of the MD5 sum of the C<@files>.
@@ -113,7 +113,7 @@ The returning bytestream will contain a javascript tag.
 
 =cut
 
-sub compress_javascripts {
+sub pack_javascripts {
   my($self, $c, @files) = @_;
   my $out = $self->_out('.js', @files);
 
@@ -123,7 +123,7 @@ sub compress_javascripts {
         print { $out->{fh} } slurp $file;
       }
       else {
-        $self->_compress_js($file => $out->{fh});
+        $self->_pack_js($file => $out->{fh});
       }
       print { $out->{fh} } "\n";
     }
@@ -132,9 +132,9 @@ sub compress_javascripts {
   return $c->javascript($self->_abs_to_rel($c, $out->{file}));
 }
 
-=head2 compress_stylesheets
+=head2 pack_stylesheets
 
-  $bytestream = $self->compress_stylesheets($c, @rel_files);
+  $bytestream = $self->pack_stylesheets($c, @rel_files);
 
 This method will compress the input files to a file in the L</out_dir>
 with the name of the MD5 sum of the C<@files>.
@@ -145,14 +145,14 @@ The returning bytestream will contain a style tag.
 
 =cut
 
-sub compress_stylesheets {
+sub pack_stylesheets {
   my($self, $c, @files) = @_;
   my $out = $self->_out('.css', @files);
 
   if($out->{fh}) {
     for my $file ($self->_input_files($c, @files)) {
       if($file =~ /\.(scss|less)$/) {
-        my $method = "_compress_$1";
+        my $method = "_pack_$1";
         $self->$method($file => $out->{fh});
       }
       else {
@@ -215,7 +215,7 @@ sub find_external_apps {
 
 =head2 register
 
-  plugin 'Compress', {
+  plugin 'AssetPack', {
     enable => $bool,
     reset => $bool,
     out_dir => '/abs/path/to/app/public/dir',
@@ -239,7 +239,7 @@ sub register {
   my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
 
   $self->find_external_apps($app, $config);
-  $self->out_dir($config->{out_dir} || $app->home->rel_dir('public/compressed'));
+  $self->out_dir($config->{out_dir} || $app->home->rel_dir('public/packed'));
 
   mkdir $self->out_dir; # TODO: Use mkpath instead?
 
@@ -249,21 +249,21 @@ sub register {
   }
 
   if($enable) {
-    $app->helper(compress => sub {
+    $app->helper(asset => sub {
       my($c, @files) = @_;
       my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
 
       if($type eq 'js') {
-        return $self->compress_javascripts($c, @files);
+        return $self->pack_javascripts($c, @files);
       }
       else {
-        return $self->compress_stylesheets($c, @files);
+        return $self->pack_stylesheets($c, @files);
       }
     });
   }
   else {
-    $app->log->debug('Mojolicious::Plugin::Compress will expand file list');
-    $app->helper(compress => sub { $self->expand_files(@_) });
+    $app->log->debug('Mojolicious::Plugin::AssetPack will expand file list');
+    $app->helper(asset => sub { $self->expand_files(@_) });
   }
 }
 
@@ -295,21 +295,21 @@ sub _compile_css {
   $file;
 }
 
-sub _compress_js {
+sub _pack_js {
   my($self, $in, $OUT) = @_;
 
   open my $APP, '-|', $APPLICATIONS{js} => $in or die "$APPLICATIONS{js} $in: $!";
   print $OUT $_ while <$APP>;
 }
 
-sub _compress_less {
+sub _pack_less {
   my($self, $in, $OUT) = @_;
 
   open my $APP, '-|', $APPLICATIONS{less} => -x => $in or die "$APPLICATIONS{less} -x $in: $!";
   print $OUT $_ while <$APP>;
 }
 
-sub _compress_scss {
+sub _pack_scss {
   my($self, $in, $OUT) = @_;
 
   open my $APP, '-|', $APPLICATIONS{scss} => -t => 'compressed' => $in or die "$APPLICATIONS{scss} -t compressed $in: $!";
