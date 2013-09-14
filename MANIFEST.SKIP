@@ -4,6 +4,7 @@
 \.swp
 ~$
 ^blib/
+^cover_db/
 ^Makefile$
 ^MANIFEST.*
 ^Mojolicious-Plugin-Compress

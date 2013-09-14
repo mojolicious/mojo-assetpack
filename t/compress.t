@@ -18,6 +18,7 @@ plan skip_all => 't/public/compressed' unless -d 't/public/compressed';
 my $t = Test::Mojo->new;
 
 if($Mojolicious::Plugin::Compress::APPLICATIONS{js}) {
+  $t->get_ok('/js'); # trigger compress_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/compressed/\w+\.js".*}m)
@@ -25,6 +26,7 @@ if($Mojolicious::Plugin::Compress::APPLICATIONS{js}) {
 }
 
 if($Mojolicious::Plugin::Compress::APPLICATIONS{less}) {
+  $t->get_ok('/less'); # trigger compress_stylesheets() twice for coverage
   $t->get_ok('/less')
     ->status_is(200)
     ->content_like(qr{<link href="/compressed/\w+\.css".*}m)
@@ -54,4 +56,4 @@ __DATA__
 @@ sass.html.ep
 %= compress '/css/a.scss', '/css/b.scss'
 @@ css.html.ep
-%= compress '/css/a.css', '/css/b.css'
+%= compress '/css/c.css', '/css/d.css'

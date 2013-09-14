@@ -79,8 +79,9 @@ Installation on Ubuntu and Debian:
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
-use Mojo::Util qw/ md5_sum slurp /;
-use File::Spec::Functions qw/ catfile tmpdir /;
+use Mojo::Util qw( md5_sum slurp );
+use Fcntl ();
+use File::Spec::Functions qw( catfile tmpdir );
 use File::Which;
 use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
 
@@ -119,30 +120,24 @@ The returning bytestream will contain a javascript tag.
 
 sub compress_javascripts {
   my($self, $c, @files) = @_;
-  my $static = $c->app->static;
-  my $file = md5_sum(join '', @files) .'.js';
-  my $out = catfile $self->out_dir, $file;
-  my $tmp = catfile tmpdir(), $file;
+  my $out = $self->_out('.js', @files);
 
-  unless(-e $out) {
-    open my $OUT, '>', $out or die "Write $out: $!";
-
-    for my $file (@files) {
-      my $in = $static->file($file)->path;
+  if($out->{fh}) {
+    for my $file ($self->_input_files($c, @files)) {
       if($file =~ /\bmin\b/) {
-        print $OUT slurp $in;
+        print { $out->{fh} } slurp $file;
       }
       else {
-        _system $APPLICATIONS{js} => $in => -o => $tmp;
-        print $OUT slurp $tmp;
+        _system $APPLICATIONS{js} => $file => -o => $out->{temp};
+        print { $out->{fh} } slurp $out->{temp};
       }
-      print $OUT "\n";
+      print { $out->{fh} } "\n";
     }
 
-    unlink $tmp if -e $tmp;
+    unlink $out->{temp} if -e $out->{temp};
   }
 
-  return $c->javascript($self->_abs_to_rel($c, $out));
+  return $c->javascript($self->_abs_to_rel($c, $out->{file}));
 }
 
 =head2 compress_stylesheets
@@ -160,27 +155,25 @@ The returning bytestream will contain a style tag.
 
 sub compress_stylesheets {
   my($self, $c, @files) = @_;
-  my $static = $c->app->static;
-  my $file = md5_sum(join '', @files) .'.css';
-  my $out = catfile $self->out_dir, $file;
-  my $tmp = catfile tmpdir(), $file;
+  my $out = $self->_out('.css', @files);
 
-  unless(-e $out) {
-    open my $OUT, '>', $out or die "Write $out: $!";
-
-    for my $file (@files) {
-      $file =~ /\.(scss|less)$/ or next;
-      my $type = $1;
-      my $in = $static->file($file)->path;
-      my @args = $type eq 'less' ? ('-x') : ('-t', 'compressed');
-      _system $APPLICATIONS{$type} => @args => $in => $tmp;
-      print $OUT slurp $tmp;
+  if($out->{fh}) {
+    for my $file ($self->_input_files($c, @files)) {
+      if($file =~ /\.(scss|less)$/) {
+        my $type = $1;
+        my @args = $type eq 'less' ? ('-x') : ('-t', 'compressed');
+        _system $APPLICATIONS{$type} => @args => $file => $out->{temp};
+        print { $out->{fh} } slurp $out->{temp};
+      }
+      else {
+        print { $out->{fh} } slurp $file;
+      }
     }
 
-    unlink $tmp if -e $tmp;
+    unlink $out->{temp} if -e $out->{temp};
   }
 
-  return $c->stylesheet($self->_abs_to_rel($c, $out));
+  return $c->stylesheet($self->_abs_to_rel($c, $out->{file}));
 }
 
 =head2 expand_files
@@ -200,6 +193,8 @@ The returning bytestream will contain style or javascript tags.
 sub expand_files {
   my($self, $c, @files) = @_;
   my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
+
+  # $type eq '' will die anyway, so I'm not testing it here
 
   if($type eq 'js') {
     return b join '', map { $c->javascript($_) } @files;
@@ -266,7 +261,7 @@ sub register {
   }
 
   if($enable) {
-    $app->helper(compress => sub { 
+    $app->helper(compress => sub {
       my($c, @files) = @_;
       my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
 
@@ -290,7 +285,7 @@ sub _abs_to_rel {
   for my $p (@{ $c->app->static->paths }) {
     return $out if $out =~ s!^$p!!;
   }
-  
+
   die "$out is not found in static paths";
 }
 
@@ -309,6 +304,29 @@ sub _convert_file {
   }
 
   $file;
+}
+
+sub _input_files {
+  my($self, $c) = (shift, shift);
+  my $static = $c->app->static;
+
+  map {
+    my $file = $static->file($_);
+    $file ? $file->path : $_;
+  } @_;
+}
+
+sub _out {
+  my($self, $ext) = (shift, shift);
+  my $name = md5_sum(join '', @_) .$ext;
+  my $path = catfile $self->out_dir, $name;
+
+  use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
+  return {
+    file => $path,
+    temp => catfile(tmpdir, $name),
+    fh => IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY),
+  };
 }
 
 =head1 AUTHOR
