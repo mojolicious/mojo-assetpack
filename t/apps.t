@@ -17,8 +17,8 @@ my $yuicompressor = qx{which yuicompressor}; chomp $yuicompressor;
 
 {
   is $Mojolicious::Plugin::AssetPack::APPLICATIONS{less}, $less, 'found less';
-  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}, $sass, 'found sass';
-  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{js}, $yuicompressor, 'found yuicompressor';
+  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{sass}, $sass, 'found sass';
+  is $Mojolicious::Plugin::AssetPack::APPLICATIONS{yuicompressor}, $yuicompressor, 'found yuicompressor';
 }
 
 done_testing;

@@ -19,19 +19,26 @@ DESCRIPTION
     This plugin will expand the input files to multiple javascript / link
     tags which makes debugging easier.
 
-    This is done using "expand_files".
+    This is done using "expand_moniker".
 
 SYNOPSIS
     In your application:
 
       use Mojolicious::Lite;
-      plugin 'AssetPack';
+
+      plugin 'AssetPack' => {
+        assets => {
+          'app.js' => [ '/js/foo.js', '/js/bar.js' ],
+          'app.css' => [ '/css/foo.less', '/css/bar.scss', '/css/main.css' ],
+        },
+      };
+
       app->start;
 
     In your template:
 
-      %= asset '/js/jquery.min.js', '/js/app.js';
-      %= asset '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+      %= asset 'app.js'
+      %= asset 'app.css'
 
     NOTE! You need to have one line for each type, meaning you cannot
     combine javascript and css sources on one line.
@@ -73,33 +80,29 @@ ATTRIBUTES
 
 METHODS
   pack_javascripts
-      $bytestream = $self->pack_javascripts($c, @rel_files);
+      $self->pack_javascripts($moniker => \@files);
 
-    This method will compress the input files to a file in the "out_dir"
-    with the name of the MD5 sum of the @files.
+    This method will combine the input files to one file in the "out_dir",
+    named "$moniker".
 
     Will also run "yuicompressor" on the input files to minify them.
 
-    The returning bytestream will contain a javascript tag.
-
   pack_stylesheets
-      $bytestream = $self->pack_stylesheets($c, @rel_files);
+      $self->pack_stylesheets($moniker => \@files);
 
-    This method will compress the input files to a file in the "out_dir"
-    with the name of the MD5 sum of the @files.
+    This method will combine the input files to one file in the "out_dir",
+    named "$moniker".
 
     Will also run "less" or "sass" on the input files to minify them.
 
-    The returning bytestream will contain a style tag.
+  expand_moniker
+      $bytestream = $self->expand_moniker($c, $moniker);
 
-  expand_files
-      $bytestream = $self->expand_files($c, @rel_files);
+    This method will return one tag for each asset defined by the
+    "$moniker".
 
-    This method will return one tag pr. input file which holds the
-    uncompressed version of the sources.
-
-    Will also run "less" or "sass" on the input files to convert them to
-    css, which the browser understand.
+    Will also run "less" or "sass" on the files to convert them to css,
+    which the browser understand.
 
     The returning bytestream will contain style or javascript tags.
 
@@ -112,10 +115,13 @@ METHODS
       plugin 'AssetPack', {
         enable => $bool,
         reset => $bool,
-        out_dir => '/abs/path/to/app/public/dir',
+        yuicompressor => '/path/to/yuicompressor',
         less => '/path/to/lessc',
         sass => '/path/to/sass',
-        js => '/path/to/yuicompressor',
+        assets => {
+          'app.js' => [ '/js/foo.js', '/js/bar.js' ],
+          'app.css' => [ '/css/foo.css', '/css/bar.css' ],
+        },
       };
 
     Will register the "compress" helper. All arguments are optional.

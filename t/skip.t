@@ -5,21 +5,30 @@ use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
-{
-  use Mojolicious::Lite;
-  plugin 'AssetPack' => { enable => 1, reset => 1 };
-  get '/js' => 'js';
-}
-
-my $t = Test::Mojo->new;
 my @run;
 
 {
-  $Mojolicious::Plugin::AssetPack::APPLICATIONS{js} = 'dummy';
+  require Mojolicious::Plugin::AssetPack;
   *Mojolicious::Plugin::AssetPack::_pack_js = sub {
     push @run, [@_];
     print { $_[2] } "dummy();\n";
   };
+
+  use Mojolicious::Lite;
+  plugin 'AssetPack' => {
+    enable => 1,
+    reset => 1,
+    yuicompressor => 'dummy',
+    assets => {
+      'app.js' => [ '/js/a.js', '/js/already.min.js' ],
+    },
+  };
+  get '/js' => 'js';
+}
+
+my $t = Test::Mojo->new;
+
+{
 
   $t->get_ok('/js')
     ->status_is(200)
@@ -33,4 +42,4 @@ my @run;
 done_testing;
 __DATA__
 @@ js.html.ep
-%= asset '/js/a.js', '/js/already.min.js'
+%= asset 'app.js'

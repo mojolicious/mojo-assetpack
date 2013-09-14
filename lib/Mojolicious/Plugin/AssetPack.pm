@@ -23,20 +23,27 @@ In development mode:
 This plugin will expand the input files to multiple javascript / link tags
 which makes debugging easier.
 
-This is done using L</expand_files>.
+This is done using L</expand_moniker>.
 
 =head1 SYNOPSIS
 
 In your application:
 
   use Mojolicious::Lite;
-  plugin 'AssetPack';
+
+  plugin 'AssetPack' => {
+    assets => {
+      'app.js' => [ '/js/foo.js', '/js/bar.js' ],
+      'app.css' => [ '/css/foo.less', '/css/bar.scss', '/css/main.css' ],
+    },
+  };
+
   app->start;
 
 In your template:
 
-  %= asset '/js/jquery.min.js', '/js/app.js';
-  %= asset '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+  %= asset 'app.js'
+  %= asset 'app.css'
 
 NOTE! You need to have one line for each type, meaning you cannot combine
 javascript and css sources on one line.
@@ -79,8 +86,8 @@ Installation on Ubuntu and Debian:
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
-use Mojo::Util qw( md5_sum slurp );
-use Fcntl ();
+use Mojo::Util 'slurp';
+use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use File::Spec::Functions qw( catfile );
 use File::Which;
 use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
@@ -102,93 +109,97 @@ has out_dir => '';
 
 =head2 pack_javascripts
 
-  $bytestream = $self->pack_javascripts($c, @rel_files);
+  $self->pack_javascripts($moniker => \@files);
 
-This method will compress the input files to a file in the L</out_dir>
-with the name of the MD5 sum of the C<@files>.
+This method will combine the input files to one file in the L</out_dir>, named
+"$moniker".
 
 Will also run L</yuicompressor> on the input files to minify them.
-
-The returning bytestream will contain a javascript tag.
 
 =cut
 
 sub pack_javascripts {
-  my($self, $c, @files) = @_;
-  my $out = $self->_out('.js', @files);
+  my($self, $moniker, $files) = @_;
+  my $path = catfile $self->out_dir, $moniker;
+  my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
 
-  if($out->{fh}) {
-    for my $file ($self->_input_files($c, @files)) {
-      if($file =~ /\bmin\b/) {
-        print { $out->{fh} } slurp $file;
-      }
-      else {
-        $self->_pack_js($file => $out->{fh});
-      }
-      print { $out->{fh} } "\n";
-    }
+  unless($fh) {
+    $self->{log}->debug("$path already exists");
+    return;
   }
 
-  return $c->javascript($self->_abs_to_rel($c, $out->{file}));
+  for my $file ($self->_input_files($files)) {
+    if($file =~ /\bmin\b/) {
+      $fh->syswrite(slurp $file);
+    }
+    else {
+      $self->_pack_js($file => $fh);
+    }
+    $fh->syswrite("\n");
+  }
+
+  $fh->close or die "close $path: $!";
 }
 
 =head2 pack_stylesheets
 
-  $bytestream = $self->pack_stylesheets($c, @rel_files);
+  $self->pack_stylesheets($moniker => \@files);
 
-This method will compress the input files to a file in the L</out_dir>
-with the name of the MD5 sum of the C<@files>.
+This method will combine the input files to one file in the L</out_dir>, named
+"$moniker".
 
 Will also run L</less> or L</sass> on the input files to minify them.
-
-The returning bytestream will contain a style tag.
 
 =cut
 
 sub pack_stylesheets {
-  my($self, $c, @files) = @_;
-  my $out = $self->_out('.css', @files);
+  my($self, $moniker, $files) = @_;
+  my $path = catfile $self->out_dir, $moniker;
+  my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
 
-  if($out->{fh}) {
-    for my $file ($self->_input_files($c, @files)) {
-      if($file =~ /\.(scss|less)$/) {
-        my $method = "_pack_$1";
-        $self->$method($file => $out->{fh});
-      }
-      else {
-        print { $out->{fh} } slurp $file;
-      }
+  unless($fh) {
+    $self->{log}->debug("$path already exists");
+    return;
+  }
+
+  for my $file ($self->_input_files($files)) {
+    if($file =~ /\.(scss|less)$/) {
+      my $method = "_pack_$1";
+      $self->$method($file => $fh);
+    }
+    else {
+      $fh->syswrite(slurp $file);
     }
   }
 
-  return $c->stylesheet($self->_abs_to_rel($c, $out->{file}));
+  $fh->close or die "close $path: $!";
 }
 
-=head2 expand_files
+=head2 expand_moniker
 
-  $bytestream = $self->expand_files($c, @rel_files);
+  $bytestream = $self->expand_moniker($c, $moniker);
 
-This method will return one tag pr. input file which holds the uncompressed
-version of the sources.
+This method will return one tag for each asset defined by the "$moniker".
 
-Will also run L</less> or L</sass> on the input files to convert them to
-css, which the browser understand.
+Will also run L</less> or L</sass> on the files to convert them to css, which
+the browser understand.
 
 The returning bytestream will contain style or javascript tags.
 
 =cut
 
-sub expand_files {
-  my($self, $c, @files) = @_;
-  my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
+sub expand_moniker {
+  my($self, $c, $moniker) = @_;
+  my $files = $self->{assets}{$moniker};
 
-  # $type eq '' will die anyway, so I'm not testing it here
-
-  if($type eq 'js') {
-    return b join '', map { $c->javascript($_) } @files;
+  if(!$files) {
+    return b "<!-- Could not expand_moniker $moniker -->";
+  }
+  elsif($moniker =~ /\.js/) {
+    return b join '', map { $c->javascript($_) } @$files;
   }
   else {
-    return b join '', map { $c->stylesheet($self->_compile_css($c, $_)) } @files;
+    return b join '', map { $c->stylesheet($self->_compile_css($_)) } @$files;
   }
 }
 
@@ -204,8 +215,8 @@ sub find_external_apps {
   my($self, $app, $config) = @_;
 
   $APPLICATIONS{less} = $config->{less} || which('lessc') || which('less');
-  $APPLICATIONS{scss} = $config->{sass} || which('sass');
-  $APPLICATIONS{js} = $config->{yuicompressor} || which('yui-compressor') || which('yuicompressor');
+  $APPLICATIONS{sass} = $config->{sass} || which('sass');
+  $APPLICATIONS{yuicompressor} = $config->{yuicompressor} || which('yui-compressor') || which('yuicompressor');
 
   for(keys %APPLICATIONS) {
     $APPLICATIONS{$_} and next;
@@ -218,10 +229,13 @@ sub find_external_apps {
   plugin 'AssetPack', {
     enable => $bool,
     reset => $bool,
-    out_dir => '/abs/path/to/app/public/dir',
+    yuicompressor => '/path/to/yuicompressor',
     less => '/path/to/lessc',
     sass => '/path/to/sass',
-    js => '/path/to/yuicompressor',
+    assets => {
+      'app.js' => [ '/js/foo.js', '/js/bar.js' ],
+      'app.css' => [ '/css/foo.css', '/css/bar.css' ],
+    },
   };
 
 Will register the C<compress> helper. All arguments are optional.
@@ -239,9 +253,13 @@ sub register {
   my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
 
   $self->find_external_apps($app, $config);
-  $self->out_dir($config->{out_dir} || $app->home->rel_dir('public/packed'));
+  $self->out_dir($app->home->rel_dir('public/packed'));
 
   mkdir $self->out_dir; # TODO: Use mkpath instead?
+
+  $self->{assets} = $config->{assets};
+  $self->{log} = $app->log;
+  $self->{static} = $app->static;
 
   if($config->{enable} and $config->{reset}) {
     opendir(my $DH, $self->out_dir);
@@ -250,45 +268,36 @@ sub register {
 
   if($enable) {
     $app->helper(asset => sub {
-      my($c, @files) = @_;
-      my $type = $files[0] =~ /\.(js|css|scss|less)$/ ? $1 : '';
-
-      if($type eq 'js') {
-        return $self->pack_javascripts($c, @files);
-      }
-      else {
-        return $self->pack_stylesheets($c, @files);
-      }
+      my($c, $file) = @_;
+      $file =~ /\.js$/ ? $c->javascript("/packed/$file") : $c->stylesheet("/packed/$file");
     });
+
+    while(my($moniker, $files) = each %{ $self->{assets} }) {
+      $moniker =~ /\.js/
+        ? $self->pack_javascripts($moniker => $files)
+        : $self->pack_stylesheets($moniker => $files)
+        ;
+    }
   }
   else {
     $app->log->debug('Mojolicious::Plugin::AssetPack will expand file list');
-    $app->helper(asset => sub { $self->expand_files(@_) });
+    $app->helper(asset => sub { $self->expand_moniker(@_) });
   }
-}
-
-sub _abs_to_rel {
-  my($self, $c, $out) = @_;
-
-  for my $p (@{ $c->app->static->paths }) {
-    return $out if $out =~ s!^$p!!;
-  }
-
-  die "$out is not found in static paths";
 }
 
 sub _compile_css {
-  my($self, $c, $file) = @_;
+  my($self, $file) = @_;
 
   if($file =~ /\.(scss|less)$/) {
     eval {
-      my $in = $c->app->static->file($file)->path;
+      my $in = $self->{static}->file($file)->path;
       (my $out = $in) =~ s/\.(\w+)$/.css/;
-      warn "system $APPLICATIONS{$1} $in $out\n" if DEBUG;
-      system $APPLICATIONS{$1} => $in => $out;
+      my $type = $1 eq 'less' ? 'less' : 'sass';
+      warn "system $APPLICATIONS{$type} $in $out\n" if DEBUG;
+      system $APPLICATIONS{$type} => $in => $out;
       $file =~ s/\.(\w+)$/.css/;
     } or do {
-      $c->app->log->warn("Could not convert $file: $@");
+      $self->{log}->warn("Could not convert $file: $@");
     };
   }
 
@@ -298,7 +307,7 @@ sub _compile_css {
 sub _pack_js {
   my($self, $in, $OUT) = @_;
 
-  open my $APP, '-|', $APPLICATIONS{js} => $in or die "$APPLICATIONS{js} $in: $!";
+  open my $APP, '-|', $APPLICATIONS{yuicompressor} => $in or die "$APPLICATIONS{yuicompressor} $in: $!";
   print $OUT $_ while <$APP>;
 }
 
@@ -312,29 +321,17 @@ sub _pack_less {
 sub _pack_scss {
   my($self, $in, $OUT) = @_;
 
-  open my $APP, '-|', $APPLICATIONS{scss} => -t => 'compressed' => $in or die "$APPLICATIONS{scss} -t compressed $in: $!";
+  open my $APP, '-|', $APPLICATIONS{sass} => -t => 'compressed' => $in or die "$APPLICATIONS{sass} -t compressed $in: $!";
   print $OUT $_ while <$APP>;
 }
 
 sub _input_files {
-  my($self, $c) = (shift, shift);
-  my $static = $c->app->static;
+  my($self, $files) = @_;
 
-  map {
-    my $file = $static->file($_);
+  return map {
+    my $file = $self->{static}->file($_);
     $file ? $file->path : $_;
-  } @_;
-}
-
-sub _out {
-  my($self, $ext) = (shift, shift);
-  my $path = catfile $self->out_dir, md5_sum(join '', @_) .$ext;
-
-  use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
-  return {
-    file => $path,
-    fh => IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY),
-  };
+  } @$files;
 }
 
 =head1 AUTHOR

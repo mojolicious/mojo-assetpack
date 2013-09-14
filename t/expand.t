@@ -7,7 +7,14 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack';
+  plugin 'AssetPack' => {
+    assets => {
+      'app.js' => [ '/js/a.js', '/js/b.js' ],
+      'less.css' => [ '/css/a.less', '/css/b.less' ],
+      'sass.css' => [ '/css/a.scss', '/css/b.scss' ],
+      'app.css' => [ '/css/a.css', '/css/b.css' ],
+    },
+  },
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';
@@ -16,7 +23,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 my $t = Test::Mojo->new;
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{js}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{yuicompressor}) {
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}m)
@@ -28,17 +35,13 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
     ;
-
-  unlink 't/public/css/a.css', 't/public/css/b.css';
 }
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
+if($Mojolicious::Plugin::AssetPack::APPLICATIONS{sass}) {
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
     ;
-
-  unlink 't/public/css/a.css', 't/public/css/b.css';
 }
 
 {
@@ -51,10 +54,10 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
 done_testing;
 __DATA__
 @@ js.html.ep
-%= asset '/js/a.js', '/js/b.js'
+%= asset 'app.js'
 @@ less.html.ep
-%= asset '/css/a.less', '/css/b.less'
+%= asset 'less.css'
 @@ sass.html.ep
-%= asset '/css/a.scss', '/css/b.scss'
+%= asset 'sass.css'
 @@ css.html.ep
-%= asset '/css/a.css', '/css/b.css'
+%= asset 'app.css'
