@@ -1,0 +1,36 @@
+NAME
+    Mojolicious::Plugin::Compress - Compress css, scss and javascript with
+    external scripts
+
+VERSION
+    0.01
+
+DESCRIPTION
+    This plugin will automatically compress scss, less, css and javascript
+    with the help of external application. The result will be one file with
+    all the sources combined.
+
+APPLICATIONS
+  less
+  sass
+  yuicompressor
+SYNOPSIS
+    In your application:
+
+      use Mojolicious::Lite;
+      plugin 'Compress';
+      app->start;
+
+    In your template:
+
+      %= compress '/js/jquery.min.js', '/js/app.js';
+      %= compress '/less/reset.less', '/sass/helpers.scss', '/css/app.css';
+
+    NOTE! You need to have one line for each type, meaning you cannot
+    combine javascript and css sources on one line.
+
+METHODS
+  startup
+AUTHOR
+    Jan Henning Thorsen - "jhthorsen@cpan.org"
+
