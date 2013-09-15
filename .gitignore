@@ -13,4 +13,4 @@
 *.old
 *.swp
 ~$
-/Mojolicious-Plugin-Compress*tar.gz
+/Mojolicious-Plugin-AssetPack*tar.gz
