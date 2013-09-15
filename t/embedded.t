@@ -23,7 +23,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   package App;
   use Mojolicious::Lite;
   app->routes->route('/embed')->detour(app => Embedded::app);
-  get '/', sub { shift->render(text => 'main') };
+  get '/main', sub { shift->render(text => 'main') };
 }
 
 {
@@ -33,7 +33,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   my $t = Test::Mojo->new('App');
-  $t->get_ok("/")->status_is(200)->content_is('main');
+  $t->get_ok("/main")->status_is(200)->content_is('main');
   $t->get_ok("/embed")->status_is(200)->content_is('Embedded');
   $t->get_ok("/embed/packed/app.42.js")->status_is(200)->content_is('var too = "cool";');
 }

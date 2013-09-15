@@ -242,11 +242,16 @@ sub register {
 
   $app->hook(before_dispatch => sub {
     my $c = shift;
-    my $url = $c->req->url;
+    my $asset = $c->req->url->path;
+    my $base = $c->url_for('/');
 
-    return unless $url->path =~ m!^\/?packed/(.+)\.(\d+)\.(\w+)$!;
+    $asset = "/$asset" unless $asset =~ m!^/!;
+    $asset =~ s!^$base!!;
+
+    return unless $asset =~ m!^/?packed/(.+)\.(\d+)\.(\w+)$!;
     return unless $self->{assets}{"$1.$3"};
-    $url->path("$1.$3");
+    return unless $c->app->static->serve($c, "/packed/$1.$3");
+    return $c->rendered;
   });
 }
 
