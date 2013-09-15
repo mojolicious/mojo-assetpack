@@ -9,7 +9,7 @@
 /Makefile.old
 /cover_db/
 /t/public/packed
-/.sass-cache/
+.sass-cache
 *.old
 *.swp
 ~$

@@ -62,8 +62,11 @@ DESCRIPTION
 
   Preprocessors
     This library tries to find default preprocessors for less, scss, js and
-    css. "detect" in Mojolicious::Plugin::AssetPack::Preprocessors holds
-    more details.
+    css.
+
+    NOTE! The preprocessors require optional dependencies to function
+    properly. Check out "detect" in
+    Mojolicious::Plugin::AssetPack::Preprocessors for more details.
 
 ATTRIBUTES
   minify

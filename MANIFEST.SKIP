@@ -8,3 +8,5 @@
 ^Makefile$
 ^MANIFEST.*
 ^Mojolicious-Plugin-AssetPack
+.sass-cache
+/packed/
