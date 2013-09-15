@@ -377,7 +377,7 @@ sub _input_files {
 
 sub _run_preprocessor {
   my($self, $file) = @_;
-  my $type = $file =~ /\.(\w{2,4})/ ? $1 : 'UNKNOWN';
+  my $type = $file =~ /\.(\w{2,4})$/ ? $1 : 'UNKNOWN';
   my $code = $self->{preprocessor}{$type};
   my $text;
 
