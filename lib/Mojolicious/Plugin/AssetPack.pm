@@ -126,6 +126,28 @@ has minify => 0;
 
 =head1 METHODS
 
+=head2 add
+
+  $self->add($c, $moniker => @rel_files);
+
+Used to define new assets aliases.
+
+=cut
+
+sub add {
+  my($self, $c, $moniker, @files) = @_;
+
+  if($self->minify) {
+    $moniker =~ /\.js/
+      ? $self->pack_javascripts($moniker => \@files)
+      : $self->pack_stylesheets($moniker => \@files)
+      ;
+  }
+
+  $self->{assets}{$moniker} = [@files];
+  $self;
+}
+
 =head2 pack_javascripts
 
   $self->pack_javascripts($moniker => \@files);
@@ -271,7 +293,7 @@ sub register {
 
   $app->helper($helper => sub {
     return $self if @_ == 1;
-    return $self->_asset_pack(@_) if @_ > 2;
+    return $self->add(@_) if @_ > 2;
     return $self->expand_moniker(@_) unless $minify;
     my($name, $ext) = $_[1] =~ /^(.+)\.(\w+)$/;
     return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
@@ -286,20 +308,6 @@ sub register {
     return unless $self->{assets}{"$1.$3"};
     $url->path("$1.$3");
   });
-}
-
-sub _asset_pack {
-  my($self, $c, $moniker, @files) = @_;
-
-  if($self->minify) {
-    $moniker =~ /\.js/
-      ? $self->pack_javascripts($moniker => \@files)
-      : $self->pack_stylesheets($moniker => \@files)
-      ;
-  }
-
-  $self->{assets}{$moniker} = [@files];
-  $self;
 }
 
 sub _compile_css {
@@ -319,15 +327,6 @@ sub _compile_css {
   }
 
   $file;
-}
-
-sub _input_files {
-  my($self, $files) = @_;
-
-  return map {
-    my $file = $self->{static}->file($_);
-    $file ? $file->path : $_;
-  } @$files;
 }
 
 sub _detect_default_preprocessors {
@@ -360,6 +359,15 @@ sub _detect_default_preprocessors {
     $self->preprocessor(js => $cb);
     $self->preprocessor(css => $cb);
   }
+}
+
+sub _input_files {
+  my($self, $files) = @_;
+
+  return map {
+    my $file = $self->{static}->file($_);
+    $file ? $file->path : $_;
+  } @$files;
 }
 
 sub _run_preprocessor {
