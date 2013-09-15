@@ -359,6 +359,10 @@ sub _detect_default_preprocessors {
     $self->preprocessor(js => $cb);
     $self->preprocessor(css => $cb);
   }
+  else {
+    $self->preprocessor(js => sub {});
+    $self->preprocessor(css => sub {});
+  }
 }
 
 sub _input_files {
