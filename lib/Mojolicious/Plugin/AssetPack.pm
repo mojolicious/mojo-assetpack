@@ -336,8 +336,8 @@ sub _detect_default_preprocessors {
     $self->preprocessor(less => sub {
       my($self, $file) = @_;
       my @args = $self->minify ? ('-x') : ();
-      open my $APP, '-|', $app => @args => $file or die "$app @args $file: $!";
-      local $/; readline $APP;
+      open my $FH, '-|', $app => @args => $file or die "$app @args $file: $!";
+      return $FH;
     });
   }
 
@@ -345,7 +345,8 @@ sub _detect_default_preprocessors {
     $self->preprocessor(scss => sub {
       my($self, $file) = @_;
       my @args = $self->minify ? ('-t', 'compressed') : ();
-      open my $APP, '-|', $app => @args => $file or die "$app @args $file: $!";
+      open my $FH, '-|', $app => @args => $file or die "$app @args $file: $!";
+      return $FH;
     });
   }
 
@@ -353,8 +354,8 @@ sub _detect_default_preprocessors {
     my $cb = sub {
       my($self, $file) = @_;
       return unless $self->minify;
-      open my $APP, '-|', $app => $file or die "$app $file: $!";
-      local $/; readline $APP;
+      open my $FH, '-|', $app => $file or die "$app $file: $!";
+      return $FH;
     };
     $self->preprocessor(js => $cb);
     $self->preprocessor(css => $cb);
@@ -380,14 +381,18 @@ sub _run_preprocessor {
   my $code = $self->{preprocessor}{$type};
   my $text;
 
-  unless($code) {
+  if(!$code) {
     $self->{log}->warn("Undefined preprocessor for $type");
     return "/* Undefined preprocessor for $type */";
   }
 
   $text = $self->$code($file);
 
-  unless(defined $text) {
+  if(ref $text) {
+    local $/;
+    $text = readline $text;
+  }
+  elsif(!defined $text) {
     open my $FH, '<', $file;
     local $/;
     $text = readline $FH;

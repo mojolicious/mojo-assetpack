@@ -5,17 +5,17 @@ use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
+my $assetpack;
+
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => {
-    minify => 1,
-    rebuild => 1,
-  };
+  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
 
   app->asset('app.js' => '/js/a.js', '/js/b.js');
   app->asset('less.css' => '/css/a.less', '/css/b.less');
   app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
   app->asset('app.css' => '/css/c.css', '/css/d.css');
+  $assetpack = app->asset;
 
   get '/js' => 'js';
   get '/less' => 'less';
@@ -28,30 +28,39 @@ plan skip_all => 't/public/packed' unless -d 't/public/packed';
 my $t = Test::Mojo->new;
 my $ts = $^T;
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{yuicompressor}) {
+if($assetpack->{preprocessor}{js}) {
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/packed/app\.$ts\.js".*}m)
     ;
-  $t->get_ok("/packed/app.$ts.js")->status_is(200);
+  $t->get_ok("/packed/app.$ts.js")
+    ->status_is(200)
+    ->content_like(qr{["']a["'].*["']b["']}s)
+    ;
 }
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
+if($assetpack->{preprocessor}{less}) {
   $t->get_ok('/less'); # trigger pack_stylesheets() twice for coverage
   $t->get_ok('/less')
     ->status_is(200)
     ->content_like(qr{<link href="/packed/less\.$ts\.css".*}m)
     ;
-  $t->get_ok("/packed/less.$ts.css")->status_is(200);
+  $t->get_ok("/packed/less.$ts.css")
+    ->status_is(200)
+    ->content_like(qr{a1a1a1.*b1b1b1}s)
+    ;
 }
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
+if($assetpack->{preprocessor}{scss}) {
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/packed/sass\.$ts\.css".*}m)
     ;
-  $t->get_ok("/packed/sass.$ts.css")->status_is(200);
+  $t->get_ok("/packed/sass.$ts.css")
+    ->status_is(200)
+    ->content_like(qr{a1a1a1.*b1b1b1}s)
+    ;
 }
 
 {
@@ -59,7 +68,10 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{scss}) {
     ->status_is(200)
     ->content_like(qr{<link href="/packed/app\.$ts\.css".*}m)
     ;
-  $t->get_ok("/packed/app.$ts.css")->status_is(200);
+  $t->get_ok("/packed/app.$ts.css")
+    ->status_is(200)
+    ->content_like(qr{c1c1c1.*d1d1d1})
+    ;
 }
 
 done_testing;

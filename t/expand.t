@@ -5,6 +5,8 @@ use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
+my $assetpack;
+
 {
   use Mojolicious::Lite;
   plugin 'AssetPack';
@@ -13,6 +15,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   app->asset('less.css' => '/css/a.less', '/css/b.less');
   app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
   app->asset('app.css' => '/css/a.css', '/css/b.css');
+  $assetpack = app->asset;
 
   get '/js' => 'js';
   get '/less' => 'less';
@@ -23,21 +26,21 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 my $t = Test::Mojo->new;
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{yuicompressor}) {
+if($assetpack->{preprocessor}{js}) {
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}m)
     ;
 }
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{less}) {
+if($assetpack->{preprocessor}{less}) {
   $t->get_ok('/less')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
     ;
 }
 
-if($Mojolicious::Plugin::AssetPack::APPLICATIONS{sass}) {
+if($assetpack->{preprocessor}{scss}) {
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
@@ -56,6 +59,11 @@ if($Mojolicious::Plugin::AssetPack::APPLICATIONS{sass}) {
     ->status_is(200)
     ->content_like(qr{<!-- Could not expand_moniker});
     ;
+}
+
+{
+  $t->get_ok('/css/a.css')->content_like(qr{a1a1a1;});
+  $t->get_ok('/css/b.css')->content_like(qr{b1b1b1;});
 }
 
 done_testing;
