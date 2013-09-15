@@ -47,6 +47,19 @@ In your application:
 
   plugin AssetPack => { rebuild => 1 };
 
+  # define other preprocessors than the default detected
+  app->asset->preprocessor(js => sub {
+    my($self, $file) = @_;
+    return JavaScript::Minifier::XS::minify($file) if $self->minify;
+    return; # return undef will keep the original file
+  });
+  app->asset->preprocessor(less => sub {
+    my($self, $file) = @_;
+    open my $APP, '-|', lessc => -x => $file or die "lessc -x $file: $!";
+    local $/;
+    return readline $APP;
+  });
+
   # define assets: $moniker => @real_assets
   app->asset('app.js' => '/js/foo.js', '/js/bar.js');
   app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
@@ -100,10 +113,18 @@ use Mojo::Util 'slurp';
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use File::Spec::Functions qw( catfile );
 use File::Which;
-use constant DEBUG => $ENV{MOJO_COMPRESS_DEBUG} || 0;
 
 our $VERSION = '0.01';
-our %APPLICATIONS; # should consider internal usage, may change without warning
+
+=head1 ATTRIBUTES
+
+=head2 minify
+
+This is set to true if the assets should be minified.
+
+=cut
+
+has minify => 0;
 
 =head1 METHODS
 
@@ -135,9 +156,8 @@ sub pack_javascripts {
       $fh->syswrite(slurp $file);
     }
     else {
-      $self->_pack_js($file => $fh);
+      $fh->syswrite($self->_run_preprocessor($file));
     }
-    $fh->syswrite("\n");
   }
 
   $fh->close or die "close $path: $!";
@@ -165,13 +185,7 @@ sub pack_stylesheets {
   }
 
   for my $file ($self->_input_files($files)) {
-    if($file =~ /\.(scss|less)$/) {
-      my $method = "_pack_$1";
-      $self->$method($file => $fh);
-    }
-    else {
-      $self->_pack_css($file => $fh);
-    }
+    $fh->syswrite($self->_run_preprocessor($file));
   }
 
   $fh->close or die "close $path: $!";
@@ -205,41 +219,32 @@ sub expand_moniker {
   }
 }
 
-=head2 find_external_apps
+=head2 preprocessor
 
-This method is used to find the L</APPLICATIONS>. It will look for the apps
-using L<File::Which> in this order: lessc, less, sass, yui-compressor,
-yuicompressor.
+  $self->preprocessor($extension => $cb);
+
+Define a preprocessor which is run on a given file extension.
+
+The default preprocessor defined is described under L</APPLICATIONS>.
 
 =cut
 
-sub find_external_apps {
-  my($self, $app, $config) = @_;
-
-  $APPLICATIONS{less} = $config->{less} || which('lessc') || which('less');
-  $APPLICATIONS{sass} = $config->{sass} || which('sass');
-  $APPLICATIONS{yuicompressor} = $config->{yuicompressor} || which('yui-compressor') || which('yuicompressor');
-
-  for(keys %APPLICATIONS) {
-    $APPLICATIONS{$_} and next;
-    $app->log->warn("Could not find application for $_");
-  }
+sub preprocessor {
+  my($self, $ext, $code) = @_;
+  $self->{preprocessor}{$ext} = $code;
+  $self;
 }
 
 =head2 register
 
   plugin 'AssetPack', {
-    enable => $bool,
+    minify => $bool,
     rebuild => $bool,
-    yuicompressor => '/path/to/yuicompressor',
-    less => '/path/to/lessc',
-    sass => '/path/to/sass',
   };
 
 Will register the C<compress> helper. All arguments are optional.
 
-"enable" will default to COMPRESS_ASSETS environment variable or set to true
-if L<Mojolicious/mode> is "production".
+"minify" will default to true if L<Mojolicious/mode> is "production".
 
 "rebuild" can be set to true to always rebuild the compressed files when the
 application is started. The default is to use the cached files.
@@ -248,9 +253,11 @@ application is started. The default is to use the cached files.
 
 sub register {
   my($self, $app, $config) = @_;
-  my $enable = $config->{enable} // $ENV{COMPRESS_ASSETS} // $app->mode eq 'production';
+  my $minify = $config->{minify} // $app->mode eq 'production';
+  my $helper = $config->{helper} || 'asset';
 
-  $self->find_external_apps($app, $config);
+  $self->minify($minify);
+  $self->_detect_default_preprocessors unless $config->{no_autodetect};
 
   $self->{assets} = {};
   $self->{log} = $app->log;
@@ -259,14 +266,15 @@ sub register {
 
   mkdir $self->{out_dir}; # TODO: Use mkpath instead?
 
-  if($enable and $config->{rebuild}) {
+  if($minify and $config->{rebuild}) {
     opendir(my $DH, $self->{out_dir});
     unlink catfile $self->{out_dir}, $_ for grep { /^\w/ } readdir $DH;
   }
 
-  $app->helper(asset => sub {
-    return $self->_asset_pack($enable, @_) if @_ > 2;
-    return $self->expand_moniker(@_) unless $enable;
+  $app->helper($helper => sub {
+    return $self if @_ == 1;
+    return $self->_asset_pack(@_) if @_ > 2;
+    return $self->expand_moniker(@_) unless $minify;
     my($name, $ext) = $_[1] =~ /^(.+)\.(\w+)$/;
     return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
     return $_[0]->stylesheet("/packed/$name.$^T.$ext");
@@ -283,9 +291,9 @@ sub register {
 }
 
 sub _asset_pack {
-  my($self, $enable, $c, $moniker, @files) = @_;
+  my($self, $c, $moniker, @files) = @_;
 
-  if($enable) {
+  if($self->minify) {
     $moniker =~ /\.js/
       ? $self->pack_javascripts($moniker => \@files)
       : $self->pack_stylesheets($moniker => \@files)
@@ -302,11 +310,10 @@ sub _compile_css {
 
   if($file =~ s/\.(scss|less)$/.css/) {
     eval {
-      my $type = $1 eq 'less' ? 'less' : 'sass';
       my $in = $self->{static}->file($original)->path;
       (my $out = $in) =~ s/\.\w+$/.css/;
-      warn "system $APPLICATIONS{$type} $in $out\n" if DEBUG;
-      system $APPLICATIONS{$type} => $in => $out;
+      open my $FH, '>', $out or die "Write $out: $!";
+      print $FH $self->_run_preprocessor($in);
       1;
     } or do {
       $self->{log}->warn("Could not convert $original: $@");
@@ -325,32 +332,58 @@ sub _input_files {
   } @$files;
 }
 
-sub _pack_css {
-  my($self, $in, $OUT) = @_;
+sub _detect_default_preprocessors {
+  my $self = shift;
 
-  open my $APP, '-|', $APPLICATIONS{yuicompressor} => $in or die "$APPLICATIONS{yuicompressor} $in: $!";
-  print $OUT $_ while <$APP>;
+  if(my $app = which('lessc')) {
+    $self->preprocessor(less => sub {
+      my($self, $file) = @_;
+      my @args = $self->minify ? ('-x') : ();
+      open my $APP, '-|', $app => @args => $file or die "$app -x $file: $!";
+      local $/; readline $APP;
+    });
+  }
+
+  if(my $app = which('sass')) {
+    $self->preprocessor(scss => sub {
+      my($self, $file) = @_;
+      my @args = $self->minify ? ('-t', 'compressed') : ();
+      open my $APP, '-|', $app => @args => $file or die "$app -t compressed $file: $!";
+    });
+  }
+
+  if(my $app = which('yui-compressor') || which('yuicompressor')) {
+    my $cb = sub {
+      my($self, $file) = @_;
+      return unless $self->minify;
+      open my $APP, '-|', $app => $file or die "$app $file: $!";
+      local $/; readline $APP;
+    };
+    $self->preprocessor(js => $cb);
+    $self->preprocessor(css => $cb);
+  }
 }
 
-sub _pack_js {
-  my($self, $in, $OUT) = @_;
+sub _run_preprocessor {
+  my($self, $file) = @_;
+  my $type = $file =~ /\.(\w{2,4})/ ? $1 : 'UNKNOWN';
+  my $code = $self->{preprocessor}{$type};
+  my $text;
 
-  open my $APP, '-|', $APPLICATIONS{yuicompressor} => $in or die "$APPLICATIONS{yuicompressor} $in: $!";
-  print $OUT $_ while <$APP>;
-}
+  unless($code) {
+    $self->{log}->warn("Undefined preprocessor for $type");
+    return "/* Undefined preprocessor for $type */";
+  }
 
-sub _pack_less {
-  my($self, $in, $OUT) = @_;
+  $text = $self->$code($file);
 
-  open my $APP, '-|', $APPLICATIONS{less} => -x => $in or die "$APPLICATIONS{less} -x $in: $!";
-  print $OUT $_ while <$APP>;
-}
+  unless(defined $text) {
+    open my $FH, '<', $file;
+    local $/;
+    $text = readline $FH;
+  }
 
-sub _pack_scss {
-  my($self, $in, $OUT) = @_;
-
-  open my $APP, '-|', $APPLICATIONS{sass} => -t => 'compressed' => $in or die "$APPLICATIONS{sass} -t compressed $in: $!";
-  print $OUT $_ while <$APP>;
+  return $text;
 }
 
 =head1 AUTHOR

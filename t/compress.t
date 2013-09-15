@@ -8,7 +8,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 {
   use Mojolicious::Lite;
   plugin 'AssetPack' => {
-    enable => 1,
+    minify => 1,
     rebuild => 1,
   };
 

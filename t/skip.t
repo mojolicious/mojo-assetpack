@@ -8,18 +8,15 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 my @run;
 
 {
-  require Mojolicious::Plugin::AssetPack;
-  *Mojolicious::Plugin::AssetPack::_pack_js = sub {
-    push @run, [@_];
-    print { $_[2] } "dummy();\n";
-  };
-
   use Mojolicious::Lite;
   plugin 'AssetPack' => {
-    enable => 1,
+    minify => 1,
     rebuild => 1,
-    yuicompressor => 'dummy',
   };
+  app->asset->preprocessor(js => sub {
+    push @run, [@_];
+    return;
+  });
   app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';
 }
