@@ -269,21 +269,6 @@ sub _compile_css {
   $file;
 }
 
-sub _run_preprocessor {
-  my($self, $file) = @_;
-  my $type = $file =~ /\.(\w{2,4})$/ ? $1 : 'UNKNOWN';
-  my $code = $self->{preprocessor}{$type};
-  my $text = Mojo::Util::slurp($file);
-
-  if(!$code) {
-    $self->{log}->warn("Undefined preprocessor for $type");
-    return "/* Undefined preprocessor for $type */";
-  }
-
-  $self->$_(\$text, $file) for @$code;
-  $text;
-}
-
 =head1 AUTHOR
 
 Jan Henning Thorsen - C<jhthorsen@cpan.org>

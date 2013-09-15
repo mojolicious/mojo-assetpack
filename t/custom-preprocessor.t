@@ -7,8 +7,9 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { minify => 1, rebuild => 1, no_autodetect => 1 };
+  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
 
+  app->asset->preprocessors->remove('js');
   app->asset->preprocessors->add(js => sub {
     my($assetpack, $text, $file) = @_;
     $$text = 'var too = "cool";';
