@@ -4,18 +4,16 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan skip_all => 'Not ready for alien host' unless eval "require JavaScript::Minifier::XS; 1";
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
+  plugin 'AssetPack' => { minify => 1, rebuild => 1, no_autodetect => 1 };
 
   app->asset->preprocessor(js => sub {
-    my($self, $file) = @_;
-    return JavaScript::Minifier::XS::minify(Mojo::Util::slurp($file)) if $self->minify;
-    return;
+    my($self, $text, $file) = @_;
+    $$text = 'var too = "cool";';
   });
-  app->asset('app.js' => '/js/a.js', '/js/b.js');
+  app->asset('app.js' => '/js/a.js');
 
   get '/js' => 'js';
 }
@@ -31,7 +29,7 @@ my $ts = $^T;
     ->status_is(200)
     ->content_like(qr{<script src="/packed/app\.$ts\.js".*}m)
     ;
-  $t->get_ok("/packed/app.$ts.js")->status_is(200);
+  $t->get_ok("/packed/app.$ts.js")->status_is(200)->content_is('var too = "cool";');
 }
 
 done_testing;

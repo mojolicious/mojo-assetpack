@@ -16,11 +16,10 @@ In your application:
 
   plugin AssetPack => { rebuild => 1 };
 
-  # define other preprocessors than the default detected
+  # add a preprocessor
   app->asset->preprocessor(js => sub {
-    my($self, $file) = @_;
-    return JavaScript::Minifier::XS::minify(Mojo::Util::slurp($file)) if $self->minify;
-    return; # return undef will keep the original file
+    my($self, $text, $file) = @_;
+    $$text = "// yikes!\n" if 5 < rand 10;
   });
 
   # define assets: $moniker => @real_assets
@@ -67,7 +66,7 @@ The output directory where all the compressed files are stored will be
 
   $app->home->rel_dir('public/packed');
 
-=head2 Applications
+=head2 Applications and libraries
 
 =over 4
 
@@ -92,28 +91,29 @@ Installation on Ubuntu and Debian:
   $ sudo apt-get install rubygems
   $ sudo gem install sass
 
-=item * yuicompressor
+=item * L<JavaScript::Minifier::XS>
 
-L<http://yui.github.io/yuicompressor> is used to compress javascript and css.
+This module is optional and must be installed manually.
 
-Installation on Ubuntu and Debian:
+EXPERIMENTAL! Not sure if this is the best minifier.
 
-  $ sudo apt-get install npm
-  $ sudo npm -g i yuicompressor
+=item * L<CSS::Minifier::XS>
+
+This module is optional and must be installed manually.
+
+EXPERIMENTAL! Not sure if this is the best minifier.
 
 =back
-
-NOTE! I want to change from yuicompressor to a pure perl module, since
-yuicompressor is a super slow java beast.
 
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
-use Mojo::Util 'slurp';
+use Mojo::Util;
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use File::Spec::Functions qw( catfile );
 use File::Which;
+use IPC::Run3;
 
 our $VERSION = '0.01';
 
@@ -158,9 +158,9 @@ sub add {
 This method will combine the input files to one file L</Packed directory>,
 named "$moniker".
 
-Will also run L</yuicompressor> on the input files to minify them - except if
-the name contains "min". Example "jquery.min.js" will not be minified by
-L</yuicompressor>.
+Will also run L<JavaScript::Minifier::XS> on the input files to minify them -
+except if the name contains "min". Example "jquery.min.js" will not be
+minified by L<JavaScript::Minifier::XS>.
 
 =cut
 
@@ -175,12 +175,7 @@ sub pack_javascripts {
   }
 
   for my $file ($self->_input_files($files)) {
-    if($file =~ /\bmin\b/) {
-      $fh->syswrite(slurp $file);
-    }
-    else {
-      $fh->syswrite($self->_run_preprocessor($file));
-    }
+    $fh->syswrite($self->_run_preprocessor($file));
   }
 
   $fh->close or die "close $path: $!";
@@ -246,15 +241,18 @@ sub expand_moniker {
 
   $self->preprocessor($extension => $cb);
 
-Define a preprocessor which is run on a given file extension.
+Define a preprocessor which is run on a given file extension. These
+preprocessors will be chained. The callbacks will be called in the order they
+where added.
 
-The default preprocessor defined is described under L</Applications>.
+The default preprocessor defined is described under
+L</Applications and libraries>.
 
 =cut
 
 sub preprocessor {
   my($self, $ext, $code) = @_;
-  $self->{preprocessor}{$ext} = $code;
+  push @{ $self->{preprocessor}{$ext} }, $code;
   $self;
 }
 
@@ -338,35 +336,27 @@ sub _detect_default_preprocessors {
 
   if(my $app = which('lessc')) {
     $self->preprocessor(less => sub {
-      my($self, $file) = @_;
-      my @args = $self->minify ? ('-x') : ();
-      open my $FH, '-|', $app => @args => $file or die "$app @args $file: $!";
-      return $FH;
+      my($self, $text, $file) = @_;
+      run3([$app, '-', $self->minify ? ('-x') : ()], $text, $text);
     });
   }
-
   if(my $app = which('sass')) {
     $self->preprocessor(scss => sub {
-      my($self, $file) = @_;
-      my @args = $self->minify ? ('-t', 'compressed') : ();
-      open my $FH, '-|', $app => @args => $file or die "$app @args $file: $!";
-      return $FH;
+      my($self, $text, $file) = @_;
+      run3([$app, '--stdin', '--scss', $self->minify ? ('-t', 'compressed') : ()], $text, $text);
     });
   }
-
-  if(my $app = which('yui-compressor') || which('yuicompressor')) {
-    my $cb = sub {
-      my($self, $file) = @_;
-      return unless $self->minify;
-      open my $FH, '-|', $app => $file or die "$app $file: $!";
-      return $FH;
-    };
-    $self->preprocessor(js => $cb);
-    $self->preprocessor(css => $cb);
+  if(eval 'require JavaScript::Minifier::XS; 1') {
+    $self->preprocessor(js => sub {
+      my($self, $text, $file) = @_;
+      $$text = JavaScript::Minifier::XS::minify($$text) if $self->minify and $file !~ /\bmin\b/;
+    });
   }
-  else {
-    $self->preprocessor(js => sub {});
-    $self->preprocessor(css => sub {});
+  if(eval 'require CSS::Minifier::XS; 1') {
+    $self->preprocessor(css => sub {
+      my($self, $text, $file) = @_;
+      $$text = CSS::Minifier::XS::minify($$text) if $self->minify;
+    });
   }
 }
 
@@ -383,26 +373,15 @@ sub _run_preprocessor {
   my($self, $file) = @_;
   my $type = $file =~ /\.(\w{2,4})$/ ? $1 : 'UNKNOWN';
   my $code = $self->{preprocessor}{$type};
-  my $text;
+  my $text = Mojo::Util::slurp($file);
 
   if(!$code) {
     $self->{log}->warn("Undefined preprocessor for $type");
     return "/* Undefined preprocessor for $type */";
   }
 
-  $text = $self->$code($file);
-
-  if(ref $text) {
-    local $/;
-    $text = readline $text;
-  }
-  elsif(!defined $text) {
-    open my $FH, '<', $file;
-    local $/;
-    $text = readline $FH;
-  }
-
-  return $text;
+  $self->$_(\$text, $file) for @$code;
+  $text;
 }
 
 =head1 AUTHOR

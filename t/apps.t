@@ -36,16 +36,21 @@ my $assetpack;
 }
 
 {
-  my $bin = qx{which yuicompressor};
-  if($bin =~ /\w/) {
+  if(eval 'require JavaScript::Minifier::XS; 1') {
     ok $assetpack->{preprocessor}{js}, 'found preprocessor for js';
-    ok $assetpack->{preprocessor}{css}, 'found preprocessor for css';
   }
   else {
     ok !$assetpack->{preprocessor}{js}, 'did not find preprocessor for js';
-    ok !$assetpack->{preprocessor}{css}, 'did not find preprocessor for css';
   }
 }
 
+{
+  if(eval 'require CSS::Minifier::XS; 1') {
+    ok $assetpack->{preprocessor}{css}, 'found preprocessor for css';
+  }
+  else {
+    ok !$assetpack->{preprocessor}{css}, 'did not find preprocessor for css';
+  }
+}
 
 done_testing;

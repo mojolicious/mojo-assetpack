@@ -28,7 +28,7 @@ plan skip_all => 't/public/packed' unless -d 't/public/packed';
 my $t = Test::Mojo->new;
 my $ts = $^T;
 
-if($assetpack->{preprocessor}{js}) {
+{
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)

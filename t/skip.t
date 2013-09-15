@@ -9,14 +9,8 @@ my @run;
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => {
-    minify => 1,
-    rebuild => 1,
-  };
-  app->asset->preprocessor(js => sub {
-    push @run, [@_];
-    return;
-  });
+  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
+  *JavaScript::Minifier::XS::minify = sub { push @run, [@_] };
   app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';
 }
@@ -30,8 +24,8 @@ my $t = Test::Mojo->new;
     ->content_like(qr{<script src="/packed/app\.$^T\.js".*}m)
     ;
 
-  is int @run, 1, 'only packed one file';
-  like $run[0][1], qr{a\.js}, 'a.js got compiled';
+  is int @run, 1, 'minify called once';
+  like $run[0][0], qr{'a'}, 'a.js got compiled';
 }
 
 done_testing;

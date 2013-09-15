@@ -8,6 +8,7 @@ WriteMakefile(
   PREREQ_PM => {
     'Mojolicious' => '4.30',
     'File::Which' => '1.00',
+    'IPC::Run3' => '0.04',
   },
   BUILD_REQUIRES => {
     'Test::More' => '0.90',
