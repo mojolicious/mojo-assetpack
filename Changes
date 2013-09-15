@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0101   Sun Sep 15 14:26:29 2013
+       * Fix t/compress.t
+
 0.01     Sun Sep 15 14:20:22 2013
        * Add "asset" helper
        * Add support for chained preprocessors

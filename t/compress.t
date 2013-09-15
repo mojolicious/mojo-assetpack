@@ -27,7 +27,8 @@ my $assetpack;
 my $t = Test::Mojo->new;
 my $ts = $^T;
 
-{
+SKIP: {
+  skip 'Could not find preprocessors for js', 7 unless $assetpack->preprocessors->has_subscribers('js');
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
@@ -64,7 +65,8 @@ SKIP: {
     ;
 }
 
-{
+SKIP: {
+  skip 'Could not find preprocessors for css', 6 unless $assetpack->preprocessors->has_subscribers('css');
   $t->get_ok('/css')
     ->status_is(200)
     ->content_like(qr{<link href="/packed/app\.$ts\.css".*}m)
