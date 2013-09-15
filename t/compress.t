@@ -4,6 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+plan tests => 26;
 
 my $assetpack;
 
@@ -23,8 +24,6 @@ my $assetpack;
   get '/css' => 'css';
 }
 
-plan skip_all => 't/public/packed' unless -d 't/public/packed';
-
 my $t = Test::Mojo->new;
 my $ts = $^T;
 
@@ -40,7 +39,8 @@ my $ts = $^T;
     ;
 }
 
-if($assetpack->{preprocessor}{less}) {
+SKIP: {
+  skip 'Could not find preprocessors for less', 7 unless $assetpack->preprocessors->has_subscribers('less');
   $t->get_ok('/less'); # trigger pack_stylesheets() twice for coverage
   $t->get_ok('/less')
     ->status_is(200)
@@ -52,7 +52,8 @@ if($assetpack->{preprocessor}{less}) {
     ;
 }
 
-if($assetpack->{preprocessor}{scss}) {
+SKIP: {
+  skip 'Could not find preprocessors for scss', 6 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/packed/sass\.$ts\.css".*}m)
@@ -74,7 +75,6 @@ if($assetpack->{preprocessor}{scss}) {
     ;
 }
 
-done_testing;
 __DATA__
 @@ js.html.ep
 %= asset 'app.js'

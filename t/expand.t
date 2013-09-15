@@ -4,6 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+plan tests => 19;
 
 my $assetpack;
 
@@ -26,21 +27,24 @@ my $assetpack;
 
 my $t = Test::Mojo->new;
 
-if($assetpack->{preprocessor}{js}) {
+SKIP: {
+  skip 'Could not find preprocessors for js', 3 unless $assetpack->preprocessors->has_subscribers('js');
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}s)
     ;
 }
 
-if($assetpack->{preprocessor}{less}) {
+SKIP: {
+  skip 'Could not find preprocessors for less', 3 unless $assetpack->preprocessors->has_subscribers('less');
   $t->get_ok('/less')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
     ;
 }
 
-if($assetpack->{preprocessor}{scss}) {
+SKIP: {
+  skip 'Could not find preprocessors for scss', 3 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
@@ -66,7 +70,6 @@ if($assetpack->{preprocessor}{scss}) {
   $t->get_ok('/css/b.css')->content_like(qr{b1b1b1;});
 }
 
-done_testing;
 __DATA__
 @@ js.html.ep
 %= asset 'app.js'

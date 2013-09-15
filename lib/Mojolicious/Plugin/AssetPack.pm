@@ -164,7 +164,7 @@ The result file will be stored in L</Packed directory>.
 
 sub process {
   my($self, $moniker) = @_;
-  my $assets = $self->{assets}{$moniker} || ["no-files-defined-for-$moniker"];
+  my $assets = $self->{assets}{$moniker};
   my $out_file = catfile $self->{out_dir}, $moniker;
   my $fh = IO::File->new($out_file, O_CREAT | O_EXCL | O_WRONLY);
 
@@ -256,10 +256,12 @@ sub _compile_css {
 
   if($file =~ s/\.(scss|less)$/.css/) {
     eval {
+      my $extension = $1;
       my $in = $self->{static}->file($original)->path;
       (my $out = $in) =~ s/\.\w+$/.css/;
-      open my $FH, '>', $out or die "Write $out: $!";
-      print $FH $self->process($in);
+      my $text = Mojo::Util::slurp($in);
+      $self->preprocessors->process($extension, $self, \$text, $in);
+      Mojo::Util::spurt($text, $out);
       1;
     } or do {
       $self->{log}->warn("Could not convert $original: $@");

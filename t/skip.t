@@ -3,14 +3,17 @@ use strict;
 use Test::More;
 use Test::Mojo;
 
-plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+BEGIN {
+  package JavaScript::Minifier::XS;
+  sub minify { push @main::run, [@_] };
+  $INC{'JavaScript/Minifier/XS.pm'} = 'MOCKED';
+}
 
-my @run;
+plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
 {
   use Mojolicious::Lite;
   plugin 'AssetPack' => { minify => 1, rebuild => 1 };
-  *JavaScript::Minifier::XS::minify = sub { push @run, [@_] };
   app->asset('app.js' => '/js/a.js', '/js/already.min.js');
   get '/js' => 'js';
 }
@@ -24,8 +27,8 @@ my $t = Test::Mojo->new;
     ->content_like(qr{<script src="/packed/app\.$^T\.js".*}m)
     ;
 
-  is int @run, 1, 'minify called once';
-  like $run[0][0], qr{'a'}, 'a.js got compiled';
+  is int @main::run, 1, 'minify called once';
+  like $main::run[0][0], qr{'a'}, 'a.js got compiled';
 }
 
 done_testing;
