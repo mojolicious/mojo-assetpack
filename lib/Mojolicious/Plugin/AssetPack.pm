@@ -232,10 +232,10 @@ sub expand_moniker {
     return b "<!-- Could not expand_moniker $moniker -->";
   }
   elsif($moniker =~ /\.js/) {
-    return b join '', map { $c->javascript($_) } @$files;
+    return b join "\n", map { $c->javascript($_) } @$files;
   }
   else {
-    return b join '', map { $c->stylesheet($self->_compile_css($_)) } @$files;
+    return b join "\n", map { $c->stylesheet($self->_compile_css($_)) } @$files;
   }
 }
 

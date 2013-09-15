@@ -29,28 +29,28 @@ my $t = Test::Mojo->new;
 if($assetpack->{preprocessor}{js}) {
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}m)
+    ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}s)
     ;
 }
 
 if($assetpack->{preprocessor}{less}) {
   $t->get_ok('/less')
     ->status_is(200)
-    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
+    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
     ;
 }
 
 if($assetpack->{preprocessor}{scss}) {
   $t->get_ok('/sass')
     ->status_is(200)
-    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
+    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
     ;
 }
 
 {
   $t->get_ok('/css')
     ->status_is(200)
-    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}m)
+    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
     ;
 }
 
