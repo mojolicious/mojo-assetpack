@@ -19,7 +19,7 @@ In your application:
   # define other preprocessors than the default detected
   app->asset->preprocessor(js => sub {
     my($self, $file) = @_;
-    return JavaScript::Minifier::XS::minify($file) if $self->minify;
+    return JavaScript::Minifier::XS::minify(Mojo::Util::slurp($file)) if $self->minify;
     return; # return undef will keep the original file
   });
 
