@@ -4,6 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+plan tests => 8;
 
 {
   use Mojolicious::Lite;
@@ -13,13 +14,12 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   app->asset->preprocessors->add(js => sub {
     my($assetpack, $text, $file) = @_;
     $$text = 'var too = "cool";';
+    like Cwd::getcwd, qr{public/js}, 'changed dir';
   });
   app->asset('app.js' => '/js/a.js');
 
   get '/js' => 'js';
 }
-
-plan skip_all => 't/public/packed' unless -d 't/public/packed';
 
 my $t = Test::Mojo->new;
 my $ts = $^T;
@@ -33,7 +33,6 @@ my $ts = $^T;
   $t->get_ok("/packed/app.$ts.js")->status_is(200)->content_is('var too = "cool";');
 }
 
-done_testing;
 __DATA__
 @@ js.html.ep
 %= asset 'app.js'

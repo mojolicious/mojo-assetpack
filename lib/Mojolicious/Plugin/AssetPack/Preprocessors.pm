@@ -7,6 +7,8 @@ Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors
 =cut
 
 use Mojo::Base 'Mojo::EventEmitter';
+use Cwd;
+use File::Basename;
 use File::Which;
 use IPC::Run3;
 
@@ -113,7 +115,17 @@ called with the C<$assetpack> object as the first argument.
 
 sub process {
   my $self = shift;
-  $_->(@_) for @{ $self->subscribers(shift) };
+  my $old_dir = getcwd;
+
+  eval {
+    chdir dirname $_[3];
+    $_->(@_) for @{ $self->subscribers(shift) };
+    1;
+  } or do {
+    chdir $old_dir;
+    $self->emit(error => "process $_[3]: $@");
+  };
+
   $self;
 }
 
