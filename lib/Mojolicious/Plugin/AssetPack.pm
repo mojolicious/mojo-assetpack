@@ -17,8 +17,8 @@ In your application:
   plugin AssetPack => { rebuild => 1 };
 
   # add a preprocessor
-  app->asset->preprocessor(js => sub {
-    my($self, $text, $file) = @_;
+  app->asset->preprocessors->add(js => sub {
+    my($assetpack, $text, $file) = @_;
     $$text = "// yikes!\n" if 5 < rand 10;
   });
 
@@ -43,17 +43,19 @@ This plugin will compress scss, less, css and javascript with the help of
 external applications on startup. The result will be one file with all the
 sources combined. This file is stored in L</Packed directory>.
 
-The actual file requested will also contain the timestamp when this server was
-started. This is to help refreshing cache on change.
+This is done using L</process>.
 
-This is done using L</pack_javascripts> and L</pack_stylesheets>.
+The actual file requested will also contain the timestamp when this server was
+started. This is to help refreshing cache on change. Example:
+
+  <script src="/packed/app.1379243728.js">
 
 =head2 Development mode
 
 This plugin will expand the input files to multiple script or link tags which
 makes debugging and development easier.
 
-This is done using L</expand_moniker>.
+This is done using L</expand>.
 
 TIP! Make morbo watch your less/sass files as well:
 
@@ -66,54 +68,21 @@ The output directory where all the compressed files are stored will be
 
   $app->home->rel_dir('public/packed');
 
-=head2 Applications and libraries
+=head2 Preprocessors
 
-=over 4
+This library tries to find default preprocessors for less, scss, js and css.
 
-=item * less
-
-LESS extends CSS with dynamic behavior such as variables, mixins, operations
-and functions. See L<http://lesscss.org> for more details.
-
-Installation on Ubuntu and Debian:
-
-  $ sudo apt-get install npm
-  $ sudo npm install -g less
-
-=item * sass
-
-Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
-variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
-for more information.
-
-Installation on Ubuntu and Debian:
-
-  $ sudo apt-get install rubygems
-  $ sudo gem install sass
-
-=item * L<JavaScript::Minifier::XS>
-
-This module is optional and must be installed manually.
-
-EXPERIMENTAL! Not sure if this is the best minifier.
-
-=item * L<CSS::Minifier::XS>
-
-This module is optional and must be installed manually.
-
-EXPERIMENTAL! Not sure if this is the best minifier.
-
-=back
+NOTE! The preprocessors require optional dependencies to function properly.
+Check out L<Mojolicious::Plugin::AssetPack::Preprocessors/detect> for more
+details.
 
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
-use Mojo::Util;
-use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
+use Mojolicious::Plugin::AssetPack::Preprocessors;
+use Fcntl qw( O_CREAT O_EXCL O_WRONLY );
 use File::Spec::Functions qw( catfile );
-use File::Which;
-use IPC::Run3;
 
 our $VERSION = '0.01';
 
@@ -127,91 +96,36 @@ This is set to true if the assets should be minified.
 
 has minify => 0;
 
+=head2 preprocessors
+
+Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
+
+=cut
+
+has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
+
 =head1 METHODS
 
 =head2 add
 
-  $self->add($c, $moniker => @rel_files);
+  $self->add($moniker => @rel_files);
 
-Used to define new assets aliases.
+Used to define new assets aliases. This method is called when the C<asset()>
+helper is called on the app.
 
 =cut
 
 sub add {
-  my($self, $c, $moniker, @files) = @_;
-
-  if($self->minify) {
-    $moniker =~ /\.js/
-      ? $self->pack_javascripts($moniker => \@files)
-      : $self->pack_stylesheets($moniker => \@files)
-      ;
-  }
+  my($self, $moniker, @files) = @_;
 
   $self->{assets}{$moniker} = [@files];
+  $self->process($moniker) if $self->minify;
   $self;
 }
 
-=head2 pack_javascripts
+=head2 expand
 
-  $self->pack_javascripts($moniker => \@files);
-
-This method will combine the input files to one file L</Packed directory>,
-named "$moniker".
-
-Will also run L<JavaScript::Minifier::XS> on the input files to minify them -
-except if the name contains "min". Example "jquery.min.js" will not be
-minified by L<JavaScript::Minifier::XS>.
-
-=cut
-
-sub pack_javascripts {
-  my($self, $moniker, $files) = @_;
-  my $path = catfile $self->{out_dir}, $moniker;
-  my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
-
-  unless($fh) {
-    $self->{log}->debug("$path already exists");
-    return;
-  }
-
-  for my $file ($self->_input_files($files)) {
-    $fh->syswrite($self->_run_preprocessor($file));
-  }
-
-  $fh->close or die "close $path: $!";
-}
-
-=head2 pack_stylesheets
-
-  $self->pack_stylesheets($moniker => \@files);
-
-This method will combine the input files to one file L</Packed directory>,
-named "$moniker".
-
-Will also run L</less> or L</sass> on the input files to minify them.
-
-=cut
-
-sub pack_stylesheets {
-  my($self, $moniker, $files) = @_;
-  my $path = catfile $self->{out_dir}, $moniker;
-  my $fh = IO::File->new($path, O_CREAT | O_EXCL | O_WRONLY);
-
-  unless($fh) {
-    $self->{log}->debug("$path already exists");
-    return;
-  }
-
-  for my $file ($self->_input_files($files)) {
-    $fh->syswrite($self->_run_preprocessor($file));
-  }
-
-  $fh->close or die "close $path: $!";
-}
-
-=head2 expand_moniker
-
-  $bytestream = $self->expand_moniker($c, $moniker);
+  $bytestream = $self->expand($c, $moniker);
 
 This method will return one tag for each asset defined by the "$moniker".
 
@@ -222,12 +136,12 @@ The returning bytestream will contain style or script tags.
 
 =cut
 
-sub expand_moniker {
+sub expand {
   my($self, $c, $moniker) = @_;
   my $files = $self->{assets}{$moniker};
 
   if(!$files) {
-    return b "<!-- Could not expand_moniker $moniker -->";
+    return b "<!-- Could not expand $moniker -->";
   }
   elsif($moniker =~ /\.js/) {
     return b join "\n", map { $c->javascript($_) } @$files;
@@ -237,23 +151,47 @@ sub expand_moniker {
   }
 }
 
-=head2 preprocessor
+=head2 process
 
-  $self->preprocessor($extension => $cb);
+  $self->process($moniker);
 
-Define a preprocessor which is run on a given file extension. These
-preprocessors will be chained. The callbacks will be called in the order they
-where added.
+This method use L<Mojolicious::Plugin::AssetPack::Preprocessors/process> to
+convert and/or minify the sources pointed at by C<$moniker>.
 
-The default preprocessor defined is described under
-L</Applications and libraries>.
+The result file will be stored in L</Packed directory>.
 
 =cut
 
-sub preprocessor {
-  my($self, $ext, $code) = @_;
-  push @{ $self->{preprocessor}{$ext} }, $code;
-  $self;
+sub process {
+  my($self, $moniker) = @_;
+  my $assets = $self->{assets}{$moniker} || ["no-files-defined-for-$moniker"];
+  my $out_file = catfile $self->{out_dir}, $moniker;
+  my $fh = IO::File->new($out_file, O_CREAT | O_EXCL | O_WRONLY);
+
+  unless($fh) {
+    $self->{log}->debug("$out_file already exists");
+    return;
+  }
+
+  for(@$assets) {
+    my $extension = /\.(\w{1,4})$/ ? $1 : 'UNKNOWN';
+    my $file = $self->{static}->file($_); # return undef if the file does not exist
+    my $text;
+
+    $file = $file ? $file->path : $_;
+
+    if($self->preprocessors->has_subscribers($extension)) {
+      $text = Mojo::Util::slurp($file);
+      $self->preprocessors->process($extension, $self, \$text, $file);
+    }
+    else {
+      $text = "/* Missing preprocessor for $extension */";
+    }
+
+    $fh->syswrite($text);
+  }
+
+  $fh->close or die "close $out_file: $!";
 }
 
 =head2 register
@@ -279,7 +217,7 @@ sub register {
   my $helper = $config->{helper} || 'asset';
 
   $self->minify($minify);
-  $self->_detect_default_preprocessors unless $config->{no_autodetect};
+  $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
   $self->{log} = $app->log;
@@ -295,8 +233,8 @@ sub register {
 
   $app->helper($helper => sub {
     return $self if @_ == 1;
-    return $self->add(@_) if @_ > 2;
-    return $self->expand_moniker(@_) unless $minify;
+    return shift, $self->add(@_) if @_ > 2;
+    return $self->expand(@_) unless $minify;
     my($name, $ext) = $_[1] =~ /^(.+)\.(\w+)$/;
     return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
     return $_[0]->stylesheet("/packed/$name.$^T.$ext");
@@ -321,7 +259,7 @@ sub _compile_css {
       my $in = $self->{static}->file($original)->path;
       (my $out = $in) =~ s/\.\w+$/.css/;
       open my $FH, '>', $out or die "Write $out: $!";
-      print $FH $self->_run_preprocessor($in);
+      print $FH $self->process($in);
       1;
     } or do {
       $self->{log}->warn("Could not convert $original: $@");
@@ -329,44 +267,6 @@ sub _compile_css {
   }
 
   $file;
-}
-
-sub _detect_default_preprocessors {
-  my $self = shift;
-
-  if(my $app = which('lessc')) {
-    $self->preprocessor(less => sub {
-      my($self, $text, $file) = @_;
-      run3([$app, '-', $self->minify ? ('-x') : ()], $text, $text);
-    });
-  }
-  if(my $app = which('sass')) {
-    $self->preprocessor(scss => sub {
-      my($self, $text, $file) = @_;
-      run3([$app, '--stdin', '--scss', $self->minify ? ('-t', 'compressed') : ()], $text, $text);
-    });
-  }
-  if(eval 'require JavaScript::Minifier::XS; 1') {
-    $self->preprocessor(js => sub {
-      my($self, $text, $file) = @_;
-      $$text = JavaScript::Minifier::XS::minify($$text) if $self->minify and $file !~ /\bmin\b/;
-    });
-  }
-  if(eval 'require CSS::Minifier::XS; 1') {
-    $self->preprocessor(css => sub {
-      my($self, $text, $file) = @_;
-      $$text = CSS::Minifier::XS::minify($$text) if $self->minify;
-    });
-  }
-}
-
-sub _input_files {
-  my($self, $files) = @_;
-
-  return map {
-    my $file = $self->{static}->file($_);
-    $file ? $file->path : $_;
-  } @$files;
 }
 
 sub _run_preprocessor {

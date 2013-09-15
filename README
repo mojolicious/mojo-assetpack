@@ -12,11 +12,10 @@ SYNOPSIS
 
       plugin AssetPack => { rebuild => 1 };
 
-      # define other preprocessors than the default detected
-      app->asset->preprocessor(js => sub {
-        my($self, $file) = @_;
-        return JavaScript::Minifier::XS::minify(Mojo::Util::slurp($file)) if $self->minify;
-        return; # return undef will keep the original file
+      # add a preprocessor
+      app->asset->preprocessors->add(js => sub {
+        my($assetpack, $text, $file) = @_;
+        $$text = "// yikes!\n" if 5 < rand 10;
       });
 
       # define assets: $moniker => @real_assets
@@ -38,16 +37,18 @@ DESCRIPTION
     of external applications on startup. The result will be one file with
     all the sources combined. This file is stored in "Packed directory".
 
-    The actual file requested will also contain the timestamp when this
-    server was started. This is to help refreshing cache on change.
+    This is done using "process".
 
-    This is done using "pack_javascripts" and "pack_stylesheets".
+    The actual file requested will also contain the timestamp when this
+    server was started. This is to help refreshing cache on change. Example:
+
+      <script src="/packed/app.1379243728.js">
 
   Development mode
     This plugin will expand the input files to multiple script or link tags
     which makes debugging and development easier.
 
-    This is done using "expand_moniker".
+    This is done using "expand".
 
     TIP! Make morbo watch your less/sass files as well:
 
@@ -59,71 +60,27 @@ DESCRIPTION
 
       $app->home->rel_dir('public/packed');
 
-  Applications
-    *   less
-
-        LESS extends CSS with dynamic behavior such as variables, mixins,
-        operations and functions. See <http://lesscss.org> for more details.
-
-        Installation on Ubuntu and Debian:
-
-          $ sudo apt-get install npm
-          $ sudo npm install -g less
-
-    *   sass
-
-        Sass makes CSS fun again. Sass is an extension of CSS3, adding
-        nested rules, variables, mixins, selector inheritance, and more. See
-        <http://sass-lang.com> for more information.
-
-        Installation on Ubuntu and Debian:
-
-          $ sudo apt-get install rubygems
-          $ sudo gem install sass
-
-    *   yuicompressor
-
-        <http://yui.github.io/yuicompressor> is used to compress javascript
-        and css.
-
-        Installation on Ubuntu and Debian:
-
-          $ sudo apt-get install npm
-          $ sudo npm -g i yuicompressor
-
-    NOTE! I want to change from yuicompressor to a pure perl module, since
-    yuicompressor is a super slow java beast.
+  Preprocessors
+    This library tries to find default preprocessors for less, scss, js and
+    css. "detect" in Mojolicious::Plugin::AssetPack::Preprocessors holds
+    more details.
 
 ATTRIBUTES
   minify
     This is set to true if the assets should be minified.
 
+  preprocessors
+    Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
+
 METHODS
   add
-      $self->add($c, $moniker => @rel_files);
+      $self->add($moniker => @rel_files);
 
-    Used to define new assets aliases.
+    Used to define new assets aliases. This method is called when the
+    "asset()" helper is called on the app.
 
-  pack_javascripts
-      $self->pack_javascripts($moniker => \@files);
-
-    This method will combine the input files to one file "Packed directory",
-    named "$moniker".
-
-    Will also run "yuicompressor" on the input files to minify them - except
-    if the name contains "min". Example "jquery.min.js" will not be minified
-    by "yuicompressor".
-
-  pack_stylesheets
-      $self->pack_stylesheets($moniker => \@files);
-
-    This method will combine the input files to one file "Packed directory",
-    named "$moniker".
-
-    Will also run "less" or "sass" on the input files to minify them.
-
-  expand_moniker
-      $bytestream = $self->expand_moniker($c, $moniker);
+  expand
+      $bytestream = $self->expand($c, $moniker);
 
     This method will return one tag for each asset defined by the
     "$moniker".
@@ -133,12 +90,14 @@ METHODS
 
     The returning bytestream will contain style or script tags.
 
-  preprocessor
-      $self->preprocessor($extension => $cb);
+  process
+      $self->process($moniker);
 
-    Define a preprocessor which is run on a given file extension.
+    This method use "process" in
+    Mojolicious::Plugin::AssetPack::Preprocessors to convert and/or minify
+    the sources pointed at by $moniker.
 
-    The default preprocessor defined is described under "Applications".
+    The result file will be stored in "Packed directory".
 
   register
       plugin 'AssetPack', {

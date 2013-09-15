@@ -57,7 +57,7 @@ if($assetpack->{preprocessor}{scss}) {
 {
   $t->get_ok('/undefined')
     ->status_is(200)
-    ->content_like(qr{<!-- Could not expand_moniker});
+    ->content_like(qr{<!-- Could not expand});
     ;
 }
 
