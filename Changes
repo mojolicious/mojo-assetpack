@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
 0.01
-       * Started project
-       * Add cool feature
+       * Add "asset" helper
+       * Can define asset monikers
+       * Can expand from moniker to multiple script/link tags
+       * Can compress multiple files to one moniker asset
+       * Can convert sass and less files
