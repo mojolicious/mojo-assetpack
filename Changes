@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0102   Sun Sep 15 15:15:37 2013
+       * Fix AssetPack in embedded apps
+
 0.0101   Sun Sep 15 14:26:29 2013
        * Fix t/compress.t
 
