@@ -8,6 +8,34 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 0.01
 
+=head1 SYNOPSIS
+
+In your application:
+
+  use Mojolicious::Lite;
+
+  plugin AssetPack => { rebuild => 1 };
+
+  # define other preprocessors than the default detected
+  app->asset->preprocessor(js => sub {
+    my($self, $file) = @_;
+    return JavaScript::Minifier::XS::minify($file) if $self->minify;
+    return; # return undef will keep the original file
+  });
+
+  # define assets: $moniker => @real_assets
+  app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+  app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
+
+  app->start;
+
+In your template:
+
+  %= asset 'app.js'
+  %= asset 'app.css'
+
+See also L</register>.
+
 =head1 DESCRIPTION
 
 =head2 Production mode
@@ -39,43 +67,11 @@ The output directory where all the compressed files are stored will be
 
   $app->home->rel_dir('public/packed');
 
-=head1 SYNOPSIS
+=head2 Applications
 
-In your application:
+=over 4
 
-  use Mojolicious::Lite;
-
-  plugin AssetPack => { rebuild => 1 };
-
-  # define other preprocessors than the default detected
-  app->asset->preprocessor(js => sub {
-    my($self, $file) = @_;
-    return JavaScript::Minifier::XS::minify($file) if $self->minify;
-    return; # return undef will keep the original file
-  });
-  app->asset->preprocessor(less => sub {
-    my($self, $file) = @_;
-    open my $APP, '-|', lessc => -x => $file or die "lessc -x $file: $!";
-    local $/;
-    return readline $APP;
-  });
-
-  # define assets: $moniker => @real_assets
-  app->asset('app.js' => '/js/foo.js', '/js/bar.js');
-  app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
-
-  app->start;
-
-In your template:
-
-  %= asset 'app.js'
-  %= asset 'app.css'
-
-See also L</register>.
-
-=head1 APPLICATIONS
-
-=head2 less
+=item * less
 
 LESS extends CSS with dynamic behavior such as variables, mixins, operations
 and functions. See L<http://lesscss.org> for more details.
@@ -85,7 +81,7 @@ Installation on Ubuntu and Debian:
   $ sudo apt-get install npm
   $ sudo npm install -g less
 
-=head2 sass
+=item * sass
 
 Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
 variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
@@ -96,7 +92,7 @@ Installation on Ubuntu and Debian:
   $ sudo apt-get install rubygems
   $ sudo gem install sass
 
-=head2 yuicompressor
+=item * yuicompressor
 
 L<http://yui.github.io/yuicompressor> is used to compress javascript and css.
 
@@ -104,6 +100,8 @@ Installation on Ubuntu and Debian:
 
   $ sudo apt-get install npm
   $ sudo npm -g i yuicompressor
+
+=back
 
 =cut
 
@@ -225,7 +223,7 @@ sub expand_moniker {
 
 Define a preprocessor which is run on a given file extension.
 
-The default preprocessor defined is described under L</APPLICATIONS>.
+The default preprocessor defined is described under L</Applications>.
 
 =cut
 
@@ -339,7 +337,7 @@ sub _detect_default_preprocessors {
     $self->preprocessor(less => sub {
       my($self, $file) = @_;
       my @args = $self->minify ? ('-x') : ();
-      open my $APP, '-|', $app => @args => $file or die "$app -x $file: $!";
+      open my $APP, '-|', $app => @args => $file or die "$app @args $file: $!";
       local $/; readline $APP;
     });
   }
@@ -348,7 +346,7 @@ sub _detect_default_preprocessors {
     $self->preprocessor(scss => sub {
       my($self, $file) = @_;
       my @args = $self->minify ? ('-t', 'compressed') : ();
-      open my $APP, '-|', $app => @args => $file or die "$app -t compressed $file: $!";
+      open my $APP, '-|', $app => @args => $file or die "$app @args $file: $!";
     });
   }
 

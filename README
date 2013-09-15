@@ -5,6 +5,39 @@ NAME
 VERSION
     0.01
 
+SYNOPSIS
+    In your application:
+
+      use Mojolicious::Lite;
+
+      plugin AssetPack => { rebuild => 1 };
+
+      # define other preprocessors than the default detected
+      app->asset->preprocessor(js => sub {
+        my($self, $file) = @_;
+        return JavaScript::Minifier::XS::minify($file) if $self->minify;
+        return; # return undef will keep the original file
+      });
+      app->asset->preprocessor(less => sub {
+        my($self, $file) = @_;
+        open my $APP, '-|', lessc => -x => $file or die "lessc -x $file: $!";
+        local $/;
+        return readline $APP;
+      });
+
+      # define assets: $moniker => @real_assets
+      app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+      app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
+
+      app->start;
+
+    In your template:
+
+      %= asset 'app.js'
+      %= asset 'app.css'
+
+    See also "register".
+
 DESCRIPTION
   Production mode
     This plugin will compress scss, less, css and javascript with the help
@@ -22,60 +55,51 @@ DESCRIPTION
 
     This is done using "expand_moniker".
 
+    TIP! Make morbo watch your less/sass files as well:
+
+      $ morbo -w lib -w templates -w public/sass
+
   Packed directory
     The output directory where all the compressed files are stored will be
     "public/packed", relative to the application home:
 
       $app->home->rel_dir('public/packed');
 
-SYNOPSIS
-    In your application:
+  Applications
+    *   less
 
-      use Mojolicious::Lite;
+        LESS extends CSS with dynamic behavior such as variables, mixins,
+        operations and functions. See <http://lesscss.org> for more details.
 
-      plugin AssetPack => { rebuild => 1 };
+        Installation on Ubuntu and Debian:
 
-      # define assets: $moniker => @real_assets
-      app->asset('app.js' => '/js/foo.js', '/js/bar.js');
-      app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
+          $ sudo apt-get install npm
+          $ sudo npm install -g less
 
-      app->start;
+    *   sass
 
-    In your template:
+        Sass makes CSS fun again. Sass is an extension of CSS3, adding
+        nested rules, variables, mixins, selector inheritance, and more. See
+        <http://sass-lang.com> for more information.
 
-      %= asset 'app.js'
-      %= asset 'app.css'
+        Installation on Ubuntu and Debian:
 
-    See also "register".
+          $ sudo apt-get install rubygems
+          $ sudo gem install sass
 
-APPLICATIONS
-  less
-    LESS extends CSS with dynamic behavior such as variables, mixins,
-    operations and functions. See <http://lesscss.org> for more details.
+    *   yuicompressor
 
-    Installation on Ubuntu and Debian:
+        <http://yui.github.io/yuicompressor> is used to compress javascript
+        and css.
 
-      $ sudo apt-get install npm
-      $ sudo npm install -g less
+        Installation on Ubuntu and Debian:
 
-  sass
-    Sass makes CSS fun again. Sass is an extension of CSS3, adding nested
-    rules, variables, mixins, selector inheritance, and more. See
-    <http://sass-lang.com> for more information.
+          $ sudo apt-get install npm
+          $ sudo npm -g i yuicompressor
 
-    Installation on Ubuntu and Debian:
-
-      $ sudo apt-get install rubygems
-      $ sudo gem install sass
-
-  yuicompressor
-    <http://yui.github.io/yuicompressor> is used to compress javascript and
-    css.
-
-    Installation on Ubuntu and Debian:
-
-      $ sudo apt-get install npm
-      $ sudo npm -g i yuicompressor
+ATTRIBUTES
+  minify
+    This is set to true if the assets should be minified.
 
 METHODS
   pack_javascripts
@@ -107,24 +131,22 @@ METHODS
 
     The returning bytestream will contain style or script tags.
 
-  find_external_apps
-    This method is used to find the "APPLICATIONS". It will look for the
-    apps using File::Which in this order: lessc, less, sass, yui-compressor,
-    yuicompressor.
+  preprocessor
+      $self->preprocessor($extension => $cb);
+
+    Define a preprocessor which is run on a given file extension.
+
+    The default preprocessor defined is described under "Applications".
 
   register
       plugin 'AssetPack', {
-        enable => $bool,
+        minify => $bool,
         rebuild => $bool,
-        yuicompressor => '/path/to/yuicompressor',
-        less => '/path/to/lessc',
-        sass => '/path/to/sass',
       };
 
     Will register the "compress" helper. All arguments are optional.
 
-    "enable" will default to COMPRESS_ASSETS environment variable or set to
-    true if "mode" in Mojolicious is "production".
+    "minify" will default to true if "mode" in Mojolicious is "production".
 
     "rebuild" can be set to true to always rebuild the compressed files when
     the application is started. The default is to use the cached files.
