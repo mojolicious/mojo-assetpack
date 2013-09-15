@@ -15,14 +15,8 @@ SYNOPSIS
       # define other preprocessors than the default detected
       app->asset->preprocessor(js => sub {
         my($self, $file) = @_;
-        return JavaScript::Minifier::XS::minify($file) if $self->minify;
+        return JavaScript::Minifier::XS::minify(Mojo::Util::slurp($file)) if $self->minify;
         return; # return undef will keep the original file
-      });
-      app->asset->preprocessor(less => sub {
-        my($self, $file) = @_;
-        open my $APP, '-|', lessc => -x => $file or die "lessc -x $file: $!";
-        local $/;
-        return readline $APP;
       });
 
       # define assets: $moniker => @real_assets
@@ -97,11 +91,19 @@ DESCRIPTION
           $ sudo apt-get install npm
           $ sudo npm -g i yuicompressor
 
+    NOTE! I want to change from yuicompressor to a pure perl module, since
+    yuicompressor is a super slow java beast.
+
 ATTRIBUTES
   minify
     This is set to true if the assets should be minified.
 
 METHODS
+  add
+      $self->add($c, $moniker => @rel_files);
+
+    Used to define new assets aliases.
+
   pack_javascripts
       $self->pack_javascripts($moniker => \@files);
 
@@ -140,8 +142,9 @@ METHODS
 
   register
       plugin 'AssetPack', {
-        minify => $bool,
-        rebuild => $bool,
+        minify => $bool, # compress assets
+        no_autodetect => $bool, # disable preprocessor autodetection
+        rebuild => $bool, # overwrite if assets exists
       };
 
     Will register the "compress" helper. All arguments are optional.

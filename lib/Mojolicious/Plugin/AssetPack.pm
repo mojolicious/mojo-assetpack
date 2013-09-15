@@ -103,6 +103,9 @@ Installation on Ubuntu and Debian:
 
 =back
 
+NOTE! I want to change from yuicompressor to a pure perl module, since
+yuicompressor is a super slow java beast.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin';
@@ -258,8 +261,9 @@ sub preprocessor {
 =head2 register
 
   plugin 'AssetPack', {
-    minify => $bool,
-    rebuild => $bool,
+    minify => $bool, # compress assets
+    no_autodetect => $bool, # disable preprocessor autodetection
+    rebuild => $bool, # overwrite if assets exists
   };
 
 Will register the C<compress> helper. All arguments are optional.
