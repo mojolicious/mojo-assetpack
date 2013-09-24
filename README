@@ -3,7 +3,7 @@ NAME
     and javascript files
 
 VERSION
-    0.0102
+    0.02
 
 SYNOPSIS
     In your application:
@@ -70,10 +70,13 @@ DESCRIPTION
 
 ATTRIBUTES
   minify
-    This is set to true if the assets should be minified.
+    Set this to true if the assets should be minified.
 
   preprocessors
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
+
+  rebuild
+    Set this to true if the assets should created, even though they exist.
 
 METHODS
   add

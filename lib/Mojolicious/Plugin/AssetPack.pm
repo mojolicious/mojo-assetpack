@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.0102
+0.02
 
 =head1 SYNOPSIS
 
@@ -84,13 +84,13 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use Fcntl qw( O_CREAT O_EXCL O_WRONLY );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.0102';
+our $VERSION = '0.02';
 
 =head1 ATTRIBUTES
 
 =head2 minify
 
-This is set to true if the assets should be minified.
+Set this to true if the assets should be minified.
 
 =cut
 
@@ -103,6 +103,14 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 =cut
 
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
+
+=head2 rebuild
+
+Set this to true if the assets should created, even though they exist.
+
+=cut
+
+has rebuild => 0;
 
 =head1 METHODS
 
@@ -165,29 +173,29 @@ The result file will be stored in L</Packed directory>.
 sub process {
   my($self, $moniker) = @_;
   my $assets = $self->{assets}{$moniker};
+  my $extension = $moniker =~ /\.(\w{1,4})$/ ? $1 : '';
+  my $mode = $self->rebuild ? O_CREAT | O_WRONLY : O_CREAT | O_EXCL | O_WRONLY;
   my $out_file = catfile $self->{out_dir}, $moniker;
-  my $fh = IO::File->new($out_file, O_CREAT | O_EXCL | O_WRONLY);
+  my $fh;
 
-  unless($fh) {
-    $self->{log}->debug("$out_file already exists");
+  unless($self->preprocessors->has_subscribers($extension)) {
+    $self->{log}->warn("No preprocessors defined for $moniker");
+    return;
+  }
+  unless($fh = IO::File->new($out_file, $mode)) {
+    $self->{log}->debug("Could not write $out_file: $!");
     return;
   }
 
+  $fh->truncate(0);
+
   for(@$assets) {
-    my $extension = /\.(\w{1,4})$/ ? $1 : 'UNKNOWN';
     my $file = $self->{static}->file($_); # return undef if the file does not exist
     my $text;
 
     $file = $file ? $file->path : $_;
-
-    if($self->preprocessors->has_subscribers($extension)) {
-      $text = Mojo::Util::slurp($file);
-      $self->preprocessors->process($extension, $self, \$text, $file);
-    }
-    else {
-      $text = "/* Missing preprocessor for $extension */";
-    }
-
+    $text = Mojo::Util::slurp($file);
+    $self->preprocessors->process($extension, $self, \$text, $file);
     $fh->syswrite($text);
   }
 
@@ -217,6 +225,7 @@ sub register {
   my $helper = $config->{helper} || 'asset';
 
   $self->minify($minify);
+  $self->rebuild($config->{rebuild} || 0);
   $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
@@ -225,11 +234,6 @@ sub register {
   $self->{static} = $app->static;
 
   mkdir $self->{out_dir}; # TODO: Use mkpath instead?
-
-  if($minify and $config->{rebuild}) {
-    opendir(my $DH, $self->{out_dir});
-    unlink catfile $self->{out_dir}, $_ for grep { /^\w/ } readdir $DH;
-  }
 
   $app->helper($helper => sub {
     return $self if @_ == 1;

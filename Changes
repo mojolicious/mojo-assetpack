@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.02     Tue Sep 24 09:17:43 2013
+       * Will only write asset files if the preprocessors exists
+
 0.0102   Sun Sep 15 15:15:37 2013
        * Fix AssetPack in embedded apps
 
