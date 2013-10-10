@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.0201
+0.0201   Thu Oct 10 20:10:25 2013
        * Fix need to change back to previous working dir
 
 0.02     Tue Sep 24 09:17:43 2013
