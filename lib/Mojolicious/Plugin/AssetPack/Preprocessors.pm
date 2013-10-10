@@ -122,9 +122,10 @@ sub process {
     $_->(@_) for @{ $self->subscribers(shift) };
     1;
   } or do {
-    chdir $old_dir;
     $self->emit(error => "process $_[3]: $@");
   };
+
+  chdir $old_dir;
 
   $self;
 }

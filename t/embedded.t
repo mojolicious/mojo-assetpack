@@ -2,8 +2,10 @@ use warnings;
 use strict;
 use Test::More;
 use Test::Mojo;
+use Cwd;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+my $working_dir = getcwd;
 
 {
   package Embedded;
@@ -37,5 +39,7 @@ plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
   $t->get_ok("/embed")->status_is(200)->content_is('Embedded');
   $t->get_ok("/embed/packed/app.42.js")->status_is(200)->content_is('var too = "cool";');
 }
+
+is getcwd, $working_dir, 'did not change directory';
 
 done_testing;

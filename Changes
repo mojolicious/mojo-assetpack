@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0201
+       * Fix need to change back to previous working dir
+
 0.02     Tue Sep 24 09:17:43 2013
        * Will only write asset files if the preprocessors exists
 
