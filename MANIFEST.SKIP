@@ -7,6 +7,7 @@
 ^cover_db/
 ^Makefile$
 ^MANIFEST.*
+^MYMETA*
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
 /packed/
