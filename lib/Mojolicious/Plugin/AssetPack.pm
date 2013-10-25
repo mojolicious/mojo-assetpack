@@ -43,12 +43,13 @@ This plugin will compress scss, less, css and javascript with the help of
 external applications on startup. The result will be one file with all the
 sources combined. This file is stored in L</Packed directory>.
 
+The files in the packed directory will have a checksum added to the
+filename which will ensure broken browsers request a new version once the
+file is changed. Example:
+
+  <script src="/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
+
 This is done using L</process>.
-
-The actual file requested will also contain the timestamp when this server was
-started. This is to help refreshing cache on change. Example:
-
-  <script src="/packed/app.1379243728.js">
 
 =head2 Development mode
 
@@ -80,8 +81,10 @@ details.
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
+use Mojo::Util qw( md5_sum slurp spurt );
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use Fcntl qw( O_CREAT O_EXCL O_WRONLY );
+use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
 our $VERSION = '0.0201';
@@ -176,41 +179,50 @@ sub process {
   my $extension = $moniker =~ /\.(\w{1,4})$/ ? $1 : '';
   my $mode = $self->rebuild ? O_CREAT | O_WRONLY : O_CREAT | O_EXCL | O_WRONLY;
   my $out_file = catfile $self->{out_dir}, $moniker;
+  my $doc = '';
   my $fh;
 
   unless($self->preprocessors->has_subscribers($extension)) {
     $self->{log}->warn("No preprocessors defined for $moniker");
+    $self->_find_processed($moniker);
     return;
   }
   unless($fh = IO::File->new($out_file, $mode)) {
     $self->{log}->debug("Could not write $out_file: $!");
+    $self->_find_processed($moniker);
     return;
   }
-
-  $fh->truncate(0);
 
   for(@$assets) {
     my $file = $self->{static}->file($_); # return undef if the file does not exist
     my $text;
 
     $file = $file ? $file->path : $_;
-    $text = Mojo::Util::slurp($file);
+    $text = slurp $file;
     $self->preprocessors->process($extension, $self, \$text, $file);
-    $fh->syswrite($text);
+    $doc .= $text;
   }
 
+  $fh->truncate(0);
+  $fh->syswrite($doc);
   $fh->close or die "close $out_file: $!";
+  $self->_remove_processed($moniker) if $self->{cleanup};
+  $self->_rename_processed($moniker, md5_sum $doc);
 }
 
 =head2 register
 
   plugin 'AssetPack', {
+    cleanup => $bool, # default is true
     minify => $bool, # compress assets
     no_autodetect => $bool, # disable preprocessor autodetection
     rebuild => $bool, # overwrite if assets exists
   };
 
 Will register the C<compress> helper. All arguments are optional.
+
+"cleanup" will remove any old processed files. You want to disable this if you
+have other web sites that need to access an old version of the minified files.
 
 "minify" will default to true if L<Mojolicious/mode> is "production".
 
@@ -229,6 +241,7 @@ sub register {
   $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
+  $self->{cleanup} //= 1;
   $self->{log} = $app->log;
   $self->{out_dir} = $app->home->rel_dir('public/packed');
   $self->{static} = $app->static;
@@ -239,23 +252,8 @@ sub register {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
     return $self->expand(@_) unless $minify;
-    my($name, $ext) = $_[1] =~ /^(.+)\.(\w+)$/;
-    return $_[0]->javascript("/packed/$name.$^T.$ext") if $ext eq 'js';
-    return $_[0]->stylesheet("/packed/$name.$^T.$ext");
-  });
-
-  $app->hook(before_dispatch => sub {
-    my $c = shift;
-    my $asset = $c->req->url->path;
-    my $base = $c->url_for('/');
-
-    $asset = "/$asset" unless $asset =~ m!^/!;
-    $asset =~ s!^$base!!;
-
-    return unless $asset =~ m!^/?packed/(.+)\.(\d+)\.(\w+)$!;
-    return unless $self->{assets}{"$1.$3"};
-    return unless $c->app->static->serve($c, "/packed/$1.$3");
-    return $c->rendered;
+    return $_[0]->javascript("/packed/$self->{assets}{$_[1]}") if $_[1] =~ /\.js$/;
+    return $_[0]->stylesheet("/packed/$self->{assets}{$_[1]}");
   });
 }
 
@@ -268,9 +266,9 @@ sub _compile_css {
       my $extension = $1;
       my $in = $self->{static}->file($original)->path;
       (my $out = $in) =~ s/\.\w+$/.css/;
-      my $text = Mojo::Util::slurp($in);
+      my $text = slurp $in;
       $self->preprocessors->process($extension, $self, \$text, $in);
-      Mojo::Util::spurt($text, $out);
+      spurt $text, $out;
       1;
     } or do {
       $self->{log}->warn("Could not convert $original: $@");
@@ -278,6 +276,43 @@ sub _compile_css {
   }
 
   $file;
+}
+
+sub _find_processed {
+  my($self, $moniker) = @_;
+  my($name, $ext) = $moniker =~ m!^(.+)\.(\w+)$!;
+
+  $self->{assets}{$moniker} = "$name-not-found.$ext";
+
+  opendir(my $DH, $self->{out_dir});
+  for my $file (readdir $DH) {
+    $file =~ m!^$name-\w{32}\.$ext! or next;
+    $self->{assets}{$moniker} = $file;
+    last;
+  }
+}
+
+sub _remove_processed {
+  my($self, $moniker) = @_;
+  my($name, $ext) = $moniker =~ m!^(.+)\.(\w+)$!;
+
+  opendir(my $DH, $self->{out_dir});
+  for my $file (readdir $DH) {
+    $file =~ m!^$name-\w{32}\.$ext! or next;
+    $self->{log}->debug("Removing $self->{out_dir}/$file");
+    unlink catfile($self->{out_dir}, $file) or die "Could not unlink $self->{out_dir}/$file: $!";
+  }
+}
+
+sub _rename_processed {
+  my($self, $moniker, $checksum) = @_;
+  my($name, $ext) = $moniker =~ m!^(.+)\.(\w+)$!;
+  my $source = catfile $self->{out_dir}, $moniker;
+  my $destination = catfile $self->{out_dir}, "$name-$checksum.$ext";
+
+  $self->{assets}{$moniker} = "$name-$checksum.$ext";
+  return if -e $destination;
+  rename $source, $destination or die "Could not rename $source to $destination: $!";
 }
 
 =head1 AUTHOR

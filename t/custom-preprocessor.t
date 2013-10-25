@@ -22,15 +22,14 @@ plan tests => 8;
 }
 
 my $t = Test::Mojo->new;
-my $ts = $^T;
 
 {
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/app\.$ts\.js".*}m)
+    ->content_like(qr{<script src="/packed/app-09bd5aefd1b3f2697a79105d741a9116\.js".*}m)
     ;
-  $t->get_ok("/packed/app.$ts.js")->status_is(200)->content_is('var too = "cool";');
+  $t->get_ok("/packed/app-09bd5aefd1b3f2697a79105d741a9116.js")->status_is(200)->content_is('var too = "cool";');
 }
 
 __DATA__

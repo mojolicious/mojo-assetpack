@@ -24,7 +24,7 @@ my $t = Test::Mojo->new;
 
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/app\.$^T\.js".*}m)
+    ->content_like(qr{<script src="/packed/app-3ed8fc2cff5774822803ff18cc2c4487\.js".*}m)
     ;
 
   is int @main::run, 1, 'minify called once';
