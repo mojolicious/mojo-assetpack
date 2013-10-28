@@ -3,7 +3,7 @@ NAME
     and javascript files
 
 VERSION
-    0.0201
+    0.03
 
 SYNOPSIS
     In your application:
@@ -37,12 +37,13 @@ DESCRIPTION
     of external applications on startup. The result will be one file with
     all the sources combined. This file is stored in "Packed directory".
 
+    The files in the packed directory will have a checksum added to the
+    filename which will ensure broken browsers request a new version once
+    the file is changed. Example:
+
+      <script src="/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
+
     This is done using "process".
-
-    The actual file requested will also contain the timestamp when this
-    server was started. This is to help refreshing cache on change. Example:
-
-      <script src="/packed/app.1379243728.js">
 
   Development mode
     This plugin will expand the input files to multiple script or link tags
@@ -107,12 +108,17 @@ METHODS
 
   register
       plugin 'AssetPack', {
+        cleanup => $bool, # default is true
         minify => $bool, # compress assets
         no_autodetect => $bool, # disable preprocessor autodetection
         rebuild => $bool, # overwrite if assets exists
       };
 
     Will register the "compress" helper. All arguments are optional.
+
+    "cleanup" will remove any old processed files. You want to disable this
+    if you have other web sites that need to access an old version of the
+    minified files.
 
     "minify" will default to true if "mode" in Mojolicious is "production".
 
