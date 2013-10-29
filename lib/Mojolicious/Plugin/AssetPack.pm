@@ -243,7 +243,7 @@ sub register {
   $self->{assets} = {};
   $self->{cleanup} //= 1;
   $self->{log} = $app->log;
-  $self->{out_dir} = $app->home->rel_dir('public/packed');
+  $self->{out_dir} = $config->{out_dir} || $app->home->rel_dir('public/packed');
   $self->{static} = $app->static;
 
   mkdir $self->{out_dir}; # TODO: Use mkpath instead?

@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.04
+       * Add support for custom out_dir
+
 0.03     Mon Oct 28 18:31:03 2013
        * Use md5sum instead of timestamp in filenames
 
