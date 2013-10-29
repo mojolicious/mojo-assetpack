@@ -44,9 +44,9 @@ SKIP: {
   $t->get_ok('/less'); # trigger pack_stylesheets() twice for coverage
   $t->get_ok('/less')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/less-bc18bba8ec99a2b755fb7b42a0dd0474\.css".*}m)
+    ->content_like(qr{<link href="/packed/less-35015e15bbadb5e5dda2f3a1fa854a90\.css".*}m)
     ;
-  $t->get_ok("/packed/less-bc18bba8ec99a2b755fb7b42a0dd0474.css")
+  $t->get_ok("/packed/less-35015e15bbadb5e5dda2f3a1fa854a90.css")
     ->status_is(200)
     ->content_like(qr{a1a1a1.*b1b1b1}s)
     ;
@@ -56,9 +56,9 @@ SKIP: {
   skip 'Could not find preprocessors for scss', 6 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/sass-a57106dcfcd43c44c48d4b9fabf9c817\.css".*}m)
+    ->content_like(qr{<link href="/packed/sass-ebe977d9e869580a4fa27a2f1d89db21\.css".*}m)
     ;
-  $t->get_ok("/packed/sass-a57106dcfcd43c44c48d4b9fabf9c817.css")
+  $t->get_ok("/packed/sass-ebe977d9e869580a4fa27a2f1d89db21.css")
     ->status_is(200)
     ->content_like(qr{a1a1a1.*b1b1b1}s)
     ;

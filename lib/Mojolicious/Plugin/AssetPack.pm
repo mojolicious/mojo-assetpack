@@ -176,28 +176,33 @@ The result file will be stored in L</Packed directory>.
 sub process {
   my($self, $moniker) = @_;
   my $assets = $self->{assets}{$moniker};
-  my $extension = $moniker =~ /\.(\w{1,4})$/ ? $1 : '';
   my $mode = $self->rebuild ? O_CREAT | O_WRONLY : O_CREAT | O_EXCL | O_WRONLY;
   my $out_file = catfile $self->{out_dir}, $moniker;
   my $doc = '';
-  my $fh;
+  my($fh, @missing);
 
-  unless($self->preprocessors->has_subscribers($extension)) {
-    $self->{log}->warn("No preprocessors defined for $moniker");
+  for my $asset (@$assets) {
+    die "Missing valid extension from asset $asset" unless $asset =~ /\.(\w{1,4})$/;
+    push @missing, $asset unless @{ $self->preprocessors->subscribers($1) || [] };
+  }
+
+  if(@missing) {
+    $self->{log}->debug("Missing preprocessors for @missing");
     $self->_find_processed($moniker);
     return;
   }
-  unless($fh = IO::File->new($out_file, $mode)) {
+  if(!($fh = IO::File->new($out_file, $mode))) {
     $self->{log}->debug("Could not write $out_file: $!");
     $self->_find_processed($moniker);
     return;
   }
 
-  for(@$assets) {
-    my $file = $self->{static}->file($_); # return undef if the file does not exist
+  for my $asset (@$assets) {
+    my $extension = $asset =~ /\.(\w{1,4})$/ ? $1 : '';
+    my $file = $self->{static}->file($asset);
     my $text;
 
-    $file = $file ? $file->path : $_;
+    $file = $file ? $file->path : $asset;
     $text = slurp $file;
     $self->preprocessors->process($extension, $self, \$text, $file);
     $doc .= $text;
@@ -241,7 +246,7 @@ sub register {
   $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
-  $self->{cleanup} //= 1;
+  $self->{cleanup} = $config->{cleanup} // 1;
   $self->{log} = $app->log;
   $self->{out_dir} = $config->{out_dir} || $app->home->rel_dir('public/packed');
   $self->{static} = $app->static;
