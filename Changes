@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.04
+0.04     Thu Oct 31 18:57:22 2013
        * Add support for custom out_dir
        * Fix bug: Cannot lookup preprocessor based on moniker extension
 
