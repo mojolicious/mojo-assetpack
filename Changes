@@ -1,8 +1,11 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0401   Thu Oct 31 21:09:56 2013
+       * Fix cleanup of files without md5
+
 0.04     Thu Oct 31 18:57:22 2013
        * Add support for custom out_dir
-       * Fix bug: Cannot lookup preprocessor based on moniker extension
+       * Fix cannot lookup preprocessor based on moniker extension
 
 0.03     Mon Oct 28 18:31:03 2013
        * Use md5sum instead of timestamp in filenames

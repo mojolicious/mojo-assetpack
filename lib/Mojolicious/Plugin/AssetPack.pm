@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.04
+0.0401
 
 =head1 SYNOPSIS
 
@@ -87,7 +87,7 @@ use Fcntl qw( O_CREAT O_EXCL O_WRONLY );
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.04';
+our $VERSION = '0.0401';
 
 =head1 ATTRIBUTES
 
@@ -316,7 +316,7 @@ sub _rename_processed {
   my $destination = catfile $self->{out_dir}, "$name-$checksum.$ext";
 
   $self->{assets}{$moniker} = "$name-$checksum.$ext";
-  return if -e $destination;
+  unlink $destination if -e $destination;
   rename $source, $destination or die "Could not rename $source to $destination: $!";
 }
 
