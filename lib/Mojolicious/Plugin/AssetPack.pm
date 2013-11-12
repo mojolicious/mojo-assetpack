@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.0401
+0.0402
 
 =head1 SYNOPSIS
 
@@ -87,7 +87,7 @@ use Fcntl qw( O_CREAT O_EXCL O_WRONLY );
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.0401';
+our $VERSION = '0.0402';
 
 =head1 ATTRIBUTES
 
@@ -285,16 +285,22 @@ sub _compile_css {
 
 sub _find_processed {
   my($self, $moniker) = @_;
-  my($name, $ext) = $moniker =~ m!^(.+)\.(\w+)$!;
 
-  $self->{assets}{$moniker} = "$name-not-found.$ext";
+  $self->{processed} ||= do {
+    opendir(my $DH, $self->{out_dir});
+    +{
+      map {
+        ($_->[0] => $_->[1]);
+      } sort {
+        $a->[11] <=> $b->[11]; # mtime
+      } map {
+        my @m = m!^(.+)-\w{32}\.(.+)!;
+        [ join('.', @m) => $_ => stat catfile $self->{out_dir}, $_ ];
+      } readdir $DH
+    };
+  };
 
-  opendir(my $DH, $self->{out_dir});
-  for my $file (readdir $DH) {
-    $file =~ m!^$name-\w{32}\.$ext! or next;
-    $self->{assets}{$moniker} = $file;
-    last;
-  }
+  $self->{assets}{$moniker} = $self->{processed}{$moniker} || "not-processed-$moniker";
 }
 
 sub _remove_processed {
