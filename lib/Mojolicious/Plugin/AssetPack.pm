@@ -33,6 +33,12 @@ In your template:
   %= asset 'app.js'
   %= asset 'app.css'
 
+Or if you need to add the tags manually:
+
+  % for my $asset (asset->get('app.js')) {
+    %= javascript $asset
+  % }
+
 See also L</register>.
 
 =head1 DESCRIPTION
@@ -135,6 +141,24 @@ sub add {
   $self;
 }
 
+=head2 get
+
+  @files = $self->get($moniker);
+
+Returns a list of files which the moniker point to. The list will only
+contain one file if the C<$moniker> is minified.
+
+=cut
+
+sub get {
+  my($self, $moniker) = @_;
+  my $files = $self->{assets}{$moniker};
+
+  return unless $files;
+  return @$files if ref $files;
+  return $files;
+}
+
 =head2 expand
 
   $bytestream = $self->expand($c, $moniker);
@@ -194,7 +218,7 @@ sub process {
 
   if(-s catfile $self->{out_dir}, $out_file) {
     $self->{log}->debug("Using existing asset for $moniker");
-    $self->{assets}{$moniker} = $out_file;
+    $self->{assets}{$moniker} = "/packed/$out_file";
     return $self;
   }
 
@@ -222,7 +246,7 @@ sub process {
   );
 
   $self->{log}->debug("Built asset for $moniker ($out_file)");
-  $self->{assets}{$moniker} = $out_file;
+  $self->{assets}{$moniker} = "/packed/$out_file";
   return $self;
 }
 
@@ -263,8 +287,8 @@ sub register {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
     return $self->expand(@_) unless $minify;
-    return $_[0]->javascript("/packed/$self->{assets}{$_[1]}") if $_[1] =~ /\.js$/;
-    return $_[0]->stylesheet("/packed/$self->{assets}{$_[1]}");
+    return $_[0]->javascript($self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
+    return $_[0]->stylesheet($self->{assets}{$_[1]});
   });
 }
 

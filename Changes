@@ -3,6 +3,7 @@ Revision history for Mojolicious-Plugin-AssetPack
 0.05
        * Bundling JavaScript::Minifier::XS and CSS::Minifier::XS
        * Will calculate md5_sum from input files
+       * Add support for getting assets for a moniker
 
 0.0402   Tue Nov 12 21:17:34 2013
        * Will select the latest processed file when preprocessor is missing

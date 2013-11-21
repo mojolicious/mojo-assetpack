@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 26;
+plan tests => 27;
 
 unlink glob 't/public/packed/*';
 
@@ -32,10 +32,17 @@ my $t = Test::Mojo->new;
     ->status_is(200)
     ->content_like(qr{<script src="/packed/app-8072d187db8ff7a1809b88ae1a5f3bd7\.js".*}m)
     ;
+
   $t->get_ok($t->tx->res->dom->at('script')->{src})
     ->status_is(200)
     ->content_like(qr{["']a["'].*["']b["']}s)
     ;
+
+  is_deeply(
+    [ $t->app->asset->get('app.js') ],
+    [ '/packed/app-8072d187db8ff7a1809b88ae1a5f3bd7.js' ],
+    'get(app.js)'
+  );
 }
 
 SKIP: {

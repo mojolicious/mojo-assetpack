@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 19;
+plan tests => 20;
 
 my $assetpack;
 
@@ -27,12 +27,17 @@ my $assetpack;
 
 my $t = Test::Mojo->new;
 
-SKIP: {
-  skip 'Could not find preprocessors for js', 3 unless $assetpack->preprocessors->has_subscribers('js');
+{
   $t->get_ok('/js')
     ->status_is(200)
     ->content_like(qr{<script src="/js/a\.js".*<script src="/js/b\.js"}s)
     ;
+
+  is_deeply(
+    [ app->asset->get('app.js') ],
+    [ '/js/a.js', '/js/b.js' ],
+    'get(app.js)'
+  );
 }
 
 SKIP: {
