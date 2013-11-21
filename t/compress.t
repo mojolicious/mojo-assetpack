@@ -6,15 +6,15 @@ use Test::Mojo;
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 plan tests => 26;
 
+unlink glob 't/public/packed/*';
+
 my $assetpack;
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
+  plugin 'AssetPack' => { minify => 1 };
 
   app->asset('app.js' => '/js/a.js', '/js/b.js');
-  app->asset('less.css' => '/css/a.less', '/css/b.less');
-  app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
   app->asset('app.css' => '/css/c.css', '/css/d.css');
   $assetpack = app->asset;
 
@@ -26,14 +26,13 @@ my $assetpack;
 
 my $t = Test::Mojo->new;
 
-SKIP: {
-  skip 'Could not find preprocessors for js', 7 unless $assetpack->preprocessors->has_subscribers('js');
+{
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/app-d2e6677cf8beb95274597f3836ea12e9\.js".*}m)
+    ->content_like(qr{<script src="/packed/app-8072d187db8ff7a1809b88ae1a5f3bd7\.js".*}m)
     ;
-  $t->get_ok("/packed/app-d2e6677cf8beb95274597f3836ea12e9.js")
+  $t->get_ok($t->tx->res->dom->at('script')->{src})
     ->status_is(200)
     ->content_like(qr{["']a["'].*["']b["']}s)
     ;
@@ -41,12 +40,13 @@ SKIP: {
 
 SKIP: {
   skip 'Could not find preprocessors for less', 7 unless $assetpack->preprocessors->has_subscribers('less');
+  $t->app->asset('less.css' => '/css/a.less', '/css/b.less');
   $t->get_ok('/less'); # trigger pack_stylesheets() twice for coverage
   $t->get_ok('/less')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/less-35015e15bbadb5e5dda2f3a1fa854a90\.css".*}m)
+    ->content_like(qr{<link href="/packed/less-8dd04d9b9e50ace10e29f7c5d0b2b39d\.css".*}m)
     ;
-  $t->get_ok("/packed/less-35015e15bbadb5e5dda2f3a1fa854a90.css")
+  $t->get_ok($t->tx->res->dom->at('link')->{href})
     ->status_is(200)
     ->content_like(qr{a1a1a1.*b1b1b1}s)
     ;
@@ -54,23 +54,23 @@ SKIP: {
 
 SKIP: {
   skip 'Could not find preprocessors for scss', 6 unless $assetpack->preprocessors->has_subscribers('scss');
+  $t->app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
   $t->get_ok('/sass')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/sass-ebe977d9e869580a4fa27a2f1d89db21\.css".*}m)
+    ->content_like(qr{<link href="/packed/sass-3041fa396995aff3acc7b926cc8981b2\.css".*}m)
     ;
-  $t->get_ok("/packed/sass-ebe977d9e869580a4fa27a2f1d89db21.css")
+  $t->get_ok($t->tx->res->dom->at('link')->{href})
     ->status_is(200)
     ->content_like(qr{a1a1a1.*b1b1b1}s)
     ;
 }
 
-SKIP: {
-  skip 'Could not find preprocessors for css', 6 unless $assetpack->preprocessors->has_subscribers('css');
+{
   $t->get_ok('/css')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/app-23872cd4e53e8bb7172460bf48c5f4d8\.css".*}m)
+    ->content_like(qr{<link href="/packed/app-9113e4a5ae6bad4b3c8343549984ae3d\.css".*}m)
     ;
-  $t->get_ok("/packed/app-23872cd4e53e8bb7172460bf48c5f4d8.css")
+  $t->get_ok($t->tx->res->dom->at('link')->{href})
     ->status_is(200)
     ->content_like(qr{c1c1c1.*d1d1d1})
     ;

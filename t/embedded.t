@@ -6,13 +6,16 @@ use Test::Mojo;
 use Cwd;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
+
+unlink glob 't/public/packed/*';
+
 my $working_dir = getcwd;
-my $md5 = md5_sum 'var too = "cool";';
+my $md5 = '527b09c38362b669ec6e16c00d9fb30d';
 
 {
   package Embedded;
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
+  plugin 'AssetPack' => { minify => 1 };
 
   app->asset->preprocessors->remove('js');
   app->asset->preprocessors->add(js => sub {

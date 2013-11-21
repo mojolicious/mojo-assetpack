@@ -2,9 +2,8 @@ use warnings;
 use strict;
 use Test::More;
 use Test::Mojo;
-use Mojo::Util 'md5_sum';
 
-my $md5 = md5_sum "hello world\n";
+my $md5 = '81e6a22b62fc6e28e355713517fdc3d8';
 
 {
   open my $FOO, '>', "t/public/packed/app-$md5.foo" or plan skip_all => $!;
@@ -14,8 +13,8 @@ my $md5 = md5_sum "hello world\n";
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack' => { minify => 1, rebuild => 1 };
-  app->asset('app.foo' => '/js/a.foo', '/js/already.min.foo');
+  plugin 'AssetPack' => { minify => 1 };
+  app->asset('app.foo' => '/dummy.foo');
   get '/foo' => 'foo';
 }
 
