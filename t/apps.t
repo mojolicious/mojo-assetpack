@@ -36,21 +36,11 @@ my $assetpack;
 }
 
 {
-  if(eval 'require JavaScript::Minifier::XS; 1') {
-    ok $assetpack->preprocessors->has_subscribers('js'), 'found preprocessor for js';
-  }
-  else {
-    ok !$assetpack->preprocessors->has_subscribers('js'), 'did not find preprocessor for js';
-  }
+  ok $assetpack->preprocessors->has_subscribers('js'), 'found preprocessor for js';
 }
 
 {
-  if(eval 'require CSS::Minifier::XS; 1') {
-    ok $assetpack->preprocessors->has_subscribers('css'), 'found preprocessor for css';
-  }
-  else {
-    ok !$assetpack->preprocessors->has_subscribers('css'), 'did not find preprocessor for css';
-  }
+  ok $assetpack->preprocessors->has_subscribers('css'), 'found preprocessor for css';
 }
 
 done_testing;

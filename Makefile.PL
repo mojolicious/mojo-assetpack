@@ -6,9 +6,11 @@ WriteMakefile(
   AUTHOR => 'Jan Henning Thorsen <jhthorsen@cpan.org>',
   LICENSE => 'perl',
   PREREQ_PM => {
-    'Mojolicious' => '4.30',
+    'CSS::Minifier::XS' => '0.01',
     'File::Which' => '1.00',
     'IPC::Run3' => '0.04',
+    'JavaScript::Minifier::XS' => '0.01',
+    'Mojolicious' => '4.30',
   },
   BUILD_REQUIRES => {
     'Test::More' => '0.90',
