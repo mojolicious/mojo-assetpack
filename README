@@ -3,14 +3,14 @@ NAME
     and javascript files
 
 VERSION
-    0.0402
+    0.05
 
 SYNOPSIS
     In your application:
 
       use Mojolicious::Lite;
 
-      plugin AssetPack => { rebuild => 1 };
+      plugin 'AssetPack';
 
       # add a preprocessor
       app->asset->preprocessors->add(js => sub {
@@ -28,6 +28,12 @@ SYNOPSIS
 
       %= asset 'app.js'
       %= asset 'app.css'
+
+    Or if you need to add the tags manually:
+
+      % for my $asset (asset->get('app.js')) {
+        %= javascript $asset
+      % }
 
     See also "register".
 
@@ -77,7 +83,7 @@ ATTRIBUTES
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
 
   rebuild
-    Set this to true if the assets should created, even though they exist.
+    Deprecated.
 
 METHODS
   add
@@ -97,8 +103,14 @@ METHODS
 
     The returning bytestream will contain style or script tags.
 
+  get
+      @files = $self->get($moniker);
+
+    Returns a list of files which the moniker point to. The list will only
+    contain one file if the $moniker is minified.
+
   process
-      $self->process($moniker);
+      $self->process($moniker => @files);
 
     This method use "process" in
     Mojolicious::Plugin::AssetPack::Preprocessors to convert and/or minify
@@ -111,7 +123,6 @@ METHODS
         cleanup => $bool, # default is true
         minify => $bool, # compress assets
         no_autodetect => $bool, # disable preprocessor autodetection
-        rebuild => $bool, # overwrite if assets exists
       };
 
     Will register the "compress" helper. All arguments are optional.
@@ -121,9 +132,6 @@ METHODS
     minified files.
 
     "minify" will default to true if "mode" in Mojolicious is "production".
-
-    "rebuild" can be set to true to always rebuild the compressed files when
-    the application is started. The default is to use the cached files.
 
 AUTHOR
     Jan Henning Thorsen - "jhthorsen@cpan.org"

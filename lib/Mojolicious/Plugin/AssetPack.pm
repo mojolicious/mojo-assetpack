@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.0402
+0.05
 
 =head1 SYNOPSIS
 
@@ -92,7 +92,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.0402';
+our $VERSION = '0.05';
 
 =head1 ATTRIBUTES
 
