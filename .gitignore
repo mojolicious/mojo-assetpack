@@ -8,7 +8,6 @@
 /Makefile
 /Makefile.old
 /cover_db/
-/t/public/packed
 .sass-cache
 *.old
 *.swp

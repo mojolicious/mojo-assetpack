@@ -33,6 +33,7 @@ my $t = Test::Mojo->new;
   like $main::run[0][0], qr{'a'}, 'a.js got compiled';
 }
 
+unlink glob 't/public/packed/*';
 done_testing;
 __DATA__
 @@ js.html.ep

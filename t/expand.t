@@ -4,17 +4,19 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 20;
+plan tests => 23;
+
+unlink glob 't/public/packed/*';
 
 my $assetpack;
 
 {
   use Mojolicious::Lite;
-  plugin 'AssetPack';
+  plugin 'AssetPack' => { minify => 0 };
 
   app->asset('app.js' => '/js/a.js', '/js/b.js');
   app->asset('less.css' => '/css/a.less', '/css/b.less');
-  app->asset('sass.css' => '/css/a.scss', '/css/b.scss');
+  app->asset('sass.css' => '/sass/x.scss');
   app->asset('app.css' => '/css/a.css', '/css/b.css');
   $assetpack = app->asset;
 
@@ -44,7 +46,7 @@ SKIP: {
   skip 'Could not find preprocessors for less', 3 unless $assetpack->preprocessors->has_subscribers('less');
   $t->get_ok('/less')
     ->status_is(200)
-    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
+    ->content_like(qr{<link href="/packed/a-\w+\.css".*<link href="/packed/b-\w+\.css"}s)
     ;
 }
 
@@ -52,7 +54,12 @@ SKIP: {
   skip 'Could not find preprocessors for scss', 3 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
-    ->content_like(qr{<link href="/css/a\.css".*<link href="/css/b\.css"}s)
+    ->content_like(qr{<link href="/packed/x-\w+\.css"});
+    ;
+
+  $t->get_ok($t->tx->res->dom->at('link')->{href})
+    ->status_is(200)
+    ->content_like(qr{background: \#abcdef})
     ;
 }
 
@@ -66,7 +73,7 @@ SKIP: {
 {
   $t->get_ok('/undefined')
     ->status_is(200)
-    ->content_like(qr{<!-- Could not expand});
+    ->content_like(qr{<!-- Cannot expand});
     ;
 }
 

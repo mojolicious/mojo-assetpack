@@ -136,9 +136,50 @@ helper is called on the app.
 sub add {
   my($self, $moniker, @files) = @_;
 
-  $self->{assets}{$moniker} = [@files];
-  $self->process($moniker) if $self->minify;
+  $self->{assets}{$moniker} = \@files;
+
+  if($self->minify) {
+    $self->process($moniker => @files);
+  }
+  else {
+    for my $file (@files) {
+      next unless $file =~ /\.(less|s[ac]ss)$/;
+      my $moniker = basename $file;
+      $moniker =~ s/\.\w+$/.css/;
+      $self->process($moniker => $file);
+      $file = delete $self->{assets}{$moniker};
+    }
+  }
+
   $self;
+}
+
+=head2 expand
+
+  $bytestream = $self->expand($c, $moniker);
+
+This method will return one tag for each asset defined by the "$moniker".
+
+Will also run L</less> or L</sass> on the files to convert them to css, which
+the browser understand.
+
+The returning bytestream will contain style or script tags.
+
+=cut
+
+sub expand {
+  my($self, $c, $moniker) = @_;
+  my $files = $self->{assets}{$moniker};
+
+  if(!ref $files) {
+    return b "<!-- Cannot expand $moniker -->";
+  }
+  elsif($moniker =~ /\.js/) {
+    return b join "\n", map { $c->javascript($_) } @$files;
+  }
+  else {
+    return b join "\n", map { $c->stylesheet($_) } @$files;
+  }
 }
 
 =head2 get
@@ -159,37 +200,9 @@ sub get {
   return $files;
 }
 
-=head2 expand
-
-  $bytestream = $self->expand($c, $moniker);
-
-This method will return one tag for each asset defined by the "$moniker".
-
-Will also run L</less> or L</sass> on the files to convert them to css, which
-the browser understand.
-
-The returning bytestream will contain style or script tags.
-
-=cut
-
-sub expand {
-  my($self, $c, $moniker) = @_;
-  my $files = $self->{assets}{$moniker};
-
-  if(!$files) {
-    return b "<!-- Could not expand $moniker -->";
-  }
-  elsif($moniker =~ /\.js/) {
-    return b join "\n", map { $c->javascript($_) } @$files;
-  }
-  else {
-    return b join "\n", map { $c->stylesheet($self->_compile_css($_)) } @$files;
-  }
-}
-
 =head2 process
 
-  $self->process($moniker);
+  $self->process($moniker => @files);
 
 This method use L<Mojolicious::Plugin::AssetPack::Preprocessors/process> to
 convert and/or minify the sources pointed at by C<$moniker>.
@@ -199,18 +212,17 @@ The result file will be stored in L</Packed directory>.
 =cut
 
 sub process {
-  my($self, $moniker) = @_;
+  my($self, $moniker, @files) = @_;
   my($md5_sum, $out, $out_file, @missing);
-  my $files = $self->{assets}{$moniker};
   my $content = {};
 
-  # $files will contain full path after this map {}
+  # @files will contain full path after this map {}
   $md5_sum = Mojo::Util::md5_sum(
               join '', map {
                 my $file = $self->{static}->file($_);
                 $_ = $file->path if $file;
                 $content->{$_} = Mojo::Util::slurp($_);
-              } @$files
+              } @files
              );
 
   $out_file = $moniker;
@@ -222,7 +234,7 @@ sub process {
     return $self;
   }
 
-  for my $file (@$files) {
+  for my $file (@files) {
     next if $file =~ /\.(\w{1,4})$/ and $self->preprocessors->has_subscribers($1);
     push @missing, $file; # will also contain files without extensions
   }
@@ -240,7 +252,7 @@ sub process {
         /\.(\w{1,4})$/; # checked in @missing loop
         $self->preprocessors->process($1, $self, \$content->{$_}, $_);
         $content->{$_};
-      } @$files
+      } @files
     ),
     catfile($self->{out_dir}, $out_file)
   );
@@ -290,47 +302,6 @@ sub register {
     return $_[0]->javascript($self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
     return $_[0]->stylesheet($self->{assets}{$_[1]});
   });
-}
-
-sub _compile_css {
-  my($self, $file) = @_;
-  my $original = $file;
-
-  if($file =~ s/\.(scss|less)$/.css/) {
-    eval {
-      my $extension = $1;
-      my $in = $self->{static}->file($original)->path;
-      (my $out = $in) =~ s/\.\w+$/.css/;
-      my $text = slurp $in;
-      $self->preprocessors->process($extension, $self, \$text, $in);
-      Mojo::Util::spurt($text, $out);
-      1;
-    } or do {
-      $self->{log}->warn("Could not convert $original: $@");
-    };
-  }
-
-  $file;
-}
-
-sub _find_processed {
-  my($self, $moniker) = @_;
-
-  $self->{processed} ||= do {
-    opendir(my $DH, $self->{out_dir});
-    +{
-      map {
-        ($_->[0] => $_->[1]);
-      } sort {
-        $a->[11] <=> $b->[11]; # mtime
-      } map {
-        my @m = m!^(.+)-\w{32}\.(.+)!;
-        [ join('.', @m) => $_ => stat catfile $self->{out_dir}, $_ ];
-      } readdir $DH
-    };
-  };
-
-  $self->{assets}{$moniker} = $self->{processed}{$moniker} || "not-processed-$moniker";
 }
 
 sub _remove_processed {
