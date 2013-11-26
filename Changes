@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0501   Tue Nov 26 09:43:06 2013
+       * Cannot define assets when missing preprocessors
+
 0.05     Sun Nov 24 18:20:11 2013
        * Bundling JavaScript::Minifier::XS and CSS::Minifier::XS
        * Will calculate md5_sum from input files

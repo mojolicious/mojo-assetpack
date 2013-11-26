@@ -14,10 +14,10 @@ my $assetpack;
   use Mojolicious::Lite;
   plugin 'AssetPack' => { minify => 0 };
 
-  app->asset('app.js' => '/js/a.js', '/js/b.js');
-  app->asset('less.css' => '/css/a.less', '/css/b.less');
-  app->asset('sass.css' => '/sass/x.scss');
   app->asset('app.css' => '/css/a.css', '/css/b.css');
+  app->asset('app.js' => '/js/a.js', '/js/b.js');
+  eval { app->asset('less.css' => '/css/a.less', '/css/b.less') };
+  eval { app->asset('sass.css' => '/sass/x.scss') };
   $assetpack = app->asset;
 
   get '/js' => 'js';
