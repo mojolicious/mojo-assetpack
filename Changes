@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0502   Wed Nov 27 09:21:33 2013
+       * Fix plan in t/expand.t when sass is missing
+
 0.0501   Tue Nov 26 09:43:06 2013
        * Cannot define assets when missing preprocessors
 

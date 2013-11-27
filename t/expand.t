@@ -51,7 +51,7 @@ SKIP: {
 }
 
 SKIP: {
-  skip 'Could not find preprocessors for scss', 3 unless $assetpack->preprocessors->has_subscribers('scss');
+  skip 'Could not find preprocessors for scss', 6 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
     ->content_like(qr{<link href="/packed/x-\w+\.css"});
