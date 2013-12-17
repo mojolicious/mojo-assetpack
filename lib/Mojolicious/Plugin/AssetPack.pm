@@ -93,6 +93,12 @@ use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
 our $VERSION = '0.0502';
+our %MISSING_ERROR = (
+  default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
+  less => '%s require "less". http://lesscss.org/#usage',
+  sass => '%s require "sass". http://sass-lang.com/install',
+  scss => '%s require "sass". http://sass-lang.com/install',
+);
 
 =head1 ATTRIBUTES
 
@@ -239,12 +245,13 @@ sub process {
     push @missing, $file; # will also contain files without extensions
   }
 
-  if(@missing) {
-    local $" = "\n- ";
-    die "AssetPack missing preprocessors:\n- @missing\n";
+  if($self->_missing(@missing)) {
+    $self->{assets}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
+    return;
   }
-
-  $self->_remove_processed($moniker) if $self->{cleanup};
+  if($self->{cleanup}) {
+    $self->_remove_processed($moniker);
+  }
 
   Mojo::Util::spurt(
     join('',
@@ -302,6 +309,17 @@ sub register {
     return $_[0]->javascript($self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
     return $_[0]->stylesheet($self->{assets}{$_[1]});
   });
+}
+
+sub _missing {
+  my($self, @files) = @_;
+
+  for(@files) {
+    my $ext = /\.(\w+)$/ ? $1 : 'default';
+    $self->{log}->error(sprintf $MISSING_ERROR{$ext} || $MISSING_ERROR{default}, $_);
+  }
+
+  return int @files;
 }
 
 sub _remove_processed {
