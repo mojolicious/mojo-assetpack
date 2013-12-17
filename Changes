@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.06     Tue Dec 17 20:16:24 2013
+       * Will not die, but log with custom error message on missing preprocessor
+
 0.0502   Wed Nov 27 09:21:33 2013
        * Fix plan in t/expand.t when sass is missing
 
