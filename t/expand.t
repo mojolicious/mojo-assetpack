@@ -16,8 +16,8 @@ my $assetpack;
 
   app->asset('app.css' => '/css/a.css', '/css/b.css');
   app->asset('app.js' => '/js/a.js', '/js/b.js');
-  eval { app->asset('less.css' => '/css/a.less', '/css/b.less') };
-  eval { app->asset('sass.css' => '/sass/x.scss') };
+  app->asset('less.css' => '/css/a.less', '/css/b.less');
+  app->asset('x.css' => '/sass/x.scss'); # fixed in 0.0601
   $assetpack = app->asset;
 
   get '/js' => 'js';
@@ -54,7 +54,7 @@ SKIP: {
   skip 'Could not find preprocessors for scss', 6 unless $assetpack->preprocessors->has_subscribers('scss');
   $t->get_ok('/sass')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/x-\w+\.css"});
+    ->content_like(qr{<link href="/packed/x-\w+\.css"})
     ;
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})
@@ -88,7 +88,7 @@ __DATA__
 @@ less.html.ep
 %= asset 'less.css'
 @@ sass.html.ep
-%= asset 'sass.css'
+%= asset 'x.css'
 @@ css.html.ep
 %= asset 'app.css'
 @@ undefined.html.ep

@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0601   Mon Dec 30 17:01:20 2013
+       * Fix bug when asset has the same moniker as one of the source files
+
 0.06     Tue Dec 17 20:16:24 2013
        * Will not die, but log with custom error message on missing preprocessor
 
