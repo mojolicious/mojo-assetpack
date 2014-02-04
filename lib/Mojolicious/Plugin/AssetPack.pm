@@ -308,9 +308,6 @@ sub register {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
     return $self->expand(@_) unless $minify;
-    use Data::Dumper;
-    say "Asset log!";
-    print Dumper($self->{assets}{$_[1]});
     return $_[0]->javascript($self->{url_prefix} . $self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
     return $_[0]->stylesheet($self->{url_prefix} . $self->{assets}{$_[1]});
   });
