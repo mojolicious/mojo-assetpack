@@ -24,6 +24,8 @@ my $url_prefix = 'http://static.app.com';
   get '/css' => 'css';
 }
 
+my $t = Test::Mojo->new;
+
 {
   $t->get_ok('/js')
     ->status_is(200)
