@@ -76,6 +76,7 @@ The output directory where all the compressed files are stored will be
   $app->home->rel_dir('public/packed');
 
 =head2 Using same code on several servers with different domain names
+
 If you use several instances of servers with same code and want recive
 static files from separate domain name (e.g. http://static.exsample.com)
 use url_prefix attribute.
