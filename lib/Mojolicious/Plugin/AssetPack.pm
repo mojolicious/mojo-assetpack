@@ -286,6 +286,7 @@ sub process {
     cleanup => $bool, # default is true
     minify => $bool, # compress assets
     no_autodetect => $bool, # disable preprocessor autodetection
+    url_prefix => $string, # prefix for links to another domain
   };
 
 Will register the C<compress> helper. All arguments are optional.
