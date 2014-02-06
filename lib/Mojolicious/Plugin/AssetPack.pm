@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.0601
+0.0602
 
 =head1 SYNOPSIS
 
@@ -75,6 +75,16 @@ The output directory where all the compressed files are stored will be
 
   $app->home->rel_dir('public/packed');
 
+=head2 Using same code on several servers with different domain names
+
+If you use several instances of servers with same code and want recive
+static files from separate domain name (e.g. http://static.exsample.com)
+use url_prefix attribute.
+Then links to scripts and stylesheets will look like:
+
+  <script src="http://static.exsample.com/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
+  <link href="http://static.exsample.com/packed/app-8ff3e5f1c5cab970a3f597572f18d367.css" rel="stylesheet" />
+
 =head2 Preprocessors
 
 This library tries to find default preprocessors for less, scss, js and css.
@@ -92,7 +102,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.0601';
+our $VERSION = '0.0602';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -182,10 +192,10 @@ sub expand {
     return b "<!-- Cannot expand $moniker -->";
   }
   elsif($moniker =~ /\.js/) {
-    return b join "\n", map { $c->javascript($_) } @$files;
+    return b join "\n", map { $c->javascript($self->{url_prefix} . $_) } @$files;
   }
   else {
-    return b join "\n", map { $c->stylesheet($_) } @$files;
+    return b join "\n", map { $c->stylesheet($self->{url_prefix} . $_) } @$files;
   }
 }
 
@@ -276,6 +286,7 @@ sub process {
     cleanup => $bool, # default is true
     minify => $bool, # compress assets
     no_autodetect => $bool, # disable preprocessor autodetection
+    url_prefix => $string, # prefix for links to another domain
   };
 
 Will register the C<compress> helper. All arguments are optional.
@@ -299,6 +310,7 @@ sub register {
   $self->{cleanup} = $config->{cleanup} // 1;
   $self->{log} = $app->log;
   $self->{out_dir} = $config->{out_dir} || $app->home->rel_dir('public/packed');
+  $self->{url_prefix} = $config->{url_prefix} // '';
   $self->{static} = $app->static;
 
   mkdir $self->{out_dir}; # TODO: Use mkpath instead?
@@ -307,8 +319,8 @@ sub register {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
     return $self->expand(@_) unless $minify;
-    return $_[0]->javascript($self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
-    return $_[0]->stylesheet($self->{assets}{$_[1]});
+    return $_[0]->javascript($self->{url_prefix} . $self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
+    return $_[0]->stylesheet($self->{url_prefix} . $self->{assets}{$_[1]});
   });
 }
 

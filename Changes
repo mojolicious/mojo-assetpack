@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.0602   Thu Feb 06 12:01:20 2014
+       * Add support for custom url_prefix
+
 0.0601   Mon Dec 30 17:01:20 2013
        * Fix bug when asset has the same moniker as one of the source files
 
