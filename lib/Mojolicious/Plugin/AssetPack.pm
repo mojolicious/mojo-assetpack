@@ -75,6 +75,15 @@ The output directory where all the compressed files are stored will be
 
   $app->home->rel_dir('public/packed');
 
+=head2 Using same code on several servers with different domain names
+If you use several instances of servers with same code and want recive
+static files from separate domain name (e.g. http://static.exsample.com)
+use url_prefix attribute.
+Then links to scripts and stylesheets will look like:
+
+  <script src="http://static.exsample.com/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
+  <link href="http://static.exsample.com/packed/app-8ff3e5f1c5cab970a3f597572f18d367.css" rel="stylesheet" />
+
 =head2 Preprocessors
 
 This library tries to find default preprocessors for less, scss, js and css.
