@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 7;
+plan tests => 6;
 
 unlink glob 't/public/packed/*';
 
