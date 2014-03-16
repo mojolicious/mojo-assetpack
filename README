@@ -3,7 +3,7 @@ NAME
     and javascript files
 
 VERSION
-    0.0601
+    0.07
 
 SYNOPSIS
     In your application:
@@ -12,15 +12,17 @@ SYNOPSIS
 
       plugin 'AssetPack';
 
-      # add a preprocessor
-      app->asset->preprocessors->add(js => sub {
-        my($assetpack, $text, $file) = @_;
-        $$text = "// yikes!\n" if 5 < rand 10;
-      });
-
       # define assets: $moniker => @real_assets
       app->asset('app.js' => '/js/foo.js', '/js/bar.js');
       app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
+
+      # you can combine with assets from web
+      app->asset('bundle.js' => (
+        'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js',
+        'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js',
+        'http://code.jquery.com/jquery-1.11.0.js',
+        '/js/myapp.js',
+      ));
 
       app->start;
 
@@ -61,12 +63,6 @@ DESCRIPTION
 
       $ morbo -w lib -w templates -w public/sass
 
-  Packed directory
-    The output directory where all the compressed files are stored will be
-    "public/packed", relative to the application home:
-
-      $app->home->rel_dir('public/packed');
-
   Preprocessors
     This library tries to find default preprocessors for less, scss, js and
     css.
@@ -75,12 +71,24 @@ DESCRIPTION
     properly. Check out "detect" in
     Mojolicious::Plugin::AssetPack::Preprocessors for more details.
 
+    You can also define your own preprocessors:
+
+      app->asset->preprocessors->add(js => sub {
+        my($assetpack, $text, $file) = @_;
+        $$text = "// yikes!\n" if 5 < rand 10;
+      });
+
 ATTRIBUTES
   minify
     Set this to true if the assets should be minified.
 
   preprocessors
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
+
+  out_dir
+    Holds the path to the firectory where packed files can be written. It
+    defaults to "mojo-assetpack" directory in temp unless a static directory
+    is writeable.
 
   rebuild
     Deprecated.

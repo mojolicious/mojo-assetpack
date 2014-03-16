@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.0601
+0.07
 
 =head1 SYNOPSIS
 
@@ -16,15 +16,17 @@ In your application:
 
   plugin 'AssetPack';
 
-  # add a preprocessor
-  app->asset->preprocessors->add(js => sub {
-    my($assetpack, $text, $file) = @_;
-    $$text = "// yikes!\n" if 5 < rand 10;
-  });
-
   # define assets: $moniker => @real_assets
   app->asset('app.js' => '/js/foo.js', '/js/bar.js');
   app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
+
+  # you can combine with assets from web
+  app->asset('bundle.js' => (
+    'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js',
+    'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js',
+    'http://code.jquery.com/jquery-1.11.0.js',
+    '/js/myapp.js',
+  ));
 
   app->start;
 
@@ -68,13 +70,6 @@ TIP! Make morbo watch your less/sass files as well:
 
   $ morbo -w lib -w templates -w public/sass
 
-=head2 Packed directory
-
-The output directory where all the compressed files are stored will be
-"public/packed", relative to the application home:
-
-  $app->home->rel_dir('public/packed');
-
 =head2 Preprocessors
 
 This library tries to find default preprocessors for less, scss, js and css.
@@ -82,6 +77,13 @@ This library tries to find default preprocessors for less, scss, js and css.
 NOTE! The preprocessors require optional dependencies to function properly.
 Check out L<Mojolicious::Plugin::AssetPack::Preprocessors/detect> for more
 details.
+
+You can also define your own preprocessors:
+
+  app->asset->preprocessors->add(js => sub {
+    my($assetpack, $text, $file) = @_;
+    $$text = "// yikes!\n" if 5 < rand 10;
+  });
 
 =cut
 
@@ -92,7 +94,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.0601';
+our $VERSION = '0.07';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',

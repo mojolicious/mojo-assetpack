@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.07
+0.07     Sun Mar 16 12:07:46 2014
        * Add support for fetching assets from web
        * Improved support for finding a writeable out_dir
 
