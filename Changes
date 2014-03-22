@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.08     Sat Mar 22 19:14:00 2014
+       * Fix finding compiled files by MD5 sum
+
 0.07     Sun Mar 16 12:07:46 2014
        * Add support for fetching assets from web
        * Improved support for finding a writeable out_dir

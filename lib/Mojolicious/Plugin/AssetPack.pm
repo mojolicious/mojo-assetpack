@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.07
+0.08
 
 =head1 SYNOPSIS
 
@@ -94,7 +94,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -240,7 +240,7 @@ sub process {
   $out_file = $moniker;
   $out_file =~ s/\.(\w{1,4})$/-$md5_sum.$1/;
 
-  if(-s catfile $self->out_dir, $out_file) {
+  if($self->{static}->file(catfile 'packed', $out_file)) {
     $self->{log}->debug("Using existing asset for $moniker");
     $self->{assets}{$moniker} = "/packed/$out_file";
     return $self;
