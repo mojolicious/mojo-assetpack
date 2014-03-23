@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.09     Sun Mar 23 11:45:03 2014
+       * Remove option for cleaning up old asset files
+
 0.08     Sat Mar 22 19:14:00 2014
        * Fix finding compiled files by MD5 sum
 

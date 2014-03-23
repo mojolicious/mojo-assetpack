@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.08
+0.09
 
 =head1 SYNOPSIS
 
@@ -94,7 +94,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -255,9 +255,6 @@ sub process {
     $self->{assets}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
     return;
   }
-  if($self->{cleanup}) {
-    $self->_remove_processed($moniker);
-  }
 
   Mojo::Util::spurt(
     join('',
@@ -278,15 +275,11 @@ sub process {
 =head2 register
 
   plugin 'AssetPack', {
-    cleanup => $bool, # default is true
     minify => $bool, # compress assets
     no_autodetect => $bool, # disable preprocessor autodetection
   };
 
 Will register the C<compress> helper. All arguments are optional.
-
-"cleanup" will remove any old processed files. You want to disable this if you
-have other web sites that need to access an old version of the minified files.
 
 "minify" will default to true if L<Mojolicious/mode> is "production".
 
@@ -301,7 +294,6 @@ sub register {
   $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
-  $self->{cleanup} = $config->{cleanup} // 1;
   $self->{log} = $app->log;
   $self->{static} = $app->static;
 
@@ -338,18 +330,6 @@ sub _missing {
   }
 
   return int @files;
-}
-
-sub _remove_processed {
-  my($self, $moniker) = @_;
-  my($name, $ext) = $moniker =~ m!^(.+)\.(\w+)$!;
-
-  opendir(my $DH, $self->out_dir);
-  for my $file (readdir $DH) {
-    $file =~ m!^$name-\w{32}\.$ext! or next;
-    $self->{log}->debug("Removing $self->{out_dir}/$file");
-    unlink catfile($self->out_dir, $file) or die "Could not unlink $self->{out_dir}/$file: $!";
-  }
 }
 
 # NOTE This method is kind of evil, since it use $_

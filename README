@@ -3,7 +3,7 @@ NAME
     and javascript files
 
 VERSION
-    0.08
+    0.09
 
 SYNOPSIS
     In your application:
@@ -128,16 +128,11 @@ METHODS
 
   register
       plugin 'AssetPack', {
-        cleanup => $bool, # default is true
         minify => $bool, # compress assets
         no_autodetect => $bool, # disable preprocessor autodetection
       };
 
     Will register the "compress" helper. All arguments are optional.
-
-    "cleanup" will remove any old processed files. You want to disable this
-    if you have other web sites that need to access an old version of the
-    minified files.
 
     "minify" will default to true if "mode" in Mojolicious is "production".
 
