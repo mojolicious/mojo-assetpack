@@ -87,7 +87,8 @@ sub detect {
   if(my $app = which('sass')) {
     $self->add(scss => sub {
       my($assetpack, $text, $file) = @_;
-      run3([$app, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+      my $include_dir = dirname $file;
+      run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
     });
   }
   if(eval 'require JavaScript::Minifier::XS; 1') {
