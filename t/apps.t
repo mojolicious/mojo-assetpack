@@ -36,6 +36,16 @@ my $assetpack;
 }
 
 {
+  my $bin = qx{which coffee};
+  if($bin =~ /\w/) {
+    ok $assetpack->preprocessors->has_subscribers('coffee'), 'found preprocessor for coffee';
+  }
+  else {
+    ok !$assetpack->preprocessors->has_subscribers('coffee'), 'did not find preprocessor for coffee';
+  }
+}
+
+{
   ok $assetpack->preprocessors->has_subscribers('js'), 'found preprocessor for js';
 }
 

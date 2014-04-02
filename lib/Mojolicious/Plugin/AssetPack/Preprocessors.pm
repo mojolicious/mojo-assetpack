@@ -71,6 +71,15 @@ be installed manually.
 
 EXPERIMENTAL! Not sure if this is the best minifier.
 
+=item * coffee
+
+CoffeeScript is a little language that compiles into JavaScript. See
+L<http://coffeescript.org> for more information.
+
+Installation on Ubuntu and Debian:
+
+  $ npm install -g coffee-script
+
 =back
 
 =cut
@@ -89,6 +98,20 @@ sub detect {
       my($assetpack, $text, $file) = @_;
       my $include_dir = dirname $file;
       run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+    });
+  }
+  if(my $app = which('coffee')) {
+    $self->add(coffee => sub {
+      my($assetpack, $text, $file) = @_;
+      my $err;
+      run3([$app, '--compile', '--stdio'], $text, $text, \$err);
+      if ($assetpack->minify && eval 'require JavaScript::Minifier::XS; 1') {
+        $$text = JavaScript::Minifier::XS::minify($$text);
+      }
+      if ($err) {
+        $assetpack->{log}->warn("Error processing $file: $err");
+      }
+      $$text;
     });
   }
   if(eval 'require JavaScript::Minifier::XS; 1') {
