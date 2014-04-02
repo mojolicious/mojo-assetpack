@@ -159,10 +159,19 @@ sub add {
     $self->process($moniker => @files);
   }
   else {
+    my %extensions = (
+      less => 'css',
+      sass => 'css',
+      scss => 'css',
+      coffee => 'js',
+    );
     for my $file (@files) {
-      next unless $file =~ /\.(less|s[ac]ss)$/;
+      my ($extension) = $file =~ /\.(\w+)$/;
+      next unless exists $extensions{$extension};
+      my $target_ext = $extensions{$extension};
+
       my $moniker = basename $file;
-      $moniker =~ s/\.\w+$/.css/;
+      $moniker =~ s/\.\w+$/.$target_ext/;
       $self->process($moniker => $file);
       $file = delete $self->{assets}{$moniker};
     }
@@ -238,7 +247,7 @@ sub process {
   $md5_sum = Mojo::Util::md5_sum(join '', map { $content->{$_} = $self->_slurp } @files);
 
   $out_file = $moniker;
-  $out_file =~ s/\.(\w{1,4})$/-$md5_sum.$1/;
+  $out_file =~ s/\.(\w+)$/-$md5_sum.$1/;
 
   if($self->{static}->file(catfile 'packed', $out_file)) {
     $self->{log}->debug("Using existing asset for $moniker");
@@ -247,7 +256,7 @@ sub process {
   }
 
   for my $file (@files) {
-    next if $file =~ /\.(\w{1,4})$/ and $self->preprocessors->has_subscribers($1);
+    next if $file =~ /\.(\w+)$/ and $self->preprocessors->has_subscribers($1);
     push @missing, $file; # will also contain files without extensions
   }
 
@@ -259,7 +268,7 @@ sub process {
   Mojo::Util::spurt(
     join('',
       map {
-        /\.(\w{1,4})$/; # checked in @missing loop
+        /\.(\w+)$/; # checked in @missing loop
         $self->preprocessors->process($1, $self, \$content->{$_}, $_);
         $content->{$_};
       } @files

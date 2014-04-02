@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 27;
+plan tests => 33;
 
 unlink glob 't/public/packed/*';
 
@@ -16,12 +16,14 @@ my $assetpack;
 
   app->asset('app.js' => '/js/a.js', '/js/b.js');
   app->asset('app.css' => '/css/c.css', '/css/d.css');
+  app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
   $assetpack = app->asset;
 
   get '/js' => 'js';
   get '/less' => 'less';
   get '/sass' => 'sass';
   get '/css' => 'css';
+  get '/coffee' => 'coffee';
 }
 
 my $t = Test::Mojo->new;
@@ -83,6 +85,19 @@ SKIP: {
     ;
 }
 
+SKIP: {
+  skip 'Could not find preprocessors for coffee', 6 unless $assetpack->preprocessors->has_subscribers('coffee');
+
+  $t->get_ok('/coffee')
+    ->status_is(200)
+    ->content_like(qr{<script src="/packed/coffee-\w+\.js".*}m)
+    ;
+  $t->get_ok($t->tx->res->dom->at('script')->{src})
+    ->status_is(200)
+    ->content_like(qr{c coffee.*d coffee})
+    ;
+}
+
 __DATA__
 @@ js.html.ep
 %= asset 'app.js'
@@ -92,3 +107,5 @@ __DATA__
 %= asset 'sass.css'
 @@ css.html.ep
 %= asset 'app.css'
+@@ coffee.html.ep
+%= asset 'coffee.js'

@@ -91,6 +91,20 @@ sub detect {
       run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
     });
   }
+  if(my $app = which('coffee')) {
+    $self->add(coffee => sub {
+      my($assetpack, $text, $file) = @_;
+      my $err;
+      run3([$app, '--compile', '--stdio'], $text, $text, \$err);
+      if ($assetpack->minify && eval 'require JavaScript::Minifier::XS; 1') {
+        $$text = JavaScript::Minifier::XS::minify($$text);
+      }
+      if ($err) {
+        $assetpack->{log}->warn("Error processing $file: $err");
+      }
+      $$text;
+    });
+  }
   if(eval 'require JavaScript::Minifier::XS; 1') {
     $self->add(js => sub {
       my($assetpack, $text, $file) = @_;
