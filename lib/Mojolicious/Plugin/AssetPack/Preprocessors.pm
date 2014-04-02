@@ -71,6 +71,15 @@ be installed manually.
 
 EXPERIMENTAL! Not sure if this is the best minifier.
 
+=item * coffee
+
+CoffeeScript is a little language that compiles into JavaScript. See
+L<http://coffeescript.org> for more information.
+
+Installation on Ubuntu and Debian:
+
+  $ npm install -g coffee-script
+
 =back
 
 =cut

@@ -2,7 +2,7 @@ package Mojolicious::Plugin::AssetPack;
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javascript files
+Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
 
 =head1 VERSION
 
@@ -17,7 +17,7 @@ In your application:
   plugin 'AssetPack';
 
   # define assets: $moniker => @real_assets
-  app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+  app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
   app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
 
   # you can combine with assets from web
@@ -47,9 +47,9 @@ See also L</register>.
 
 =head2 Production mode
 
-This plugin will compress scss, less, css and javascript with the help of
-external applications on startup. The result will be one file with all the
-sources combined. This file is stored in L</Packed directory>.
+This plugin will compress scss, less, css, javascript and coffeescript with the
+help of external applications on startup. The result will be one file with all
+the sources combined. This file is stored in L</Packed directory>.
 
 The files in the packed directory will have a checksum added to the
 filename which will ensure broken browsers request a new version once the
@@ -72,7 +72,8 @@ TIP! Make morbo watch your less/sass files as well:
 
 =head2 Preprocessors
 
-This library tries to find default preprocessors for less, scss, js and css.
+This library tries to find default preprocessors for less, scss, js, coffee
+and css.
 
 NOTE! The preprocessors require optional dependencies to function properly.
 Check out L<Mojolicious::Plugin::AssetPack::Preprocessors/detect> for more
@@ -100,6 +101,7 @@ our %MISSING_ERROR = (
   less => '%s require "less". http://lesscss.org/#usage',
   sass => '%s require "sass". http://sass-lang.com/install',
   scss => '%s require "sass". http://sass-lang.com/install',
+  coffee => '%s require "coffee". http://coffeescript.org/#installation',
 );
 
 =head1 ATTRIBUTES
@@ -187,8 +189,8 @@ sub add {
 
 This method will return one tag for each asset defined by the "$moniker".
 
-Will also run L</less> or L</sass> on the files to convert them to css, which
-the browser understand.
+Will also run L</less>, L</sass> or L</coffee> on the files to convert them to
+css or js, which the browser understands.
 
 The returning bytestream will contain style or script tags.
 
