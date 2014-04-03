@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 
 plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-plan tests => 23;
+plan tests => 29;
 
 unlink glob 't/public/packed/*';
 
@@ -18,6 +18,7 @@ my $assetpack;
   app->asset('app.js' => '/js/a.js', '/js/b.js');
   app->asset('less.css' => '/css/a.less', '/css/b.less');
   app->asset('x.css' => '/sass/x.scss'); # fixed in 0.0601
+  app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
   $assetpack = app->asset;
 
   get '/js' => 'js';
@@ -25,6 +26,7 @@ my $assetpack;
   get '/sass' => 'sass';
   get '/css' => 'css';
   get '/undefined' => 'undefined';
+  get '/coffee' => 'coffee';
 }
 
 my $t = Test::Mojo->new;
@@ -82,6 +84,24 @@ SKIP: {
   $t->get_ok('/css/b.css')->content_like(qr{b1b1b1;});
 }
 
+SKIP: {
+  skip 'Could not find preprocessors for coffee', 6 unless $assetpack->preprocessors->has_subscribers('coffee');
+
+  $t->get_ok('/coffee')
+    ->status_is(200)
+    ->content_like(qr{<script \s src="/packed/c-\w+\.js"
+                      .*
+                      <script \s src="/packed/d-\w+\.js"
+                   }sx)
+    ;
+
+  $t->get_ok($t->tx->res->dom->at('script')->{src})
+    ->status_is(200)
+    ->content_like(qr{console\.log\(['"]hello from c coffee})
+    ;
+}
+
+
 __DATA__
 @@ js.html.ep
 %= asset 'app.js'
@@ -93,3 +113,5 @@ __DATA__
 %= asset 'app.css'
 @@ undefined.html.ep
 %= asset 'undefined.css'
+@@ coffee.html.ep
+%= asset 'coffee.js'
