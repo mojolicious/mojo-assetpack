@@ -328,7 +328,10 @@ sub register {
   my $helper = $config->{helper} || 'asset';
   my $reprocess = $config->{reprocess} // 0;
 
-  die "Cannot use reprocess with minify" if $minify && $reprocess;
+  if ($minify && $reprocess) {
+    warn "Cannot use reprocess with minify; reprocess is disabled";
+    $reprocess = 0;
+  }
 
   $self->minify($minify);
   $self->reprocess($reprocess);
