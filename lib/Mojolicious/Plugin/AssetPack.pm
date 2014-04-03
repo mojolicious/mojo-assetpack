@@ -313,6 +313,7 @@ sub process {
 
   plugin 'AssetPack', {
     minify => $bool, # compress assets
+    reprocess => $bool, # run preprocessors each time on page refresh
     no_autodetect => $bool, # disable preprocessor autodetection
   };
 
