@@ -66,8 +66,12 @@ makes debugging and development easier.
 
 This is done using L</expand>.
 
-TIP! Set L</reprocess> to true to convert your less/sass/coffee files each time
-they're requested.
+TIP! Make morbo watch your less/sass files as well:
+
+  $ morbo -w lib -w templates -w public/sass
+
+You can also set L</reprocess> to true to convert your less/sass/coffee files
+each time they're requested.
 
 =head2 Preprocessors
 
