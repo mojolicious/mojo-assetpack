@@ -66,8 +66,12 @@ makes debugging and development easier.
 
 This is done using L</expand>.
 
-TIP! Set L</reprocess> to true to convert your less/sass/coffee files each time
-they're requested.
+TIP! Make morbo watch your less/sass files as well:
+
+  $ morbo -w lib -w templates -w public/sass
+
+You can also set L</reprocess> to true to convert your less/sass/coffee files
+each time they're requested.
 
 =head2 Preprocessors
 
@@ -309,6 +313,7 @@ sub process {
 
   plugin 'AssetPack', {
     minify => $bool, # compress assets
+    reprocess => $bool, # run preprocessors each time on page refresh
     no_autodetect => $bool, # disable preprocessor autodetection
   };
 
@@ -324,7 +329,10 @@ sub register {
   my $helper = $config->{helper} || 'asset';
   my $reprocess = $config->{reprocess} // 0;
 
-  die "Cannot use reprocess with minify" if $minify && $reprocess;
+  if ($minify && $reprocess) {
+    warn "Cannot use reprocess with minify; reprocess is disabled";
+    $reprocess = 0;
+  }
 
   $self->minify($minify);
   $self->reprocess($reprocess);
