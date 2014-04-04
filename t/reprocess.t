@@ -17,9 +17,7 @@ sub test_reprocess {
 
   {
     use Mojolicious::Lite;
-    plugin 'AssetPack' => {
-      minify => 0, reprocess => $args{reprocess}
-    };
+    plugin 'AssetPack' => { minify => 0 };
 
     app->asset('coffee.js' => '/reprocess/current.coffee');
     $assetpack = app->asset;
@@ -57,15 +55,18 @@ sub test_reprocess {
       ->content_like(qr{console\.log\(['"]$new_text})
       ;
 
-    # Return the filesystem to original state.
+    # Return the filesystem to the original state.
     copy("$FindBin::Bin/public/reprocess/current.coffee.original",
          "$FindBin::Bin/public/reprocess/current.coffee");
 
   }
 }
 
-test_reprocess(reprocess => 1, new_text => 'new');
-test_reprocess(reprocess => 0, new_text => 'current');
+$ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND} = 1;
+test_reprocess(new_text => 'new');
+
+delete $ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND};
+test_reprocess(new_text => 'current');
 
 __DATA__
 @@ coffee.html.ep
