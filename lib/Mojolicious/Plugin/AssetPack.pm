@@ -70,9 +70,9 @@ TIP! Make morbo watch your less/sass files as well:
 
   $ morbo -w lib -w templates -w public/sass
 
-You can also set the L</MOJO_ASSETPACK_PROCESS_ON_EXPAND> environment variable to 1 to
-convert your less/sass/coffee files each time their asset directive is
-expanded (only works when minify is disabled).
+You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
+convert your less/sass/coffee files each time their asset directive is expanded
+(only works when L</minify> is disabled).
 
 =head2 Preprocessors
 
@@ -164,7 +164,7 @@ sub add {
   if($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif ($ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND}) {
+  elsif ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
     # Do nothing, as the assets will be processed each time in expand.
   }
   else {
@@ -203,7 +203,7 @@ sub _process_many {
 This method will return one tag for each asset defined by the "$moniker".
 
 Will also run L</less>, L</sass> or L</coffee> on the files to convert them to
-css or js, which the browser understands. (With L</MOJO_ASSETPACK_PROCESS_ON_EXPAND>
+css or js, which the browser understands. (With L</MOJO_ASSETPACK_NO_CACHE>
 enabled, this is done each time on expand; with it disabled, this is done once
 when the asset is added.)
 
@@ -220,7 +220,7 @@ sub expand {
   }
 
   my @processed_files;
-  if ($ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND}) {
+  if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
     @processed_files = $self->_process_many($moniker, @$files);
   }
   else {
@@ -396,10 +396,11 @@ sub _slurp {
 
 =head1 ENVIRONMENT
 
-=head2 MOJO_ASSETPACK_PROCESS_ON_EXPAND
+=head2 MOJO_ASSETPACK_NO_CACHE
 
-If true, reprocess the assets each time they're expanded (useful for
-development). Has no effect when L</minify> is enabled.
+If true, convert the assets each time they're expanded, instead of once at
+application start (useful for development). Has no effect when L</minify> is
+enabled.
 
 =head1 AUTHOR
 

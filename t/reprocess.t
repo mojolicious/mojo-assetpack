@@ -62,10 +62,10 @@ sub test_reprocess {
   }
 }
 
-$ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND} = 1;
+$ENV{MOJO_ASSETPACK_NO_CACHE} = 1;
 test_reprocess(new_text => 'new');
 
-delete $ENV{MOJO_ASSETPACK_PROCESS_ON_EXPAND};
+delete $ENV{MOJO_ASSETPACK_NO_CACHE};
 test_reprocess(new_text => 'current');
 
 __DATA__
