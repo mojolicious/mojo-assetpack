@@ -129,6 +129,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 has minify => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir => sub { File::Spec::Functions::catdir(File::Spec::Functions::tmpdir(), 'mojo-assetpack') };
+has _no_cache => 0;
 
 =head2 rebuild
 
@@ -164,7 +165,7 @@ sub add {
   if($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
+  elsif ($self->_no_cache) {
     # Do nothing, as the assets will be processed each time in expand.
   }
   else {
@@ -220,7 +221,7 @@ sub expand {
   }
 
   my @processed_files;
-  if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
+  if ($self->_no_cache) {
     @processed_files = $self->_process_many($moniker, @$files);
   }
   else {
@@ -327,6 +328,7 @@ sub register {
 
   $self->minify($minify);
   $self->preprocessors->detect unless $config->{no_autodetect};
+  $self->_no_cache($ENV{MOJO_ASSETPACK_NO_CACHE});
 
   $self->{assets} = {};
   $self->{log} = $app->log;
