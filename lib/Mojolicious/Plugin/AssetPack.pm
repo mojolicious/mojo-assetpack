@@ -70,6 +70,10 @@ TIP! Make morbo watch your less/sass files as well:
 
   $ morbo -w lib -w templates -w public/sass
 
+You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
+convert your less/sass/coffee files each time their asset directive is expanded
+(only works when L</minify> is disabled).
+
 =head2 Preprocessors
 
 This library tries to find default preprocessors for less, scss, js, coffee
@@ -125,6 +129,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 has minify => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir => sub { File::Spec::Functions::catdir(File::Spec::Functions::tmpdir(), 'mojo-assetpack') };
+has _no_cache => 0;
 
 =head2 rebuild
 
@@ -160,27 +165,36 @@ sub add {
   if($self->minify) {
     $self->process($moniker => @files);
   }
+  elsif ($self->_no_cache) {
+    # Do nothing, as the assets will be processed each time in expand.
+  }
   else {
-    my %extensions = (
-      less => 'css',
-      sass => 'css',
-      scss => 'css',
-      coffee => 'js',
-    );
-    for my $file (@files) {
-      my ($extension) = $file =~ /\.(\w+)$/;
-      next unless exists $extensions{$extension};
-      my $target_ext = $extensions{$extension};
-
-      my $moniker = basename $file;
-      $moniker =~ s/\.\w+$/.$target_ext/;
-      $self->process($moniker => $file);
-      $file = delete $self->{assets}{$moniker};
-    }
-    $self->{assets}{$moniker} = \@files;
+    my @processed_files = $self->_process_many($moniker, @files);
+    $self->{assets}{$moniker} = \@processed_files;
   }
 
   $self;
+}
+
+sub _process_many {
+  my($self, $moniker, @files) = @_;
+  my %extensions = (
+    less => 'css',
+    sass => 'css',
+    scss => 'css',
+    coffee => 'js',
+  );
+  for my $file (@files) {
+    my ($extension) = $file =~ /\.(\w+)$/;
+    next unless exists $extensions{$extension};
+    my $target_ext = $extensions{$extension};
+
+    my $moniker = basename $file;
+    $moniker =~ s/\.\w+$/.$target_ext/;
+    $self->process($moniker => $file);
+    $file = delete $self->{assets}{$moniker};
+  }
+  return @files;
 }
 
 =head2 expand
@@ -190,7 +204,9 @@ sub add {
 This method will return one tag for each asset defined by the "$moniker".
 
 Will also run L</less>, L</sass> or L</coffee> on the files to convert them to
-css or js, which the browser understands.
+css or js, which the browser understands. (With L</MOJO_ASSETPACK_NO_CACHE>
+enabled, this is done each time on expand; with it disabled, this is done once
+when the asset is added.)
 
 The returning bytestream will contain style or script tags.
 
@@ -203,11 +219,20 @@ sub expand {
   if(!ref $files) {
     return b "<!-- Cannot expand $moniker -->";
   }
-  elsif($moniker =~ /\.js/) {
-    return b join "\n", map { $c->javascript($_) } @$files;
+
+  my @processed_files;
+  if ($self->_no_cache) {
+    @processed_files = $self->_process_many($moniker, @$files);
   }
   else {
-    return b join "\n", map { $c->stylesheet($_) } @$files;
+    @processed_files = @$files;
+  }
+
+  if($moniker =~ /\.js/) {
+    return b join "\n", map { $c->javascript($_) } @processed_files;
+  }
+  else {
+    return b join "\n", map { $c->stylesheet($_) } @processed_files;
   }
 }
 
@@ -303,6 +328,7 @@ sub register {
 
   $self->minify($minify);
   $self->preprocessors->detect unless $config->{no_autodetect};
+  $self->_no_cache($ENV{MOJO_ASSETPACK_NO_CACHE});
 
   $self->{assets} = {};
   $self->{log} = $app->log;
@@ -369,6 +395,14 @@ sub _slurp {
 
   die "Could not find asset for ($file)";
 }
+
+=head1 ENVIRONMENT
+
+=head2 MOJO_ASSETPACK_NO_CACHE
+
+If true, convert the assets each time they're expanded, instead of once at
+application start (useful for development). Has no effect when L</minify> is
+enabled.
 
 =head1 AUTHOR
 
