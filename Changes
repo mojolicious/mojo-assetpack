@@ -1,12 +1,16 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.10     Thu May  8 19:09:00 2014
+
+0.11     Thu May  8 19:13:41 2014
        * Add CoffeScript support. (Alexander Rymasheusky)
          https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/7
        * Add -I<path_to_dir> to sass command line (Per Edin)
          https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/5
        * Add support for MOJO_ASSETPACK_NO_CACHE=1 (Alexander Rymasheusky)
          https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/9
+
+0.10     Thu May  8 19:09:00 2014
+       * See 0.11
 
 0.09     Sun Mar 23 11:45:03 2014
        * Remove option for cleaning up old asset files

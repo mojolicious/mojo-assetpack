@@ -1,9 +1,9 @@
 NAME
-    Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass
-    and javascript files
+    Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass,
+    javascript and coffeescript files
 
 VERSION
-    0.10
+    0.11
 
 SYNOPSIS
     In your application:
@@ -13,7 +13,7 @@ SYNOPSIS
       plugin 'AssetPack';
 
       # define assets: $moniker => @real_assets
-      app->asset('app.js' => '/js/foo.js', '/js/bar.js');
+      app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
       app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
 
       # you can combine with assets from web
@@ -39,11 +39,18 @@ SYNOPSIS
 
     See also "register".
 
+ENVIRONMENT
+  MOJO_ASSETPACK_NO_CACHE
+    If true, convert the assets each time they're expanded, instead of once
+    at application start (useful for development). Has no effect when
+    "minify" is enabled.
+
 DESCRIPTION
   Production mode
-    This plugin will compress scss, less, css and javascript with the help
-    of external applications on startup. The result will be one file with
-    all the sources combined. This file is stored in "Packed directory".
+    This plugin will compress scss, less, css, javascript and coffeescript
+    with the help of external applications on startup. The result will be
+    one file with all the sources combined. This file is stored in "Packed
+    directory".
 
     The files in the packed directory will have a checksum added to the
     filename which will ensure broken browsers request a new version once
@@ -63,9 +70,13 @@ DESCRIPTION
 
       $ morbo -w lib -w templates -w public/sass
 
+    You can also set the "MOJO_ASSETPACK_NO_CACHE" environment variable to 1
+    to convert your less/sass/coffee files each time their asset directive
+    is expanded (only works when "minify" is disabled).
+
   Preprocessors
-    This library tries to find default preprocessors for less, scss, js and
-    css.
+    This library tries to find default preprocessors for less, scss, js,
+    coffee and css.
 
     NOTE! The preprocessors require optional dependencies to function
     properly. Check out "detect" in
@@ -106,8 +117,10 @@ METHODS
     This method will return one tag for each asset defined by the
     "$moniker".
 
-    Will also run "less" or "sass" on the files to convert them to css,
-    which the browser understand.
+    Will also run "less", "sass" or "coffee" on the files to convert them to
+    css or js, which the browser understands. (With
+    "MOJO_ASSETPACK_NO_CACHE" enabled, this is done each time on expand;
+    with it disabled, this is done once when the asset is added.)
 
     The returning bytestream will contain style or script tags.
 
