@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass and javasc
 
 =head1 VERSION
 
-0.09
+0.10
 
 =head1 SYNOPSIS
 
@@ -94,7 +94,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -359,9 +359,22 @@ sub _slurp {
   die "Could not find asset for ($file)";
 }
 
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2014, Jan Henning Thorsen.
+
+This program is free software, you can redistribute it and/or modify it under
+the terms of the Artistic License version 2.0.
+
 =head1 AUTHOR
 
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
+
+Alexander Rymasheusky
+
+Per Edin - C<info@peredin.com>
+
+Viktor Turskyi
 
 =cut
 
