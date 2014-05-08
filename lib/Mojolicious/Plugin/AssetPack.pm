@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.09
+0.10
 
 =head1 SYNOPSIS
 
@@ -42,6 +42,14 @@ Or if you need to add the tags manually:
   % }
 
 See also L</register>.
+
+=head1 ENVIRONMENT
+
+=head2 MOJO_ASSETPACK_NO_CACHE
+
+If true, convert the assets each time they're expanded, instead of once at
+application start (useful for development). Has no effect when L</minify> is
+enabled.
 
 =head1 DESCRIPTION
 
@@ -99,7 +107,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -396,17 +404,22 @@ sub _slurp {
   die "Could not find asset for ($file)";
 }
 
-=head1 ENVIRONMENT
+=head1 COPYRIGHT AND LICENSE
 
-=head2 MOJO_ASSETPACK_NO_CACHE
+Copyright (C) 2014, Jan Henning Thorsen.
 
-If true, convert the assets each time they're expanded, instead of once at
-application start (useful for development). Has no effect when L</minify> is
-enabled.
+This program is free software, you can redistribute it and/or modify it under
+the terms of the Artistic License version 2.0.
 
 =head1 AUTHOR
 
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
+
+Alexander Rymasheusky
+
+Per Edin - C<info@peredin.com>
+
+Viktor Turskyi
 
 =cut
 
