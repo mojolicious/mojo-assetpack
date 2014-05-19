@@ -137,7 +137,6 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 has minify => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir => sub { File::Spec::Functions::catdir(File::Spec::Functions::tmpdir(), 'mojo-assetpack') };
-has _no_cache => 0;
 
 =head2 rebuild
 
@@ -173,12 +172,9 @@ sub add {
   if($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif ($self->_no_cache) {
-    # Do nothing, as the assets will be processed each time in expand.
-  }
-  else {
+  elsif(!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
     my @processed_files = $self->_process_many($moniker, @files);
-    $self->{assets}{$moniker} = \@processed_files;
+    $self->{processed}{$moniker} = \@processed_files;
   }
 
   $self;
@@ -200,7 +196,7 @@ sub _process_many {
     my $moniker = basename $file;
     $moniker =~ s/\.\w+$/.$target_ext/;
     $self->process($moniker => $file);
-    $file = delete $self->{assets}{$moniker};
+    $file = $self->{processed}{$moniker};
   }
   return @files;
 }
@@ -222,18 +218,16 @@ The returning bytestream will contain style or script tags.
 
 sub expand {
   my($self, $c, $moniker) = @_;
-  my $files = $self->{assets}{$moniker};
-
-  if(!ref $files) {
-    return b "<!-- Cannot expand $moniker -->";
-  }
-
   my @processed_files;
-  if ($self->_no_cache) {
-    @processed_files = $self->_process_many($moniker, @$files);
+
+  if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
+    @processed_files = $self->_process_many($moniker, @{ $self->{assets}{$moniker} });
+  }
+  elsif(ref $self->{processed}{$moniker} eq 'ARRAY') {
+    @processed_files = @{ $self->{processed}{$moniker} };
   }
   else {
-    @processed_files = @$files;
+    return b "<!-- Cannot expand $moniker -->";
   }
 
   if($moniker =~ /\.js/) {
@@ -255,7 +249,7 @@ contain one file if the C<$moniker> is minified.
 
 sub get {
   my($self, $moniker) = @_;
-  my $files = $self->{assets}{$moniker};
+  my $files = $self->{processed}{$moniker};
 
   return unless $files;
   return @$files if ref $files;
@@ -286,7 +280,7 @@ sub process {
 
   if($self->{static}->file(catfile 'packed', $out_file)) {
     $self->{log}->debug("Using existing asset for $moniker");
-    $self->{assets}{$moniker} = "/packed/$out_file";
+    $self->{processed}{$moniker} = "/packed/$out_file";
     return $self;
   }
 
@@ -296,7 +290,7 @@ sub process {
   }
 
   if($self->_missing(@missing)) {
-    $self->{assets}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
+    $self->{processed}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
     return;
   }
 
@@ -312,8 +306,8 @@ sub process {
   );
 
   $self->{log}->debug("Built asset for $moniker ($out_file)");
-  $self->{assets}{$moniker} = "/packed/$out_file";
-  return $self;
+  $self->{processed}{$moniker} = "/packed/$out_file";
+  $self;
 }
 
 =head2 register
@@ -336,9 +330,9 @@ sub register {
 
   $self->minify($minify);
   $self->preprocessors->detect unless $config->{no_autodetect};
-  $self->_no_cache($ENV{MOJO_ASSETPACK_NO_CACHE});
 
   $self->{assets} = {};
+  $self->{processed} = {};
   $self->{log} = $app->log;
   $self->{static} = $app->static;
 
@@ -361,8 +355,8 @@ sub register {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
     return $self->expand(@_) unless $minify;
-    return $_[0]->javascript($self->{assets}{$_[1]}) if $_[1] =~ /\.js$/;
-    return $_[0]->stylesheet($self->{assets}{$_[1]});
+    return $_[0]->javascript($self->{processed}{$_[1]}) if $_[1] =~ /\.js$/;
+    return $_[0]->stylesheet($self->{processed}{$_[1]});
   });
 }
 

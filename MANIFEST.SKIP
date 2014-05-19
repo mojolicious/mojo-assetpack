@@ -5,6 +5,7 @@
 ~$
 ^blib/
 ^cover_db/
+^t/public/packed
 ^Makefile$
 ^MANIFEST.*
 ^MYMETA*

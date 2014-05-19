@@ -13,3 +13,5 @@
 *.swp
 ~$
 /Mojolicious-Plugin-AssetPack*tar.gz
+/public/packed/
+/t/public/packed/
