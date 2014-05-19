@@ -278,7 +278,7 @@ sub process {
   $out_file = $moniker;
   $out_file =~ s/\.(\w+)$/-$md5_sum.$1/;
 
-  if($self->{static}->file(catfile 'packed', $out_file)) {
+  if(!$ENV{MOJO_ASSETPACK_NO_CACHE} and $self->{static}->file(catfile 'packed', $out_file)) {
     $self->{log}->debug("Using existing asset for $moniker");
     $self->{processed}{$moniker} = "/packed/$out_file";
     return $self;
