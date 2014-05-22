@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.12
+0.12     Thu May 22 21:39:43 2014
        * Allow asset moniker with same name as expanded packed filename.
 
 0.11     Thu May  8 19:13:41 2014
