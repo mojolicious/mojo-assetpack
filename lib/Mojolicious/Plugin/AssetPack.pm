@@ -85,7 +85,7 @@ convert your less/sass/coffee files each time their asset directive is expanded
 =head2 Preprocessors
 
 This library tries to find default preprocessors for less, scss, js, coffee
-and css.
+and css. It tries to deal with associated libraries such as compass as well.
 
 NOTE! The preprocessors require optional dependencies to function properly.
 Check out L<Mojolicious::Plugin::AssetPack::Preprocessors/detect> for more

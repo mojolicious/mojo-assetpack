@@ -97,7 +97,27 @@ sub detect {
     $self->add(scss => sub {
       my($assetpack, $text, $file) = @_;
       my $include_dir = dirname $file;
-      run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+      my $err;
+      if (grep("compass",$text))
+      {
+        $assetpack->{log}->warn("compass detected!!!!!");
+        if(which('compass')) 
+        {
+          run3([$app,$assetpack->minify ? ('-t', 'compressed') : (),'--stdin','--scss','--compass',], $text, $text,\$err);
+          if ($err) {
+            $assetpack->{log}->warn("Error processing $file: $err");
+          }
+        }else
+        {
+          $assetpack->{log}->info("Error: import of compass modules in $file while the compass command is not found."); 
+        }
+      }else
+      {
+        run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text,\$err);
+        if ($err) {
+          $assetpack->{log}->warn("Error processing $file: $err");
+        }
+      } 
     });
   }
   if(my $app = which('coffee')) {
