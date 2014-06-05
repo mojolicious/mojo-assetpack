@@ -138,15 +138,15 @@ called with the C<$assetpack> object as the first argument.
 =cut
 
 sub process {
-  my $self = shift;
+  my($self, $extension, $assetpack, $text, $filename) = @_;
   my $old_dir = getcwd;
 
   eval {
-    chdir dirname $_[3];
-    $_->(@_) for @{ $self->subscribers(shift) };
+    chdir dirname $filename;
+    $_->($assetpack, $text, $filename) for @{ $self->subscribers($extension) };
     1;
   } or do {
-    $self->emit(error => "process $_[3]: $@");
+    $self->emit(error => "process $filename: $@");
   };
 
   chdir $old_dir;
