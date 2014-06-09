@@ -189,10 +189,9 @@ sub _process_many {
     coffee => 'js',
   );
   for my $file (@files) {
-    my ($extension) = $file =~ /\.(\w+)$/;
-    next unless exists $extensions{$extension};
-    my $target_ext = $extensions{$extension};
-
+    $file =~ /\.(\w+)$/ or next;
+    exists $extensions{$1} or next;
+    my $target_ext = $extensions{$1};
     my $moniker = basename $file;
     $moniker =~ s/\.\w+$/.$target_ext/;
     $self->process($moniker => $file);
