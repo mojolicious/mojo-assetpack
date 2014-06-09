@@ -1,6 +1,7 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.1201
+0.13
+       * Fix including online assets without extension
        * Fix Use of uninitialized value $_[3] in concatenation
 
 0.12     Thu May 22 21:39:43 2014

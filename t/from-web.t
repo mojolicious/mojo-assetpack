@@ -20,7 +20,7 @@ my $t = Test::Mojo->new;
   $t->get_ok('/js')->status_is(200)->content_like(qr{<script src="/packed/app-\w+\.js".*}m);
   $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{jQuery}s);
 
-  ok -s 't/public/packed/http___code.jquery.com_jquery-1.11.0.min.js', 'cached jquery asset';
+  ok -s 't/public/packed/http___code_jquery_com_jquery_1_11_0_min_js.js', 'cached jquery asset';
 }
 
 done_testing;

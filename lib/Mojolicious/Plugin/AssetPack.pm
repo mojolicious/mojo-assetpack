@@ -268,14 +268,11 @@ The result file will be stored in L</Packed directory>.
 =cut
 
 sub process {
-  my($self, $moniker, @files) = @_;
-  my($md5_sum, $out, $out_file, @missing);
-  my $content = {};
+  my ($self, $moniker, @files) = @_;
+  my ($md5_sum, $content) = $self->_read_files(\@files);
+  my $out_file = $moniker;
+  my @missing;
 
-  # @files will contain full path after this map {}
-  $md5_sum = Mojo::Util::md5_sum(join '', map { $content->{$_} = $self->_slurp } @files);
-
-  $out_file = $moniker;
   $out_file =~ s/\.(\w+)$/-$md5_sum.$1/;
 
   if(!$ENV{MOJO_ASSETPACK_NO_CACHE} and $self->{static}->file(catfile 'packed', $out_file)) {
@@ -371,31 +368,40 @@ sub _missing {
   return int @files;
 }
 
-# NOTE This method is kind of evil, since it use $_
-sub _slurp {
-  my $self = shift;
-  my $file = $_;
-  my $asset;
+# this method will change the values in @$files
+sub _read_files {
+  my ($self, $files) = @_;
+  my %content;
 
-  if(/^https?:/) {
-    $asset = $file;
-    $asset =~ s![^\w\.\-]!_!g;
-    $asset = catfile($self->out_dir, $asset);
-    $_ = $asset;
+  FILE:
+  for my $file (@$files) {
+    if($file =~ /^https?:/) {
+      my $url = $file;
+      $file =~ s!\W!_!g;
 
-    return Mojo::Util::slurp($asset) if -s $asset;
+      opendir(my $DH, $self->out_dir);
+      for my $f (readdir $DH) {
+        $f =~ m!^$file\b! or next;
+        $file = catfile($self->out_dir, $f);
+        $content{$file} = Mojo::Util::slurp($file);
+        next FILE;
+      }
 
-    my $data = $self->_ua->get($file)->res->body;
-    Mojo::Util::spurt($data, $asset);
-    $self->{log}->info("Downloaded asset $file to $asset");
-    return $data;
+      my $res = $self->_ua->get($url)->res;
+      my $ct = $res->headers->content_type;
+      my $type = $ct =~ m!javascript! ? 'js' : $ct =~ m!css! ? 'css' : $file =~ m!\.(\w+)$! ? $1 : 'unknown';
+      $file = catfile($self->out_dir, "$file.$type");
+      $content{$file} = $res->body;
+      Mojo::Util::spurt($res->body, $file);
+      $self->{log}->info("Downloaded asset $url to $file");
+    }
+    elsif(my $asset = $self->{static}->file($file)) {
+      $file = $asset->path;
+      $content{$file} = Mojo::Util::slurp($asset->path);
+    }
   }
-  elsif($asset = $self->{static}->file($file)) {
-    $_ = $asset->path;
-    return Mojo::Util::slurp($asset->path);
-  }
 
-  die "Could not find asset for ($file)";
+  return Mojo::Util::md5_sum(join '', map { $content{$_} } @$files), \%content;
 }
 
 =head1 COPYRIGHT AND LICENSE
