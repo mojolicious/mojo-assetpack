@@ -9,5 +9,6 @@
 ^Makefile$
 ^MANIFEST.*
 ^MYMETA*
+^README.pod
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
