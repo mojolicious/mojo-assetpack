@@ -29,9 +29,11 @@ my $assetpack;
   my $bin = qx{which sass};
   if($bin =~ /\w/) {
     ok $assetpack->preprocessors->has_subscribers('scss'), 'found preprocessor for scss';
+    ok $assetpack->preprocessors->has_subscribers('sass'), 'found preprocessor for sass';
   }
   else {
     ok !$assetpack->preprocessors->has_subscribers('scss'), 'did not find preprocessor for scss';
+    ok !$assetpack->preprocessors->has_subscribers('sass'), 'did not find preprocessor for sass';
   }
 }
 
