@@ -4,6 +4,7 @@ Revision history for Mojolicious-Plugin-AssetPack
        * Add ::Preprocessors->map_type() method.
        * Add support for .sass files
        * Add support for sass+compass
+       * Add support for custom base_url for minified assets
 
 0.13     Mon Jun  9 16:11:57 2014
        * Fix including online assets without extension

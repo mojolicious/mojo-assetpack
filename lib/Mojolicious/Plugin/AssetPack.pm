@@ -98,6 +98,35 @@ You can also define your own preprocessors:
     $$text = "// yikes!\n" if 5 < rand 10;
   });
 
+=head2 Custom domain
+
+You might want to serve the assets from a domain different from where the
+main app is running. The reasons for that might be:
+
+=over 4
+
+=item *
+
+No cookies send on each request. This is especially useful when you use
+L<Mojolicious> sessions as they are stored in cookies and clients send
+whole session with every request.
+
+=item *
+
+More request done in parallel. Browsers have limits for sending parallel
+request to one domain. With separate domain static files can be loaded in
+parallel.
+
+=item *
+
+Serve files directly (by absolute url) from CDN (or Amazon S3).
+
+=back
+
+This plugin support this if you set a custom L</base_url>.
+
+See also L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin';
@@ -118,6 +147,16 @@ our %MISSING_ERROR = (
 
 =head1 ATTRIBUTES
 
+=head2 base_url
+
+  $self = $self->base_url("http://my-domain.com/static/");
+  $str = $self->base_url;
+
+This attribute can be used to control where to serve static assets from.
+it defaults to "/packed". See als L</Custom domain>.
+
+NOTE! You need to have a trailing "/" at the end of the string.
+
 =head2 minify
 
 Set this to true if the assets should be minified.
@@ -134,6 +173,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 
 =cut
 
+has base_url => '/packed/';
 has minify => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir => sub { File::Spec::Functions::catdir(File::Spec::Functions::tmpdir(), 'mojo-assetpack') };
@@ -256,7 +296,7 @@ sub process {
 
   if(!$ENV{MOJO_ASSETPACK_NO_CACHE} and $self->{static}->file(catfile 'packed', $out_file)) {
     $self->{log}->debug("Using existing asset for $moniker");
-    $self->{processed}{$moniker} = "/packed/$out_file";
+    $self->{processed}{$moniker} = $self->base_url .$out_file;
     return $self;
   }
 
@@ -282,13 +322,14 @@ sub process {
   );
 
   $self->{log}->debug("Built asset for $moniker ($out_file)");
-  $self->{processed}{$moniker} = "/packed/$out_file";
+  $self->{processed}{$moniker} = $self->base_url .$out_file;
   $self;
 }
 
 =head2 register
 
-  plugin 'AssetPack', {
+  plugin AssetPack => {
+    base_url => $str, # default to "/packed"
     minify => $bool, # compress assets
     no_autodetect => $bool, # disable preprocessor autodetection
   };
@@ -305,6 +346,7 @@ sub register {
   my $helper = $config->{helper} || 'asset';
 
   $self->minify($minify);
+  $self->base_url($config->{base_url}) if $config->{base_url};
   $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
@@ -358,6 +400,7 @@ sub _process_many {
     $self->process($moniker => $file);
     $file = $self->{processed}{$moniker};
   }
+
   return @files;
 }
 
