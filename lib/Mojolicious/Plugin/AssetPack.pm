@@ -392,6 +392,9 @@ sub _read_files {
       $file = $asset->path;
       $content{$file} = Mojo::Util::slurp($asset->path);
     }
+    else {
+      die "Cannot find input file $file";
+    }
   }
 
   return Mojo::Util::md5_sum(join '', map { $content{$_} } @$files), \%content;

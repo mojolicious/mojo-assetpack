@@ -50,7 +50,7 @@ Installation on Ubuntu and Debian:
 
 Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
 variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
-for more information.
+for more information. Supports both F<*.scss> and F<*.sass> syntax variants.
 
 Installation on Ubuntu and Debian:
 
@@ -100,6 +100,12 @@ sub detect {
       my($assetpack, $text, $file) = @_;
       my $include_dir = dirname $file;
       run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+    });
+    $self->map_type(sass => 'css');
+    $self->add(sass => sub {
+      my($assetpack, $text, $file) = @_;
+      my $include_dir = dirname $file;
+      run3([$app, '-I', $include_dir, '--stdin', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
     });
   }
   if(my $app = which('coffee')) {
