@@ -88,12 +88,14 @@ sub detect {
   my $self = shift;
 
   if(my $app = which('lessc')) {
+    $self->map_type(less => 'css');
     $self->add(less => sub {
       my($assetpack, $text, $file) = @_;
       run3([$app, '-', $assetpack->minify ? ('-x') : ()], $text, $text);
     });
   }
   if(my $app = which('sass')) {
+    $self->map_type(scss => 'css');
     $self->add(scss => sub {
       my($assetpack, $text, $file) = @_;
       my $include_dir = dirname $file;
@@ -101,6 +103,7 @@ sub detect {
     });
   }
   if(my $app = which('coffee')) {
+    $self->map_type(coffee => 'js');
     $self->add(coffee => sub {
       my($assetpack, $text, $file) = @_;
       my $err;
@@ -152,6 +155,24 @@ sub process {
   chdir $old_dir;
 
   $self;
+}
+
+=head2 map_type
+
+  $self = $self->map_type($from => $to);
+  $to = $self->map_type($from);
+
+Method used to map one file type that should be transformed to another file
+type. Example:
+
+  $self->map_type(coffee => "js");
+
+=cut
+
+sub map_type {
+  return $_[0]->{extensions}{$_[1]} || '' if @_ == 2;
+  $_[0]->{extensions}{$_[1]} = $_[2];
+  return $_[0];
 }
 
 =head2 remove

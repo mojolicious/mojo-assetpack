@@ -349,17 +349,10 @@ sub _missing {
 
 sub _process_many {
   my($self, $moniker, @files) = @_;
-  my %extensions = (
-    less => 'css',
-    sass => 'css',
-    scss => 'css',
-    coffee => 'js',
-  );
 
   for my $file (@files) {
     $file =~ /\.(\w+)$/ or next;
-    exists $extensions{$1} or next;
-    my $target_ext = $extensions{$1};
+    my $target_ext = $self->preprocessors->map_type($1) or next;
     my $moniker = basename $file;
     $moniker =~ s/\.\w+$/.$target_ext/;
     $self->process($moniker => $file);
