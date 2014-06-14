@@ -46,7 +46,7 @@ Installation on Ubuntu and Debian:
   $ sudo apt-get install npm
   $ sudo npm install -g less
 
-=item * scss
+=item * sass
 
 Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
 variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
@@ -56,6 +56,26 @@ Installation on Ubuntu and Debian:
 
   $ sudo apt-get install rubygems
   $ sudo gem install sass
+
+=item * compass
+
+Compass is an open-source CSS Authoring Framework built on top of L</sass>.
+See L<http://compass-style.org/> for more information.
+
+Installation on Ubuntu and Debian:
+
+  $ sudo apt-get install rubygems
+  $ sudo gem install compass
+
+This module will try figure out if "compass" is required to process your
+C<*.scss> files. This is done with this regexp on the top level sass file:
+
+  m!\@import\W+compass\/!;
+
+NOTE! Compass support is experimental.
+
+You can disable compass detection by setting the environment variable
+C<MOJO_ASSETPACK_NO_COMPASS> to a true value.
 
 =item * js
 
@@ -98,8 +118,13 @@ sub detect {
     $self->map_type(scss => 'css');
     $self->add(scss => sub {
       my($assetpack, $text, $file) = @_;
-      my $include_dir = dirname $file;
-      run3([$app, '-I', $include_dir, '--stdin', '--scss', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+      my @cmd = ( $app, '-I' => dirname $file );
+
+      push @cmd, qw( --stdin --scss );
+      push @cmd, qw( -t compressed) if $assetpack->minify;
+      push @cmd, qw( --compass ) if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
+
+      run3(\@cmd, $text, $text);
     });
     $self->map_type(sass => 'css');
     $self->add(sass => sub {
