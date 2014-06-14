@@ -10,6 +10,7 @@
 /Makefile
 /Makefile.old
 /cover_db/
+/npm-debug.log
 .sass-cache
 *.old
 *.swp

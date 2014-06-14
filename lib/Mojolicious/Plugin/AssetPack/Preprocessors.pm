@@ -36,6 +36,17 @@ Will add the following preprocessors, if they are available:
 
 =over 4
 
+=item * jsx
+
+JSX is a JavaScript XML syntax transform recommended for use with
+L<React|http://facebook.github.io/react>. See
+L<http://facebook.github.io/react/docs/jsx-in-depth.html> for more information.
+
+Installation on Ubuntu and Debian:
+
+  $ sudo apt-get install npm
+  $ npm install -g react-tools
+
 =item * less
 
 LESS extends CSS with dynamic behavior such as variables, mixins, operations
@@ -107,6 +118,14 @@ Installation on Ubuntu and Debian:
 sub detect {
   my $self = shift;
 
+  if(my $app = which('jsx')) {
+    $self->map_type(jsx => 'js');
+    $self->add(jsx => sub {
+      my($assetpack, $text, $file) = @_;
+      run3(['jsx'], $text, $text); # TODO: Add --follow-requires ?
+      $$text = JavaScript::Minifier::XS::minify($$text) if $assetpack->minify;
+    });
+  }
   if(my $app = which('lessc')) {
     $self->map_type(less => 'css');
     $self->add(less => sub {

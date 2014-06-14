@@ -3,8 +3,10 @@
 \.old
 \.swp
 ~$
+^local/
 ^blib/
 ^cover_db/
+^npm-debug.log
 ^t/public/packed
 ^Makefile$
 ^MANIFEST.*
