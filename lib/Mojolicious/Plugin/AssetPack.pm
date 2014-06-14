@@ -180,26 +180,6 @@ sub add {
   $self;
 }
 
-sub _process_many {
-  my($self, $moniker, @files) = @_;
-  my %extensions = (
-    less => 'css',
-    sass => 'css',
-    scss => 'css',
-    coffee => 'js',
-  );
-  for my $file (@files) {
-    $file =~ /\.(\w+)$/ or next;
-    exists $extensions{$1} or next;
-    my $target_ext = $extensions{$1};
-    my $moniker = basename $file;
-    $moniker =~ s/\.\w+$/.$target_ext/;
-    $self->process($moniker => $file);
-    $file = $self->{processed}{$moniker};
-  }
-  return @files;
-}
-
 =head2 expand
 
   $bytestream = $self->expand($c, $moniker);
@@ -350,7 +330,7 @@ sub register {
   $app->helper($helper => sub {
     return $self if @_ == 1;
     return shift, $self->add(@_) if @_ > 2;
-    return $self->expand(@_) unless $minify;
+    return $self->expand(@_) unless $self->minify;
     return $_[0]->javascript($self->{processed}{$_[1]}) if $_[1] =~ /\.js$/;
     return $_[0]->stylesheet($self->{processed}{$_[1]});
   });
@@ -365,6 +345,27 @@ sub _missing {
   }
 
   return int @files;
+}
+
+sub _process_many {
+  my($self, $moniker, @files) = @_;
+  my %extensions = (
+    less => 'css',
+    sass => 'css',
+    scss => 'css',
+    coffee => 'js',
+  );
+
+  for my $file (@files) {
+    $file =~ /\.(\w+)$/ or next;
+    exists $extensions{$1} or next;
+    my $target_ext = $extensions{$1};
+    my $moniker = basename $file;
+    $moniker =~ s/\.\w+$/.$target_ext/;
+    $self->process($moniker => $file);
+    $file = $self->{processed}{$moniker};
+  }
+  return @files;
 }
 
 # this method will change the values in @$files
