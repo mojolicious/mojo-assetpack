@@ -1,5 +1,9 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.16
+       * Fix CPAN testers error
+         http://www.cpantesters.org/cpan/report/caa7015a-050b-11e4-ae21-9a7d1ff27236
+
 0.15     Sat Jul  5 11:28:42 2014
        * Add JSX support.
 
