@@ -153,7 +153,7 @@ our %MISSING_ERROR = (
   $str = $self->base_url;
 
 This attribute can be used to control where to serve static assets from.
-it defaults to "/packed". See als L</Custom domain>.
+it defaults to "/packed". See also L</Custom domain>.
 
 NOTE! You need to have a trailing "/" at the end of the string.
 
@@ -167,7 +167,7 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 
 =head2 out_dir
 
-Holds the path to the firectory where packed files can be written. It
+Holds the path to the directory where packed files can be written. It
 defaults to "mojo-assetpack" directory in L<temp|File::Spec::Functions/tmpdir>
 unless a L<static directory|Mojolicious::Static/paths> is writeable.
 
