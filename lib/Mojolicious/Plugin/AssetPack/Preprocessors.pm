@@ -123,7 +123,7 @@ sub detect {
     $self->add(jsx => sub {
       my($assetpack, $text, $file) = @_;
       run3(['jsx'], $text, $text); # TODO: Add --follow-requires ?
-      $$text = JavaScript::Minifier::XS::minify($$text) if $assetpack->minify;
+      _js_minify($text, $file) if $assetpack->minify;
     });
   }
   if(my $app = which('lessc')) {
@@ -159,7 +159,7 @@ sub detect {
       my $err;
       run3([$app, '--compile', '--stdio'], $text, $text, \$err);
       if ($assetpack->minify && eval 'require JavaScript::Minifier::XS; 1') {
-        $$text = JavaScript::Minifier::XS::minify($$text);
+        _js_minify($text, $file) if $assetpack->minify;
       }
       if ($err) {
         $assetpack->{log}->warn("Error processing $file: $err");
@@ -170,7 +170,7 @@ sub detect {
   if(eval 'require JavaScript::Minifier::XS; 1') {
     $self->add(js => sub {
       my($assetpack, $text, $file) = @_;
-      $$text = JavaScript::Minifier::XS::minify($$text) if $assetpack->minify and $file !~ /\bmin\b/;
+      _js_minify($text, $file) if $assetpack->minify and $file !~ /\bmin\b/;
     });
   }
   if(eval 'require CSS::Minifier::XS; 1') {
@@ -236,6 +236,12 @@ given C<$cb>.
 =cut
 
 sub remove { shift->unsubscribe(@_) }
+
+sub _js_minify {
+  my ($text, $file) = @_;
+  $$text = JavaScript::Minifier::XS::minify($$text);
+  $$text = '' unless defined $$text;
+}
 
 =head1 AUTHOR
 

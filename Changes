@@ -1,5 +1,7 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.17
+       * Fix loading empty javascript file
 
 0.16     Mon Jul  7 22:39:30 2014
        * Fix CPAN testers error

@@ -12,6 +12,8 @@ sub t {
   $route =~ s!\.t!!;
   $route =~ s!.*/!!;
 
+  diag "Add route /$route";
+
   $t->app->static->paths([ 't/public' ]);
   $t->app->plugin(AssetPack => $args || {});
   $t->app->routes->get("/$route" => $route);
