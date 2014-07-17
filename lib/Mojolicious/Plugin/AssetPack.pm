@@ -426,6 +426,7 @@ sub _read_files {
       my $res = $self->_ua->get($url)->res;
       my $ct = $res->headers->content_type;
       my $type = $ct =~ m!javascript! ? 'js' : $ct =~ m!css! ? 'css' : $file =~ m!\.(\w+)$! ? $1 : 'unknown';
+      die "Could not download asset from $url: @{[$res->error->{message}]}" if $res->error;
       $file = catfile($self->out_dir, "$file.$type");
       $content{$file} = $res->body;
       Mojo::Util::spurt($res->body, $file);
@@ -436,7 +437,7 @@ sub _read_files {
       $content{$file} = Mojo::Util::slurp($asset->path);
     }
     else {
-      die "Cannot find input file $file";
+      die "Cannot find asset input file $file";
     }
   }
 
