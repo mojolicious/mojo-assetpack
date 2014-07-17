@@ -1,6 +1,7 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.18
+
+0.18     Fri Jul 18 01:29:04 2014
        * Will not continue if asset failed to download
 
 0.17     Tue Jul 15 03:03:57 2014

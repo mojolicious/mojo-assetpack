@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.17
+    0.18
 
 SYNOPSIS
     In your application:
@@ -115,7 +115,7 @@ ATTRIBUTES
       $str = $self->base_url;
 
     This attribute can be used to control where to serve static assets from.
-    it defaults to "/packed". See als "Custom domain".
+    it defaults to "/packed". See also "Custom domain".
 
     NOTE! You need to have a trailing "/" at the end of the string.
 
@@ -126,7 +126,7 @@ ATTRIBUTES
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
 
   out_dir
-    Holds the path to the firectory where packed files can be written. It
+    Holds the path to the directory where packed files can be written. It
     defaults to "mojo-assetpack" directory in temp unless a static directory
     is writeable.
 
