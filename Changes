@@ -1,5 +1,7 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.19     Sun Jul 27 20:26:45 2014
+       * Fix failing test for "compass"
 
 0.18     Fri Jul 18 01:29:04 2014
        * Will not continue if asset failed to download

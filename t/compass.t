@@ -2,7 +2,7 @@ use t::Helper;
 use File::Which;
 
 my $compass = which 'compass';
-my $expected = $compass ? qr{\babcdef\b} : qr{ERROR:\|Unable to load Compass}i;
+my $expected = $compass ? qr{\babcdef\b} : qr{ERROR:|Unable to load Compass}i;
 
 {
   diag "minify=0";
