@@ -424,7 +424,7 @@ sub _read_files {
       }
 
       my $res = $self->_ua->get($url)->res;
-      my $ct = $res->headers->content_type;
+      my $ct = $res->headers->content_type // 'unknown';
       my $type = $ct =~ m!javascript! ? 'js' : $ct =~ m!css! ? 'css' : $file =~ m!\.(\w+)$! ? $1 : 'unknown';
       die "Could not download asset from $url: @{[$res->error->{message}]}" if $res->error;
       $file = catfile($self->out_dir, "$file.$type");
