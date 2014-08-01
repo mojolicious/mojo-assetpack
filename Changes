@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.20
+0.20     Fri Aug  1 09:55:12 2014
        * Catch exit code from external applications
        * Improved error messages
 
