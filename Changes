@@ -1,5 +1,9 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.20
+       * Catch exit code from external applications
+       * Improved error messages
+
 0.19     Sun Jul 27 20:26:45 2014
        * Fix failing test for "compass"
 

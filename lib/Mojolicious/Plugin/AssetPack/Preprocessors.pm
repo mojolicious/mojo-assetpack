@@ -10,7 +10,7 @@ use Mojo::Base 'Mojo::EventEmitter';
 use Cwd;
 use File::Basename;
 use File::Which;
-use IPC::Run3;
+use IPC::Run3 ();
 
 our $VERSION = '0.01';
 
@@ -122,7 +122,7 @@ sub detect {
     $self->map_type(jsx => 'js');
     $self->add(jsx => sub {
       my($assetpack, $text, $file) = @_;
-      run3(['jsx'], $text, $text); # TODO: Add --follow-requires ?
+      $self->_run(['jsx'], $text, $text); # TODO: Add --follow-requires ?
       _js_minify($text, $file) if $assetpack->minify;
     });
   }
@@ -130,7 +130,7 @@ sub detect {
     $self->map_type(less => 'css');
     $self->add(less => sub {
       my($assetpack, $text, $file) = @_;
-      run3([$app, '-', $assetpack->minify ? ('-x') : ()], $text, $text);
+      $self->_run([$app, '-', $assetpack->minify ? ('-x') : ()], $text, $text);
     });
   }
   if(my $app = which('sass')) {
@@ -143,13 +143,13 @@ sub detect {
       push @cmd, qw( -t compressed) if $assetpack->minify;
       push @cmd, qw( --compass ) if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
 
-      run3(\@cmd, $text, $text);
+      $self->_run(\@cmd, $text, $text);
     });
     $self->map_type(sass => 'css');
     $self->add(sass => sub {
       my($assetpack, $text, $file) = @_;
       my $include_dir = dirname $file;
-      run3([$app, '-I', $include_dir, '--stdin', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
+      $self->_run([$app, '-I', $include_dir, '--stdin', $assetpack->minify ? ('-t', 'compressed') : ()], $text, $text);
     });
   }
   if(my $app = which('coffee')) {
@@ -157,7 +157,7 @@ sub detect {
     $self->add(coffee => sub {
       my($assetpack, $text, $file) = @_;
       my $err;
-      run3([$app, '--compile', '--stdio'], $text, $text, \$err);
+      $self->_run([$app, '--compile', '--stdio'], $text, $text, \$err);
       if ($assetpack->minify && eval 'require JavaScript::Minifier::XS; 1') {
         _js_minify($text, $file) if $assetpack->minify;
       }
@@ -193,17 +193,20 @@ called with the C<$assetpack> object as the first argument.
 sub process {
   my($self, $extension, $assetpack, $text, $filename) = @_;
   my $old_dir = getcwd;
+  my $err = '';
+
+  local $@;
 
   eval {
     chdir dirname $filename;
     $_->($assetpack, $text, $filename) for @{ $self->subscribers($extension) };
     1;
   } or do {
-    $self->emit(error => "process $filename: $@");
+    $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
   };
 
   chdir $old_dir;
-
+  die $err if $err;
   $self;
 }
 
@@ -241,6 +244,15 @@ sub _js_minify {
   my ($text, $file) = @_;
   $$text = JavaScript::Minifier::XS::minify($$text);
   $$text = '' unless defined $$text;
+}
+
+sub _run {
+  my ($self, @args) = @_;
+  local ($?, $@, $!);
+  eval { IPC::Run3::run3(@args); };
+  return $self unless $?;
+  chomp $@ if $@;
+  die sprintf "AssetPack failed to run '%s'. exit_code=%s (%s)\n", join(' ', @{ $args[0] }), $? <= 0 ? $? : $? >> 8, $@ || $?;
 }
 
 =head1 AUTHOR

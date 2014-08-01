@@ -366,7 +366,7 @@ sub register {
   }
 
   unless(-d $self->out_dir) {
-    mkdir $self->out_dir or die "Could not mkdir $self->{out_dir}: $!";
+    mkdir $self->out_dir or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
   }
 
   $app->helper($helper => sub {
@@ -426,7 +426,7 @@ sub _read_files {
       my $res = $self->_ua->get($url)->res;
       my $ct = $res->headers->content_type // 'unknown';
       my $type = $ct =~ m!javascript! ? 'js' : $ct =~ m!css! ? 'css' : $file =~ m!\.(\w+)$! ? $1 : 'unknown';
-      die "Could not download asset from $url: @{[$res->error->{message}]}" if $res->error;
+      die "AssetPack could not download asset from '$url': @{[$res->error->{message}]}\n" if $res->error;
       $file = catfile($self->out_dir, "$file.$type");
       $content{$file} = $res->body;
       Mojo::Util::spurt($res->body, $file);
@@ -437,7 +437,7 @@ sub _read_files {
       $content{$file} = Mojo::Util::slurp($asset->path);
     }
     else {
-      die "Cannot find asset input file $file";
+      die "AssetPack cannot find input file '$file'\n";
     }
   }
 
