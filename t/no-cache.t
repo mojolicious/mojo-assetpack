@@ -75,7 +75,6 @@ sub add_preprocessor {
   my $t = shift;
 
   $t->app->asset->preprocessors->remove('coffee');
-  $t->app->asset->preprocessors->map_type(coffee => 'js');
   $t->app->asset->preprocessors->add(coffee => sub {
     my($assetpack, $text, $file) = @_;
     $$text = "var i = $i;";

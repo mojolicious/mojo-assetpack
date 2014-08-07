@@ -1,5 +1,11 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.21
+       * Add support for more debug output with MOJO_ASSETPACK_DEBUG=1
+       * Add error message for missing "jsx" preprocessor
+       * Will render missing text for all types which is not detected.
+       * Remove map_type() from Mojolicious::Plugin::AssetPack::Preprocessors
+
 0.20     Fri Aug  1 09:55:12 2014
        * Catch exit code from external applications
        * Improved error messages
