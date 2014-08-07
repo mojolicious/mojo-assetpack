@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.21
+0.21     Thu Aug  7 21:33:48 2014
        * Add support for more debug output with MOJO_ASSETPACK_DEBUG=1
        * Add error message for missing "jsx" preprocessor
        * Will render missing text for all types which is not detected.
