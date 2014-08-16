@@ -1,0 +1,13 @@
+language: perl
+perl:
+  - "5.20"
+  - "5.16"
+  - "5.12"
+  - "5.10"
+env:
+  - "HARNESS_OPTIONS=j9"
+install:
+  - "cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL"
+  - "cpanm -n --installdeps ."
+notifications:
+  email: false
