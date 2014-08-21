@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.21
+0.22
 
 =head1 SYNOPSIS
 
@@ -137,7 +137,7 @@ use File::Basename qw( basename );
 use File::Spec::Functions qw( catfile );
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   coffee => '%s require "coffee". http://coffeescript.org/#installation',

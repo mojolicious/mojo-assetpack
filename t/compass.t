@@ -1,8 +1,7 @@
 use t::Helper;
 use File::Which;
 
-my $compass = which 'compass';
-my $expected = $compass ? qr{\babcdef\b} : qr{ERROR:|Unable to load Compass}i;
+plan skip_all => 'Need to install sass+compass' unless which 'compass';
 
 {
   diag "minify=0";
@@ -12,7 +11,7 @@ my $expected = $compass ? qr{\babcdef\b} : qr{ERROR:|Unable to load Compass}i;
 
   $t->app->asset('compass.css' => '/sass/compass.scss');
   $t->get_ok('/compass')->status_is(200);
-  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like($expected, $expected);
+  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{\babcdef\b});
 }
 
 done_testing;
