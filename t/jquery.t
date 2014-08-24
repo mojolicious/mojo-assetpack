@@ -9,7 +9,7 @@ plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
   $t->get_ok('/jquery')->status_is(200)->content_like(qr{<script src="/packed/app-\w+\.js".*}m);
   $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{jQuery}s);
 
-  ok -s 't/public/packed/http___code_jquery_com_jquery_1_11_0_min_js.js', 'cached jquery asset';
+  ok -s 't/public/packed/http___code_jquery_com_jquery-1_11_0_min_js.js', 'cached jquery asset';
 }
 
 done_testing;

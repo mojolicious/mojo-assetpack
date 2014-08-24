@@ -17,7 +17,7 @@ my $cdn_base_url = 'http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0';
 }
 
 {
-  $t->get_ok('/expand-src-url-example')->status_is(200)->content_like(qr{href="/packed/font-awesome-\w+\.css".*}m);
+  $t->get_ok('/example-expand-src-url')->status_is(200)->content_like(qr{href="/packed/font-awesome-\w+\.css".*}m);
   $t->get_ok($t->tx->res->dom->at('link')->{href})
     ->status_is(200)
     ->content_like(qr{url\('$cdn_base_url/fonts/fontawesome-webfont\.eot\?v=4\.1\.0'\);}, 'eot')
@@ -31,5 +31,5 @@ my $cdn_base_url = 'http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0';
 done_testing;
 
 __DATA__
-@@ expand-src-url-example.html.ep
+@@ example-expand-src-url.html.ep
 %= asset 'app.css'

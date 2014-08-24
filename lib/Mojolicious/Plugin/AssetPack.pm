@@ -131,10 +131,10 @@ See also L<https://developers.google.com/speed/docs/best-practices/request#Serve
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
-use Mojo::Util 'md5_sum';
+use Mojo::Util qw( md5_sum slurp spurt );
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
-use File::Spec::Functions qw( catfile );
+use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.22';
@@ -178,7 +178,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 has base_url => '/packed/';
 has minify => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir => sub { File::Spec::Functions::catdir(File::Spec::Functions::tmpdir(), 'mojo-assetpack') };
+has out_dir => sub { catdir File::Spec::Functions::tmpdir(), 'mojo-assetpack' };
 
 =head2 rebuild
 
@@ -264,6 +264,46 @@ sub expand {
   }
 }
 
+=head2 fetch
+
+  $path = $self->fetch($url);
+
+This method can be used to fetch an asset and store the content to a local
+file. The download will be skipped if the file already exists. The return
+value is the absolute path to the downloaded file.
+
+=cut
+
+sub fetch {
+  my ($self, $url, $destination) = @_;
+  my $lookup = $url;
+
+  $lookup =~ s![^\w-]!_!g;
+
+  opendir (my $DH, $self->out_dir) or die "opendir @{[$self->out_dir]}: $!";
+  for my $f (readdir $DH) {
+    next unless $f =~ m!^$lookup\.!;
+    return catfile $self->out_dir, $f;
+  }
+
+  my $res = $self->_ua->get($url)->res;
+  my $ct = $res->headers->content_type // 'text/plain';
+  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
+  my $path;
+
+  $ext = $ext->[0] if ref $ext;
+  $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
+
+  if (my $e = $res->error) {
+    die "AssetPack could not download asset from '$url': $e->{message}\n";
+  }
+
+  $path = catfile($self->out_dir, "$lookup.$ext");
+  spurt $res->body, $path;
+  $self->{log}->info("Downloaded asset $url to $path");
+  return $path;
+}
+
 =head2 get
 
   @files = $self->get($moniker);
@@ -330,7 +370,7 @@ sub process {
     $self->{processed}{$moniker} = $files[0];
   }
   else {
-    Mojo::Util::spurt($processed, catfile $self->out_dir, $out_file);
+    spurt $processed, catfile $self->out_dir, $out_file;
     $self->{log}->debug("Built asset for $moniker ($out_file)");
     $self->{processed}{$moniker} = $self->base_url .$out_file;
   }
@@ -375,7 +415,7 @@ sub register {
   else {
     for my $path (@{ $app->static->paths }) {
       next unless -w $path;
-      $self->out_dir(File::Spec::Functions::catdir($path, 'packed'));
+      $self->out_dir(catdir $path, 'packed');
     }
   }
 
@@ -415,29 +455,12 @@ sub _read_files {
     my $data = $files{$file} = { ext => $file =~ /\.(\w+)$/ ? $1 : 'default' };
 
     if ($file =~ /^https?:/) {
-      my $lookup = $file;
-      $lookup =~ s!\W!_!g;
-
-      opendir(my $DH, $self->out_dir);
-      for my $f (readdir $DH) {
-        $f =~ m!^$lookup\.! or next;
-        $data->{path} = catfile($self->out_dir, $f);
-        $data->{body} = Mojo::Util::slurp($data->{path});
-        next FILE;
-      }
-
-      my $res = $self->_ua->get($file)->res;
-      my $ct = $res->headers->content_type // 'unknown';
-      my $type = $ct =~ m!javascript! ? 'js' : $ct =~ m!css! ? 'css' : $file =~ m!\.(\w+)$! ? $1 : 'unknown';
-      die "AssetPack could not download asset from '$file': @{[$res->error->{message}]}\n" if $res->error;
-      $data->{path} = catfile($self->out_dir, "$lookup.$type");
-      $data->{body} = $res->body;
-      Mojo::Util::spurt($res->body, $data->{path});
-      $self->{log}->info("Downloaded asset $file to $data->{path}");
+      $data->{path} = $self->fetch($file);
+      $data->{body} = slurp $data->{path};
     }
     elsif (my $asset = $self->{static}->file($file)) {
       $data->{path} = $asset->path if $self->preprocessors->has_subscribers($data->{ext});
-      $data->{body} = Mojo::Util::slurp($asset->path);
+      $data->{body} = slurp $asset->path;
     }
     else {
       die "AssetPack cannot find input file '$file'\n";

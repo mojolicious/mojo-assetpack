@@ -3,6 +3,7 @@ use Mojo::Base -strict;
 use Mojolicious;
 use Test::Mojo;
 use Test::More;
+use Cwd ();
 
 sub t {
   my ($class, $args) = @_;
@@ -14,7 +15,7 @@ sub t {
 
   diag "Add route /$route";
 
-  $t->app->static->paths([ 't/public' ]);
+  $t->app->static->paths([ Cwd::abs_path('t/public') ]);
   $t->app->plugin(AssetPack => $args || {});
   $t->app->routes->get("/$route" => $route);
   $t;
@@ -26,7 +27,7 @@ sub import {
 
   plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
-  unlink glob 't/public/packed/*';
+  unlink glob 't/public/packed/*' unless $ENV{TEST_KEEP_FILES};
 
   strict->import;
   warnings->import;

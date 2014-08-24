@@ -10,7 +10,7 @@ plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
   $t->get_ok('/google-font')->status_is(200)->content_like(qr{href="/packed/app-\w+\.css".*}m);
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200);
 
-  ok -s 't/public/packed/http___fonts_googleapis_com_css_family_Lora_400_700_400italic_700italic.css', 'cached jquery asset';
+  ok -s 't/public/packed/http___fonts_googleapis_com_css_family_Lora_400_700_400italic_700italic.css', 'cached font';
 }
 
 done_testing;
