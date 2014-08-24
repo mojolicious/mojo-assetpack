@@ -19,7 +19,10 @@ our $VERSION = '0.01';
 
 =head2 add
 
-  $self->add($extension => $cb);
+  $self->add($extension => sub {
+    my ($assetpack, $text, $file) = @_;
+    $$text =~ s/foo/bar/ if $file =~ /baz/ and $assetpack->minify;
+  });
 
 Define a preprocessor which is run on a given file extension. These
 preprocessors will be chained. The callbacks will be called in the order they
