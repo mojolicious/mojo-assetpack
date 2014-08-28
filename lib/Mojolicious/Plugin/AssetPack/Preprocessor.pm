@@ -11,6 +11,8 @@ L<Mojolicious::Plugin::AssetPack::Preprocessor> is a base class for preprocessor
 =cut
 
 use Mojo::Base -base;
+use Mojo::Util ();
+
 use overload (
   q(&{}) => sub { shift->can('process') },
   fallback => 1,
@@ -19,6 +21,21 @@ use overload (
 =head1 ATTRIBUTES
 
 =head1 METHODS
+
+=head2 checksum
+
+  $str = $self->checksum($text, $path);
+
+Returns the checksum for a given chunk of C<$text>. C<$text> is a
+scalar ref containing the text from the asset. The default is
+to use L<Mojo::Util/md5_sum>.
+
+=cut
+
+sub checksum {
+  my ($self, $text, $path) = @_;
+  Mojo::Util::md5_sum($$text);
+}
 
 =head2 process
 

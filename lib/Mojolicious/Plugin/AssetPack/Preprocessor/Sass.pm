@@ -12,7 +12,9 @@ C<.sass> files.
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+use Mojo::Util qw( slurp md5_sum );
 use File::Basename 'dirname';
+use File::Spec::Functions 'catfile';
 use File::Which ();
 
 =head1 ATTRIBUTES
@@ -28,6 +30,35 @@ Holds the path to the "sass" executable, if it could be found.
 has executable => File::Which::which('sass');
 
 =head1 METHODS
+
+=head2 checksum
+
+Returns the checksum for the given C<$text>, but also checks for any
+C<@import> statements and includes those files in the checksum.
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
+
+=cut
+
+sub checksum {
+  my ($self, $text, $path) = @_;
+  my $ext = $path =~ /\.(s[ac]ss)$/ ? $1 : $self->_extension;
+  my $dir = dirname $path;
+  my $re = qr{ \@import \s+ (["']) (.*?) \1 }x;
+  my @checksum = md5_sum $$text;
+
+  while ($$text =~ /$re/gs) {
+    my $file = $2;
+    if (-r "$dir/$file.$ext") {
+      push @checksum, md5_sum slurp catfile $dir, "$file.$ext";
+    }
+    elsif (-r "$dir/_$file.$ext") {
+      push @checksum, md5_sum slurp catfile $dir, "_$file.$ext";
+    }
+  }
+
+  return Mojo::Util::md5_sum(join '', @checksum);
+}
 
 =head2 process
 
@@ -48,6 +79,8 @@ sub process {
 
   return $self;
 }
+
+sub _extension { 'sass' }
 
 =head1 COPYRIGHT AND LICENSE
 

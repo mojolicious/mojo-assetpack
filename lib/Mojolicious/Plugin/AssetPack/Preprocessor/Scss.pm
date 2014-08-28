@@ -39,6 +39,8 @@ sub process {
   return $self;
 }
 
+sub _extension { 'scss' }
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2014, Jan Henning Thorsen

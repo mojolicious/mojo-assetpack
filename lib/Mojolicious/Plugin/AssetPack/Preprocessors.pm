@@ -49,6 +49,33 @@ sub add {
   $self->on($type => $arg);
 }
 
+=head2 checksum
+
+  $str = $self->checksum($extension => \$text, $filename);
+
+=cut
+
+sub checksum {
+  my($self, $extension, $text, $filename) = @_;
+  my $old_dir = getcwd;
+  my $err = '';
+  my @checksum;
+
+  local $@;
+
+  eval {
+    chdir dirname $filename;
+    push @checksum, $_->checksum($text, $filename) for @{ $self->subscribers($extension) };
+    1;
+  } or do {
+    $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
+  };
+
+  chdir $old_dir;
+  die $err if $err;
+  Mojo::Util::md5_sum(join '', @checksum);
+}
+
 =head2 detect
 
 Will add the following preprocessors, if they are available:

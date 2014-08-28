@@ -448,7 +448,7 @@ sub _process_many {
 
 sub _read_files {
   my ($self, @files) = @_;
-  my ($md5_sum, %files);
+  my (@checksum, %files);
 
   FILE:
   for my $file (@files) {
@@ -465,9 +465,11 @@ sub _read_files {
     else {
       die "AssetPack cannot find input file '$file'\n";
     }
+
+    push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
   }
 
-  md5_sum(join '', map { $files{$_}{body} } @files), \%files;
+  md5_sum(join '', @checksum), \%files;
 }
 
 =head1 COPYRIGHT AND LICENSE
