@@ -23,11 +23,11 @@ use File::Which ();
 
   $path = $self->executable;
 
-Holds the path to the "sass" executable, if it could be found.
+Holds the path to the "sass" executable. Default to just "sass".
 
 =cut
 
-has executable => File::Which::which('sass');
+has executable => sub { File::Which::which('sass') || 'sass' };
 
 =head1 METHODS
 
@@ -75,12 +75,25 @@ sub process {
   push @cmd, '-I' => dirname $path;
   push @cmd, qw( -t compressed) if $assetpack->minify;
 
-  Mojolicious::Plugin::AssetPack::Preprocessors->_run(\@cmd, $text, $text);
-
-  return $self;
+  $self->_run(\@cmd, $text, $text);
 }
 
 sub _extension { 'sass' }
+
+sub _run {
+  my ($self, $cmd, $text) = @_;
+
+  eval {
+    Mojolicious::Plugin::AssetPack::Preprocessors->_run($cmd, $text, $text);
+    1;
+  } or do {
+    my $e = $@ || 'Unknown error';
+    $e =~ s!"!'!g;
+    $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$e";});
+  };
+
+  $self;
+}
 
 =head1 COPYRIGHT AND LICENSE
 
