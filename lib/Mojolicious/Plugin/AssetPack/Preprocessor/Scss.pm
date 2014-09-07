@@ -34,7 +34,7 @@ sub process {
   push @cmd, qw( -t compressed) if $assetpack->minify;
   push @cmd, qw( --compass ) if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
 
-  $self->_run(\@cmd, $text, $text);
+  $self->_run(\@cmd, $text, $path);
 }
 
 sub _extension { 'scss' }

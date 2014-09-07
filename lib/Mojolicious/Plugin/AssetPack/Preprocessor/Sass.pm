@@ -75,13 +75,15 @@ sub process {
   push @cmd, '-I' => dirname $path;
   push @cmd, qw( -t compressed) if $assetpack->minify;
 
-  $self->_run(\@cmd, $text, $text);
+  $self->_run(\@cmd, $text, $path);
 }
 
 sub _extension { 'sass' }
 
 sub _run {
-  my ($self, $cmd, $text) = @_;
+  my ($self, $cmd, $text, $path) = @_;
+
+  $path ||= 'unknown.file';
 
   eval {
     Mojolicious::Plugin::AssetPack::Preprocessors->_run($cmd, $text, $text);
@@ -89,7 +91,8 @@ sub _run {
   } or do {
     my $e = $@ || 'Unknown error';
     $e =~ s!"!'!g;
-    $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$e";});
+    $e =~ s![\s\n\r]+! !g;
+    $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$e ($path)";});
   };
 
   $self;
