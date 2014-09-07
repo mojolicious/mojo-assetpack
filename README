@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.22
+    0.23
 
 SYNOPSIS
     In your application:
@@ -17,7 +17,7 @@ SYNOPSIS
       app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
 
       # you can combine with assets from web
-      app->asset('bundle.js' => (
+      app->asset('ie8.js' => (
         'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js',
         'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js',
         'http://code.jquery.com/jquery-1.11.0.js',
@@ -152,6 +152,13 @@ METHODS
     with it disabled, this is done once when the asset is added.)
 
     The returning bytestream will contain style or script tags.
+
+  fetch
+      $path = $self->fetch($url);
+
+    This method can be used to fetch an asset and store the content to a
+    local file. The download will be skipped if the file already exists. The
+    return value is the absolute path to the downloaded file.
 
   get
       @files = $self->get($moniker);

@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.23
+0.23     Sun Sep  7 18:20:35 2014
        * Add AssetPack->fetch() method #24
        * Can calculate checksum with included .sass and .scss files #25
        * Can load external assets with minify=0 #27
