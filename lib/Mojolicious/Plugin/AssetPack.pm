@@ -217,8 +217,7 @@ sub add {
     $self->process($moniker => @files);
   }
   elsif(!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
-    my @processed_files = $self->_process_many($moniker, @files);
-    $self->{processed}{$moniker} = \@processed_files;
+    $self->{processed}{$moniker} = [$self->_process_many($moniker, @files)];
   }
 
   $self;
