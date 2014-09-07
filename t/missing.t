@@ -1,7 +1,8 @@
-BEGIN { $ENV{PATH} = '' }
+BEGIN {
+  use File::Spec::Functions 'catfile';
+  $ENV{PATH} = '/dev/null';
+}
 use t::Helper;
-
-my $md5 = '81e6a22b62fc6e28e355713517fdc3d8';
 
 {
   my $t = t::Helper->t({ minify => 1 });
@@ -12,13 +13,13 @@ my $md5 = '81e6a22b62fc6e28e355713517fdc3d8';
 
   $t->get_ok('/missing')
     ->status_is(200)
-    ->element_exists(qq([href="/Mojolicious/Plugin/AssetPack/could/not/compile/one.foo"]))
-    ->element_exists(qq([href="/Mojolicious/Plugin/AssetPack/could/not/compile/two.css"]))
-    ->element_exists(qq([href="/Mojolicious/Plugin/AssetPack/could/not/compile/three.css"]))
+    ->element_exists(qq([href="/Mojolicious/Plugin/AssetPack/could/not/compile/one.foo"]), 'one.foo')
+    ->element_exists(qq([href="/packed/two-19455f135dea3f162e486f8a734f0069.css"]), 'two.css')
+    ->element_exists(qq([href="/Mojolicious/Plugin/AssetPack/could/not/compile/three.css"]), 'three.css')
     ;
 
   $t->get_ok('/packed/one.foo')->status_is(404);
-  $t->get_ok('/packed/two.css')->status_is(404);
+  $t->get_ok('/packed/two-19455f135dea3f162e486f8a734f0069.css')->status_is(200)->content_like(qr{content:"AssetPack failed});
   $t->get_ok('/packed/three.css')->status_is(404);
 }
 

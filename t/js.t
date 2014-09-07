@@ -29,7 +29,7 @@ use t::Helper;
   $t->get_ok('/js'); # trigger pack_javascripts() twice for coverage
   $t->get_ok('/js')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/app-8072d187db8ff7a1809b88ae1a5f3bd7\.js".*}m)
+    ->content_like(qr{<script src="/packed/app-ec1f584de6b736ca6aea95c003e498aa\.js".*}m)
     ;
 
   $t->get_ok($t->tx->res->dom->at('script')->{src})
@@ -39,7 +39,7 @@ use t::Helper;
 
   is_deeply(
     [ $t->app->asset->get('app.js') ],
-    [ '/packed/app-8072d187db8ff7a1809b88ae1a5f3bd7.js' ],
+    [ '/packed/app-ec1f584de6b736ca6aea95c003e498aa.js' ],
     'get(app.js)'
   );
 }

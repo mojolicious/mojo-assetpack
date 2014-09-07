@@ -24,7 +24,7 @@ use t::Helper;
 
   $t->get_ok('/less')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/less-8dd04d9b9e50ace10e29f7c5d0b2b39d\.css".*}m)
+    ->content_like(qr{<link href="/packed/less-9bb8a2a996dde4692205a829ba6d1c8a\.css".*}m)
     ;
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})

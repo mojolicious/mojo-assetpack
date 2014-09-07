@@ -13,7 +13,7 @@ BEGIN {
 
   $t->get_ok('/skip-minified')
     ->status_is(200)
-    ->content_like(qr{<script src="/packed/app-ebe7fb100ee204a3db3b8d11a3d46f78\.js".*}m)
+    ->content_like(qr{<script src="/packed/app-9f544b9fe09441cb64e52620223f413a\.js".*}m)
     ;
 
   is int @main::run, 1, 'minify called once';

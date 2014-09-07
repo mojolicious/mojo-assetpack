@@ -16,7 +16,7 @@ use t::Helper;
   my $t = t::Helper->t({ minify => 1 });
 
   $t->app->asset('sass.css' => '/sass/a.sass');
-  $t->get_ok('/sass')->status_is(200)->content_like(qr{<link href="/packed/sass-81292545c41544394e4d436682ccf779\.css"});
+  $t->get_ok('/sass')->status_is(200)->content_like(qr{<link href="/packed/sass-0c60d31af2de1ab7ea0108b8e866f87d\.css"});
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{font:100% Helvetica,sans-serif;color:\#333});
 }
 

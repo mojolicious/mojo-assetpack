@@ -7,6 +7,7 @@ Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors
 =cut
 
 use Mojo::Base 'Mojo::EventEmitter';
+use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Preprocessor;
 use Cwd;
 use File::Basename;
@@ -64,7 +65,7 @@ sub checksum {
   local $@;
 
   eval {
-    chdir dirname $filename;
+    chdir dirname $filename if $filename;
     push @checksum, $_->checksum($text, $filename) for @{ $self->subscribers($extension) };
     1;
   } or do {
@@ -73,7 +74,7 @@ sub checksum {
 
   chdir $old_dir;
   die $err if $err;
-  Mojo::Util::md5_sum(join '', @checksum);
+  return @checksum == 1 ? $checksum[0] : Mojo::Util::md5_sum(join '', @checksum);
 }
 
 =head2 detect

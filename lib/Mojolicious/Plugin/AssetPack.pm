@@ -365,7 +365,7 @@ sub process {
   if (@missing) {
     $self->{processed}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
   }
-  elsif ($md5_sum eq md5_sum $processed and $files[0] !~ /^http\s?:/) {
+  elsif ($md5_sum eq md5_sum($processed) and $files[0] !~ /^http\s?:/) {
     warn "[ASSETPACK] Same input as output for $files[0]\n" if DEBUG;
     $self->{processed}{$moniker} = $files[0];
   }
@@ -469,7 +469,10 @@ sub _read_files {
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
   }
 
-  md5_sum(join '', @checksum), \%files;
+  return(
+    @checksum == 1 ? $checksum[0] : md5_sum(join '', @checksum),
+    \%files,
+  );
 }
 
 =head1 COPYRIGHT AND LICENSE

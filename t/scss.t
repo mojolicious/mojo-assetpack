@@ -33,7 +33,7 @@ use t::Helper;
     ;
 
   $t->get_ok('/include-dir')
-    ->content_like(qr{<link href="/packed/y-9a1f9477380119f8c2b78e49a38fa227\.css".*}m)
+    ->content_like(qr{<link href="/packed/y-ac21fd5d420c2fbd1c41eec8bfcefb62\.css".*}m)
     ->status_is(200)
     ;
 }
@@ -46,7 +46,7 @@ use t::Helper;
 
   $t->get_ok('/scss')
     ->status_is(200)
-    ->content_like(qr{<link href="/packed/scss-3041fa396995aff3acc7b926cc8981b2\.css".*}m)
+    ->content_like(qr{<link href="/packed/scss-53f756a54b650d23d1ddb705c10c97d6\.css".*}m)
     ;
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})
