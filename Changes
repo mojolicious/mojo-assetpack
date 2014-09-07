@@ -1,5 +1,13 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.23
+       * Add AssetPack->fetch() method #24
+       * Can calculate checksum with included .sass and .scss files #25
+       * Can load external assets with minify=0 #27
+       * Support printing sass error to web page #26
+       * Better error message when unable to find asset file
+       * Change to using objects for processing files
+
 0.22     Thu Aug 21 15:08:56 2014
        * Made compass test more robust
 
