@@ -192,8 +192,12 @@ sub rebuild {
 
 has _ua => sub {
   require Mojo::UserAgent;
-  Mojo::UserAgent->new(max_redirects => 3);
+  my $ua = Mojo::UserAgent->new(max_redirects => 3);
+  $ua->server->app($_[0]->_app);
+  return $ua;
 };
+
+has '_app';
 
 =head1 METHODS
 
@@ -355,7 +359,7 @@ sub process {
       $processed .= $data->{body};
     }
     else {
-      my $error = $MISSING_ERROR{$data->{ext}} || $MISSING_ERROR{default};
+      my $error = $MISSING_ERROR{$data->{ext}} // $MISSING_ERROR{default};
       push @missing, $data->{ext};
       $self->{log}->error(sprintf "AssetPack: $error", $file);
     }
@@ -396,6 +400,7 @@ sub register {
   my $minify = $config->{minify} // $app->mode eq 'production';
   my $helper = $config->{helper} || 'asset';
 
+  $self->_app($app);
   $self->minify($minify);
   $self->base_url($config->{base_url}) if $config->{base_url};
   $self->preprocessors->detect unless $config->{no_autodetect};
@@ -471,16 +476,13 @@ sub _read_files {
   for my $file (@files) {
     my $data = $files{$file} = { ext => $file =~ /\.(\w+)$/ ? $1 : 'default' };
 
-    if ($file =~ /^https?:/) {
-      $data->{path} = $self->fetch($file);
-      $data->{body} = slurp $data->{path};
-    }
-    elsif (my $asset = $self->{static}->file($file)) {
+    if ($file !~ /^https?:/ && (my $asset = $self->{static}->file($file))) {
       $data->{path} = $asset->path if $self->preprocessors->has_subscribers($data->{ext});
       $data->{body} = slurp $asset->path;
     }
     else {
-      die "AssetPack cannot find input file '$file'\n";
+      $data->{path} = $self->fetch($file);
+      $data->{body} = slurp $data->{path};
     }
 
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
