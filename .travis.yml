@@ -2,10 +2,16 @@ language: perl
 perl:
   - "5.20"
   - "5.16"
-  - "5.12"
   - "5.10"
 env:
   - "HARNESS_OPTIONS=j9"
+before_install:
+  - sudo apt-get install npm
+  - npm install -g react-tools
+  - sudo npm install -g less
+  - sudo apt-get install rubygems
+  - sudo gem install sass
+  - sudo gem install compass
 install:
   - "cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL"
   - "cpanm -n --installdeps ."
