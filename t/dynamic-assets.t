@@ -6,17 +6,29 @@ use Test::More;
 sub startup {
   my $app = shift;
   $app->plugin('AssetPack');
+  $app->plugin(Config => {
+    default => {
+      bg_color => 'blue'
+    }
+  });
 
   my $r = $app->routes;
   $r->get('/test.css')->to(
     cb => sub {
-      shift->render(text => 'a[href]{ border: 1px solid black; }', format => 'css');
+      my $c = shift;
+      $c->render(
+	text => 'body { background-color: ' . $c->config('bg_color') . ' }',
+	format => 'css'
+      );
     }
   )->name('mystyle');
 
   $r->get('/')->to(
     cb => sub {
-      shift->render(inline => '%= asset "/myapp.css"', format => 'html');
+      shift->render(
+	inline => '%= asset "/myapp.css"',
+	format => 'html'
+      );
     }
   )->name('mystyle');
 
@@ -29,12 +41,11 @@ sub startup {
 };
 
 package main;
+use strict;
+use warnings;
 use lib '../lib','lib';
 use Test::More;
 use Test::Mojo;
-
-use strict;
-use warnings;
 
 my $t = Test::Mojo->new;
 
@@ -45,7 +56,7 @@ is($t->app->url_for('mystyle'), '/test.css', 'CSS Asset');
 $t->get_ok('/test.css')
   ->status_is(200)
   ->content_type_is('text/css')
-  ->content_is(q!a[href]{ border: 1px solid black; }!);
+  ->content_is(q!body { background-color: blue }!);
 
 $t->get_ok('/')
   ->status_is(200)
