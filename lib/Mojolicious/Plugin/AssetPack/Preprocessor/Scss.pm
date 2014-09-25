@@ -10,6 +10,26 @@ L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss> is a preprocessor for
 C<.scss> files. This module inherite all the functionality from
 L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass>.
 
+=head1 COMPASS
+
+Compass is an open-source CSS Authoring Framework built on top of L</sass>.
+See L<http://compass-style.org/> for more information.
+
+Installation on Ubuntu and Debian:
+
+  $ sudo apt-get install rubygems
+  $ sudo gem install compass
+
+This module will try figure out if "compass" is required to process your
+C<*.scss> files. This is done with this regexp on the top level sass file:
+
+  m!\@import\W+compass\/!;
+
+NOTE! Compass support is experimental.
+
+You can disable compass detection by setting the environment variable
+C<MOJO_ASSETPACK_NO_COMPASS> to a true value.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::Sass';
@@ -29,12 +49,14 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @cmd = ( $self->executable, '--stdin', '--scss' );
+  my $err;
 
   push @cmd, '-I' => dirname $path;
   push @cmd, qw( -t compressed) if $assetpack->minify;
   push @cmd, qw( --compass ) if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
 
-  $self->_run(\@cmd, $text, $path);
+  $self->_run(\@cmd, $text, $text, \$err);
+  $self->_make_css_error($err, $text) if length $err;
 }
 
 sub _extension { 'scss' }

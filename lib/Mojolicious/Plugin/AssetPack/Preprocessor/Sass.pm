@@ -2,12 +2,21 @@ package Mojolicious::Plugin::AssetPack::Preprocessor::Sass;
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Preprocessor::Sass - Preprocessor for .sass files
+Mojolicious::Plugin::AssetPack::Preprocessor::Sass - Preprocessor for sass
 
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> is a preprocessor for
 C<.sass> files.
+
+Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
+variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
+for more information. Supports both F<*.scss> and F<*.sass> syntax variants.
+
+Installation on Ubuntu and Debian:
+
+  $ sudo apt-get install rubygems
+  $ sudo gem install sass
 
 =cut
 
@@ -71,32 +80,16 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @cmd = ( $self->executable, '--stdin' );
+  my $err;
 
   push @cmd, '-I' => dirname $path;
   push @cmd, qw( -t compressed) if $assetpack->minify;
 
-  $self->_run(\@cmd, $text, $path);
+  $self->_run(\@cmd, $text, $text, \$err);
+  $self->_make_css_error($err, $text) if length $err;
 }
 
 sub _extension { 'sass' }
-
-sub _run {
-  my ($self, $cmd, $text, $path) = @_;
-
-  $path ||= 'unknown.file';
-
-  eval {
-    Mojolicious::Plugin::AssetPack::Preprocessors->_run($cmd, $text, $text);
-    1;
-  } or do {
-    my $e = $@ || 'Unknown error';
-    $e =~ s!"!'!g;
-    $e =~ s![\s\n\r]+! !g;
-    $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$e ($path)";});
-  };
-
-  $self;
-}
 
 =head1 COPYRIGHT AND LICENSE
 

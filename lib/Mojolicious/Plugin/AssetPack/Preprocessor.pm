@@ -12,6 +12,7 @@ L<Mojolicious::Plugin::AssetPack::Preprocessor> is a base class for preprocessor
 
 use Mojo::Base -base;
 use Mojo::Util ();
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 use overload (
   q(&{}) => sub { shift->can('process') },
@@ -51,6 +52,48 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
   die "No pre-processor defined for $path" unless $self->{processor};
   $self->{processor}->($assetpack, $text, $path);
+  $self;
+}
+
+sub _make_css_error {
+  my ($self, $err, $text) = @_;
+  $err =~ s!"!'!g;
+  $err =~ s!\n!\\A!g;
+  $err =~ s!\s! !g;
+  $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+  $self;
+}
+
+sub _make_js_error {
+  my ($self, $err, $text) = @_;
+  $err =~ s!'!"!g;
+  $err =~ s!\n!\\n!g;
+  $err =~ s!\s! !g;
+  $$text = "alert('$err');";
+  $self;
+}
+
+sub _run {
+  my ($self, @args) = @_;
+  my $cmd = join(' ', @{ $args[0] });
+  my $err = $_[-1];
+  my $exit_code = -1;
+
+  local ($!, $?, $@);
+
+  eval {
+    IPC::Run3::run3(@args);
+    return do { $err = ''; $self } unless $?;
+    $exit_code = $? > 0 ? $? >> 8 : $?;
+    $$err ||= sprintf '%s', $!;
+  } or do {
+    $$err = $@;
+    $$err =~ s!\sat\s\S+.*!!s; # remove " at /some/file.pm line 308"
+    chomp $$err;
+  };
+
+  warn "[ASSETPACK] $cmd ($exit_code) $$err\n" if DEBUG;
+  $$err = sprintf "AssetPack failed to run '%s'. exit_code=%s %s", $cmd, $exit_code, $$err;
   $self;
 }
 
