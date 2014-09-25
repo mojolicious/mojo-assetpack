@@ -15,7 +15,7 @@ use t::Helper;
   $t->get_ok($t->tx->res->dom->at('script')->{src})
     ->status_is(200)
     ->content_like(qr{;[\n\s]+React})
-    ->content_like(qr{var app\s*=\s*React\.DOM\.div\(\s*{className:"appClass"},\s*"Hello, React!"\)});
+    ->content_like(qr{var app\s*=\s*React\.DOM\.div\(\s*{.*"appClass"},\s*"Hello, React!"\)});
 }
 
 {
