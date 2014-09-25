@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  ok $t->app->asset->preprocessors->has_subscribers('js'), 'found preprocessor for js';
+  ok $t->app->asset->preprocessors->can_process('js'), 'found preprocessor for js';
 
   $t->app->asset('app.js' => '/js/a.js', '/js/b.js');
 

@@ -40,6 +40,14 @@ has executable => sub { File::Which::which('sass') || 'sass' };
 
 =head1 METHODS
 
+=head2 can_process
+
+Returns true if L</executable> points to an actual file.
+
+=cut
+
+sub can_process { -f $_[0]->executable ? 1 : 0 }
+
 =head2 checksum
 
 Returns the checksum for the given C<$text>, but also checks for any

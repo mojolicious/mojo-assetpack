@@ -2,7 +2,18 @@ package Mojolicious::Plugin::AssetPack::Preprocessors;
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors
+Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors for the assetpack
+
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessors> is used to hold a list of
+preprocessors for a given file type.
+
+=head2 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor>,
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> and
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss>.
 
 =cut
 
@@ -40,19 +51,46 @@ method.
 =cut
 
 sub add {
-  my ($self, $type, $arg) = @_;
+  my ($self, $extension, $arg) = @_;
 
   # back compat
   if (ref $arg eq 'CODE') {
     $arg = Mojolicious::Plugin::AssetPack::Preprocessor->new(processor => $arg);
   }
 
-  $self->on($type => $arg);
+  $self->on($extension => $arg);
+}
+
+=head2 can_process
+
+  $bool = $self->can_process($extension);
+
+Returns true if there is at least one of the preprocessors L<added|/add>
+can handle this extensions.
+
+This means that a preprocessor object can be added, but is unable to
+actually process the asset. This is a helper method, which can be handy
+in unit tests to check if "sass", "jsx" or other preprocessors are
+actually installed.
+
+=cut
+
+sub can_process {
+  my ($self, $extension) = @_;
+
+  for my $p (@{ $self->subscribers($extension) }) {
+    return 1 if $p->can_process;
+  }
+
+  return 0;
 }
 
 =head2 checksum
 
   $str = $self->checksum($extension => \$text, $filename);
+
+Calls the C<checksum()> method in all the preprocessors for the C<$extension>
+and returns a combined checksum.
 
 =cut
 

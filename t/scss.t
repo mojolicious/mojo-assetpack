@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  plan skip_all => 'Could not find preprocessors for scss', 6 unless $t->app->asset->preprocessors->has_subscribers('scss');
+  plan skip_all => 'Could not find preprocessors for scss', 6 unless $t->app->asset->preprocessors->can_process('scss');
 
   $t->app->asset('scss.css' => '/css/a.scss', '/css/b.scss');
 

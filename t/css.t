@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  ok $t->app->asset->preprocessors->has_subscribers('css'), 'found preprocessor for css';
+  ok $t->app->asset->preprocessors->can_process('css'), 'found preprocessor for css';
 
   $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
 

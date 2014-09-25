@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  plan skip_all => 'Could not find preprocessors for sass', 6 unless $t->app->asset->preprocessors->has_subscribers('sass');
+  plan skip_all => 'Could not find preprocessors for sass', 6 unless $t->app->asset->preprocessors->can_process('sass');
 
   $t->app->asset('sass.css' => '/sass/a.sass');
   $t->get_ok('/sass')->status_is(200)->content_like(qr{<link href="/packed/a-\w+\.css"});

@@ -7,7 +7,7 @@ plan skip_all => 'Need to install sass+compass' unless which 'compass';
   diag "minify=0";
   my $t = t::Helper->t({ minify => 1 });
 
-  plan skip_all => 'Could not find preprocessors for scss', 6 unless $t->app->asset->preprocessors->has_subscribers('scss');
+  plan skip_all => 'Could not find preprocessors for scss', 6 unless $t->app->asset->preprocessors->can_process('scss');
 
   $t->app->asset('compass.css' => '/sass/compass.scss');
   $t->get_ok('/compass')->status_is(200);

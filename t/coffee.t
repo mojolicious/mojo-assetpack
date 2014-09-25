@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  plan skip_all => 'Could not find preprocessors for coffee', 6 unless $t->app->asset->preprocessors->has_subscribers('coffee');
+  plan skip_all => 'Could not find preprocessors for coffee', 6 unless $t->app->asset->preprocessors->can_process('coffee');
 
   $t->app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
 

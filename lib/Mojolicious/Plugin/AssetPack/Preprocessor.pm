@@ -23,6 +23,16 @@ use overload (
 
 =head1 METHODS
 
+=head2 can_process
+
+  $bool = $self->can_process;
+
+Returns true.
+
+=cut
+
+sub can_process { 1 }
+
 =head2 checksum
 
   $str = $self->checksum($text, $path);

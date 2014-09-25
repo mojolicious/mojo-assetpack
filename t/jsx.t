@@ -4,7 +4,7 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({ minify => 0 });
 
-  plan skip_all => 'Could not find preprocessors for jsx', 6 unless $t->app->asset->preprocessors->has_subscribers('jsx');
+  plan skip_all => 'Could not find preprocessors for jsx', 6 unless $t->app->asset->preprocessors->can_process('jsx');
 
   $t->app->asset('jsx.js' => '/js/c.jsx');
 
