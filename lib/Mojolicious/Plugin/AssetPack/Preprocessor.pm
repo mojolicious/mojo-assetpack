@@ -93,9 +93,8 @@ sub _run {
 
   eval {
     IPC::Run3::run3(@args);
-    return do { $err = ''; $self } unless $?;
     $exit_code = $? > 0 ? $? >> 8 : $?;
-    $$err ||= sprintf '%s', $!;
+    $$err ||= sprintf '%s', $! if $?;
   } or do {
     $$err = $@;
     $$err =~ s!\sat\s\S+.*!!s; # remove " at /some/file.pm line 308"
@@ -103,6 +102,7 @@ sub _run {
   };
 
   warn "[ASSETPACK] $cmd ($exit_code) $$err\n" if DEBUG;
+  return $self unless $exit_code;
   $$err = sprintf "AssetPack failed to run '%s'. exit_code=%s %s", $cmd, $exit_code, $$err;
   $self;
 }

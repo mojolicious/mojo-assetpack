@@ -1,6 +1,7 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
 0.24
+       * Add preprocessor classes for every detected preprocessor
        * Add Preprocessors->can_process method to detect if preprocessors exists
        * Improved error message from sass preprocessor
 
