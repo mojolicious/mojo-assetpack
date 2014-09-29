@@ -9,11 +9,23 @@ Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors for the asse
 L<Mojolicious::Plugin::AssetPack::Preprocessors> is used to hold a list of
 preprocessors for a given file type.
 
-=head2 SEE ALSO
+=head2 Bundled preprocessors
 
-L<Mojolicious::Plugin::AssetPack::Preprocessor>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> and
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss>.
+=over 4
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Css>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Less>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass>
+
+=item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss>
 
 =cut
 
@@ -24,8 +36,19 @@ use Cwd;
 use File::Basename;
 use File::Which;
 use IPC::Run3 ();
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.01';
+
+my %PREPROCESSORS = (
+  coffee => 'Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript',
+  css => 'Mojolicious::Plugin::AssetPack::Preprocessor::Css',
+  js => 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript',
+  jsx => 'Mojolicious::Plugin::AssetPack::Preprocessor::Jsx',
+  less => 'Mojolicious::Plugin::AssetPack::Preprocessor::Less',
+  sass => 'Mojolicious::Plugin::AssetPack::Preprocessor::Sass',
+  scss => 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss',
+);
 
 =head1 METHODS
 
@@ -41,8 +64,6 @@ our $VERSION = '0.01';
 Define a preprocessor which is run on a given file extension. These
 preprocessors will be chained. The callbacks will be called in the order they
 where added.
-
-The default preprocessor defined is described under L</detect>.
 
 In case of C<$object>, the object need to be able to have the C<process()>
 method.
@@ -77,7 +98,7 @@ actually installed.
 sub can_process {
   my ($self, $extension) = @_;
 
-  for my $p (@{ $self->subscribers($extension) }) {
+  for my $p ($self->_preprocessors($extension)) {
     return 1 if $p->can_process;
   }
 
@@ -103,7 +124,7 @@ sub checksum {
 
   eval {
     chdir dirname $filename if $filename;
-    push @checksum, $_->checksum($text, $filename) for @{ $self->subscribers($extension) };
+    push @checksum, $_->checksum($text, $filename) for $self->_preprocessors($extension);
     1;
   } or do {
     $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
@@ -116,41 +137,13 @@ sub checksum {
 
 =head2 detect
 
-Will add
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Css>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Less>,
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> and
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss> as preprocessors.
+DEPRECATED. Default handlers are added on the fly.
 
 =cut
 
 sub detect {
-  my $self = shift;
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::Css;
-  $self->add(css => Mojolicious::Plugin::AssetPack::Preprocessor::Css->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript;
-  $self->add(coffee => Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript;
-  $self->add(js => Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::Less;
-  $self->add(less => Mojolicious::Plugin::AssetPack::Preprocessor::Less->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::Jsx;
-  $self->add(jsx => Mojolicious::Plugin::AssetPack::Preprocessor::Jsx->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::Sass;
-  $self->add(sass => Mojolicious::Plugin::AssetPack::Preprocessor::Sass->new);
-
-  require Mojolicious::Plugin::AssetPack::Preprocessor::Scss;
-  $self->add(scss => Mojolicious::Plugin::AssetPack::Preprocessor::Scss->new);
+  warn "DEPRECATED".
+  $_[0];
 }
 
 =head2 process
@@ -171,7 +164,7 @@ sub process {
 
   eval {
     chdir dirname $filename;
-    $_->($_, $assetpack, $text, $filename) for @{ $self->subscribers($extension) };
+    $_->($_, $assetpack, $text, $filename) for $self->_preprocessors($extension);
     1;
   } or do {
     $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
@@ -197,6 +190,21 @@ given C<$cb>.
 =cut
 
 sub remove { shift->unsubscribe(@_) }
+
+sub _preprocessors {
+  my ($self, $extension) = @_;
+  my @preprocessors = @{ $self->subscribers($extension) };
+
+  return @preprocessors if @preprocessors;
+
+  if (my $class = $PREPROCESSORS{$extension}) {
+    warn "[ASSETPACK] Adding $class preprocessor.\n" if DEBUG;
+    eval "require $class;1" or die "Could not load $class: $@\n";
+    return $self->add($extension => $class->new);
+  }
+
+  return;
+}
 
 =head1 AUTHOR
 

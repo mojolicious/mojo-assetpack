@@ -138,6 +138,7 @@ use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.24';
+
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
   coffee => '%s require "coffee". http://coffeescript.org/#installation',
@@ -382,7 +383,6 @@ sub process {
   plugin AssetPack => {
     base_url => $str, # default to "/packed"
     minify => $bool, # compress assets
-    no_autodetect => $bool, # disable preprocessor autodetection
   };
 
 Will register the C<compress> helper. All arguments are optional.
@@ -398,7 +398,6 @@ sub register {
 
   $self->minify($minify);
   $self->base_url($config->{base_url}) if $config->{base_url};
-  $self->preprocessors->detect unless $config->{no_autodetect};
 
   $self->{assets} = {};
   $self->{processed} = {};
@@ -476,7 +475,7 @@ sub _read_files {
       $data->{body} = slurp $data->{path};
     }
     elsif (my $asset = $self->{static}->file($file)) {
-      $data->{path} = $asset->path if $self->preprocessors->has_subscribers($data->{ext});
+      $data->{path} = $asset->path if $self->preprocessors->_preprocessors($data->{ext});
       $data->{body} = slurp $asset->path;
     }
     else {
