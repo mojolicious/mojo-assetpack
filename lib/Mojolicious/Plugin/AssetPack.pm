@@ -43,19 +43,23 @@ Or if you need to add the tags manually:
 
 See also L</register>.
 
-=head1 ENVIRONMENT
-
-=head2 MOJO_ASSETPACK_NO_CACHE
-
-If true, convert the assets each time they're expanded, instead of once at
-application start (useful for development). Has no effect when L</minify> is
-enabled.
-
 =head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack> is a L<Mojolicious> plugin which can be used
+to cram multiple assets of the same type into one file. This means that if
+you have a lot of CSS files (.css, .less, .sass, ...) as input, the AssetPack
+can make one big CSS file as output. This is good, since it will often speed
+up the rendering of your page. The output file can even be minified, meaning
+you can save bandwidth and browser parsing time.
+
+The core preprocessors that are bundled with this module can handle CSS and
+JavaScript files, written in many languages.
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessors> for more details.
 
 =head2 Production mode
 
-This plugin will compress scss, less, css, javascript and coffeescript with the
+This plugin will compress sass, less, css, javascript and coffeescript with the
 help of external applications on startup. The result will be one file with all
 the sources combined. This file is stored in L</Packed directory>.
 
@@ -81,22 +85,6 @@ TIP! Make morbo watch your less/sass files as well:
 You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
 convert your less/sass/coffee files each time their asset directive is expanded
 (only works when L</minify> is disabled).
-
-=head2 Preprocessors
-
-This library tries to find default preprocessors for less, scss, js, coffee
-and css.
-
-NOTE! The preprocessors require optional dependencies to function properly.
-Check out L<Mojolicious::Plugin::AssetPack::Preprocessors/detect> for more
-details.
-
-You can also define your own preprocessors:
-
-  app->asset->preprocessors->add(js => sub {
-    my($assetpack, $text, $file) = @_;
-    $$text = "// yikes!\n" if 5 < rand 10;
-  });
 
 =head2 Custom domain
 
@@ -127,6 +115,18 @@ This plugin support this if you set a custom L</base_url>.
 
 See also L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
 
+=head1 ENVIRONMENT
+
+=head2 MOJO_ASSETPACK_DEBUG
+
+Set this to get extra debug information to STDERR from AssetPack internals.
+
+=head2 MOJO_ASSETPACK_NO_CACHE
+
+If true, convert the assets each time they're expanded, instead of once at
+application start (useful for development). Has no effect when L</minify> is
+enabled.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin';
@@ -140,7 +140,7 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 our $VERSION = '0.24';
 
 our %MISSING_ERROR = (
-  default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors#detect',
+  default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors',
   coffee => '%s require "coffee". http://coffeescript.org/#installation',
   jsx => '%s require "jsx". http://facebook.github.io/react',
   less => '%s require "less". http://lesscss.org/#usage',
@@ -230,7 +230,7 @@ sub add {
 
 This method will return one tag for each asset defined by the "$moniker".
 
-Will also run L</less>, L</sass> or L</coffee> on the files to convert them to
+Will also run C<less>, C<sass> or C<coffee> on the files to convert them to
 css or js, which the browser understands. (With L</MOJO_ASSETPACK_NO_CACHE>
 enabled, this is done each time on expand; with it disabled, this is done once
 when the asset is added.)

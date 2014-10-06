@@ -11,21 +11,57 @@ preprocessors for a given file type.
 
 =head2 Bundled preprocessors
 
+L<Mojolicious::Plugin::AssetPack> will load the preprocessors in the list
+below, when you try to handle a given file.
+
+NOTE! Some of the preprocessors require optional dependencies to function
+properly.
+
 =over 4
 
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript>
 
+Handle C<.coffee> files.
+
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Css>
+
+Handle C<.css> files.
 
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript>
 
+Handle C<.js> files.
+
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx>
+
+Handle C<.jsx> files.
 
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Less>
 
+Handle C<.less> files.
+
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass>
 
+Handle C<.sass> files.
+
 =item * L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss>
+
+Handle C<.scss> files.
+
+=back
+
+=head2 Custom preprocessors
+
+You can also define your own preprocessors. Example code:
+
+  package My::Preprocessor;
+  use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+
+  sub process {
+    my ($self, $assetpack, $text, $path) = @_;
+    $$text = "// yikes!\n" if 5 < rand 10;
+  }
+
+  app->asset->preprocessors->add(js => My::Preprocessor->new);
 
 =cut
 

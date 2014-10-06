@@ -3,6 +3,7 @@ Revision history for Mojolicious-Plugin-AssetPack
 0.25
        * Preprocessors are added on the fly
        * Deprecated "no_autodetect"
+       * Improved documentation
 
 0.24     Sun Sep 28 20:44:00 2014
        * Add preprocessor classes for every detected preprocessor
