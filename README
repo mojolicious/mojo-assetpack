@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.24
+    0.25
 
 SYNOPSIS
     In your application:
@@ -39,15 +39,21 @@ SYNOPSIS
 
     See also "register".
 
-ENVIRONMENT
-  MOJO_ASSETPACK_NO_CACHE
-    If true, convert the assets each time they're expanded, instead of once
-    at application start (useful for development). Has no effect when
-    "minify" is enabled.
-
 DESCRIPTION
+    Mojolicious::Plugin::AssetPack is a Mojolicious plugin which can be used
+    to cram multiple assets of the same type into one file. This means that
+    if you have a lot of CSS files (.css, .less, .sass, ...) as input, the
+    AssetPack can make one big CSS file as output. This is good, since it
+    will often speed up the rendering of your page. The output file can even
+    be minified, meaning you can save bandwidth and browser parsing time.
+
+    The core preprocessors that are bundled with this module can handle CSS
+    and JavaScript files, written in many languages.
+
+    See Mojolicious::Plugin::AssetPack::Preprocessors for more details.
+
   Production mode
-    This plugin will compress scss, less, css, javascript and coffeescript
+    This plugin will compress sass, less, css, javascript and coffeescript
     with the help of external applications on startup. The result will be
     one file with all the sources combined. This file is stored in "Packed
     directory".
@@ -74,21 +80,6 @@ DESCRIPTION
     to convert your less/sass/coffee files each time their asset directive
     is expanded (only works when "minify" is disabled).
 
-  Preprocessors
-    This library tries to find default preprocessors for less, scss, js,
-    coffee and css.
-
-    NOTE! The preprocessors require optional dependencies to function
-    properly. Check out "detect" in
-    Mojolicious::Plugin::AssetPack::Preprocessors for more details.
-
-    You can also define your own preprocessors:
-
-      app->asset->preprocessors->add(js => sub {
-        my($assetpack, $text, $file) = @_;
-        $$text = "// yikes!\n" if 5 < rand 10;
-      });
-
   Custom domain
     You might want to serve the assets from a domain different from where
     the main app is running. The reasons for that might be:
@@ -108,6 +99,16 @@ DESCRIPTION
     See also
     <https://developers.google.com/speed/docs/best-practices/request#ServeFr
     omCookielessDomain>.
+
+ENVIRONMENT
+  MOJO_ASSETPACK_DEBUG
+    Set this to get extra debug information to STDERR from AssetPack
+    internals.
+
+  MOJO_ASSETPACK_NO_CACHE
+    If true, convert the assets each time they're expanded, instead of once
+    at application start (useful for development). Has no effect when
+    "minify" is enabled.
 
 ATTRIBUTES
   base_url
@@ -179,7 +180,6 @@ METHODS
       plugin AssetPack => {
         base_url => $str, # default to "/packed"
         minify => $bool, # compress assets
-        no_autodetect => $bool, # disable preprocessor autodetection
       };
 
     Will register the "compress" helper. All arguments are optional.

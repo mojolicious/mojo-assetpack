@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.25
+0.25     Mon Oct  6 16:28:59 2014
        * Preprocessors are added on the fly
        * Deprecated "no_autodetect"
        * Improved documentation
