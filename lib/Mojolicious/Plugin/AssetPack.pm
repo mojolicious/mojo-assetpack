@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.26
+0.27
 
 =head1 SYNOPSIS
 
@@ -137,7 +137,7 @@ use File::Basename qw( basename );
 use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors',
@@ -462,15 +462,17 @@ sub _read_files {
 
 FILE:
   for my $file (@files) {
-    my $data = $files{$file} = {ext => $file =~ /\.(\w+)$/ ? $1 : 'default'};
+    my $data = $files{$file} = {ext => 'unknown_extension'};
 
     if ($file =~ /^https?:/) {
       $data->{path} = $self->fetch($file);
       $data->{body} = slurp $data->{path};
+      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     elsif (my $asset = $self->{static}->file($file)) {
-      $data->{path} = $asset->path if $self->preprocessors->_preprocessors($data->{ext});
+      $data->{path} = $asset->path;
       $data->{body} = slurp $asset->path;
+      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     else {
       die "AssetPack cannot find input file '$file'\n";
