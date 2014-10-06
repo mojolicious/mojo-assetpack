@@ -2,7 +2,7 @@ language: perl
 perl:
   - "5.16"
 env:
-  - "HARNESS_OPTIONS=j1"
+  - "HARNESS_OPTIONS=j1 TEST_ONLINE=1"
 install:
   - "cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL"
   - "cpanm -n --installdeps ."
