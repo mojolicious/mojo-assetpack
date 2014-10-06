@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.26
+0.26     Tue Oct  7 00:16:27 2014
        * Generate a different checksum when unable to process input files
        * Replaced "/Mojolicious/Plugin/AssetPack/could/not/compile/..."
          with an actual asset using Preprocessor::Fallback
