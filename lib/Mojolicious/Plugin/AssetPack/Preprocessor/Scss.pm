@@ -48,7 +48,7 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my @cmd = ( $self->executable, '--stdin', '--scss' );
+  my @cmd = ($self->executable, '--stdin', '--scss');
   my $err;
 
   push @cmd, '-I' => dirname $path;
@@ -59,7 +59,7 @@ sub process {
   $self->_make_css_error($err, $text) if length $err;
 }
 
-sub _extension { 'scss' }
+sub _extension {'scss'}
 
 =head1 COPYRIGHT AND LICENSE
 

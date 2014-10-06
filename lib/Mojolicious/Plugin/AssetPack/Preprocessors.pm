@@ -78,12 +78,12 @@ our $VERSION = '0.01';
 
 my %PREPROCESSORS = (
   coffee => 'Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript',
-  css => 'Mojolicious::Plugin::AssetPack::Preprocessor::Css',
-  js => 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript',
-  jsx => 'Mojolicious::Plugin::AssetPack::Preprocessor::Jsx',
-  less => 'Mojolicious::Plugin::AssetPack::Preprocessor::Less',
-  sass => 'Mojolicious::Plugin::AssetPack::Preprocessor::Sass',
-  scss => 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss',
+  css    => 'Mojolicious::Plugin::AssetPack::Preprocessor::Css',
+  js     => 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript',
+  jsx    => 'Mojolicious::Plugin::AssetPack::Preprocessor::Jsx',
+  less   => 'Mojolicious::Plugin::AssetPack::Preprocessor::Less',
+  sass   => 'Mojolicious::Plugin::AssetPack::Preprocessor::Sass',
+  scss   => 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss',
 );
 
 =head1 METHODS
@@ -151,9 +151,9 @@ and returns a combined checksum.
 =cut
 
 sub checksum {
-  my($self, $extension, $text, $filename) = @_;
+  my ($self, $extension, $text, $filename) = @_;
   my $old_dir = getcwd;
-  my $err = '';
+  my $err     = '';
   my @checksum;
 
   local $@;
@@ -178,8 +178,7 @@ DEPRECATED. Default handlers are added on the fly.
 =cut
 
 sub detect {
-  warn "DEPRECATED".
-  $_[0];
+  warn "DEPRECATED" . $_[0];
 }
 
 =head2 process
@@ -192,9 +191,9 @@ called with the C<$assetpack> object as the first argument.
 =cut
 
 sub process {
-  my($self, $extension, $assetpack, $text, $filename) = @_;
+  my ($self, $extension, $assetpack, $text, $filename) = @_;
   my $old_dir = getcwd;
-  my $err = '';
+  my $err     = '';
 
   local $@;
 
@@ -229,7 +228,7 @@ sub remove { shift->unsubscribe(@_) }
 
 sub _preprocessors {
   my ($self, $extension) = @_;
-  my @preprocessors = @{ $self->subscribers($extension) };
+  my @preprocessors = @{$self->subscribers($extension)};
 
   return @preprocessors if @preprocessors;
 

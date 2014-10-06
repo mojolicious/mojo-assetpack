@@ -59,9 +59,9 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub checksum {
   my ($self, $text, $path) = @_;
-  my $ext = $path =~ /\.(s[ac]ss)$/ ? $1 : $self->_extension;
-  my $dir = dirname $path;
-  my $re = qr{ \@import \s+ (["']) (.*?) \1 }x;
+  my $ext      = $path =~ /\.(s[ac]ss)$/ ? $1 : $self->_extension;
+  my $dir      = dirname $path;
+  my $re       = qr{ \@import \s+ (["']) (.*?) \1 }x;
   my @checksum = md5_sum $$text;
 
   while ($$text =~ /$re/gs) {
@@ -87,7 +87,7 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my @cmd = ( $self->executable, '--stdin' );
+  my @cmd = ($self->executable, '--stdin');
   my $err;
 
   push @cmd, '-I' => dirname $path;
@@ -97,7 +97,7 @@ sub process {
   $self->_make_css_error($err, $text) if length $err;
 }
 
-sub _extension { 'sass' }
+sub _extension {'sass'}
 
 =head1 COPYRIGHT AND LICENSE
 

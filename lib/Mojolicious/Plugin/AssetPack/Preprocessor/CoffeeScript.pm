@@ -20,7 +20,7 @@ Installation on Ubuntu or Debian:
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use File::Which ();
+use File::Which              ();
 use JavaScript::Minifier::XS ();
 
 =head1 ATTRIBUTES
@@ -55,7 +55,7 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my @cmd = ( $self->executable, '--compile', '--stdio' );
+  my @cmd = ($self->executable, '--compile', '--stdio');
   my $err;
 
   $self->_run(\@cmd, $text, $text, \$err);

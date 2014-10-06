@@ -141,11 +141,11 @@ our $VERSION = '0.25';
 
 our %MISSING_ERROR = (
   default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors',
-  coffee => '%s require "coffee". http://coffeescript.org/#installation',
-  jsx => '%s require "jsx". http://facebook.github.io/react',
-  less => '%s require "less". http://lesscss.org/#usage',
-  sass => '%s require "sass". http://sass-lang.com/install',
-  scss => '%s require "sass". http://sass-lang.com/install',
+  coffee  => '%s require "coffee". http://coffeescript.org/#installation',
+  jsx     => '%s require "jsx". http://facebook.github.io/react',
+  less    => '%s require "less". http://lesscss.org/#usage',
+  sass    => '%s require "sass". http://sass-lang.com/install',
+  scss    => '%s require "sass". http://sass-lang.com/install',
 );
 
 =head1 ATTRIBUTES
@@ -176,10 +176,10 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 
 =cut
 
-has base_url => '/packed/';
-has minify => 0;
+has base_url      => '/packed/';
+has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir => sub { catdir File::Spec::Functions::tmpdir(), 'mojo-assetpack' };
+has out_dir       => sub { catdir File::Spec::Functions::tmpdir(), 'mojo-assetpack' };
 
 =head2 rebuild
 
@@ -188,7 +188,7 @@ Deprecated.
 =cut
 
 sub rebuild {
-  warn "rebuild() has no effect any more. Will soon be removed."
+  warn "rebuild() has no effect any more. Will soon be removed.";
 }
 
 has _ua => sub {
@@ -208,16 +208,16 @@ helper is called on the app.
 =cut
 
 sub add {
-  my($self, $moniker, @files) = @_;
+  my ($self, $moniker, @files) = @_;
 
   warn "[ASSETPACK] add $moniker => @files\n" if DEBUG;
 
   $self->{assets}{$moniker} = \@files;
 
-  if($self->minify) {
+  if ($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif(!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
+  elsif (!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
     $self->{processed}{$moniker} = [$self->_process_many($moniker, @files)];
   }
 
@@ -240,23 +240,23 @@ The returning bytestream will contain style or script tags.
 =cut
 
 sub expand {
-  my($self, $c, $moniker) = @_;
+  my ($self, $c, $moniker) = @_;
   my @processed_files;
 
   warn "[ASSETPACK] expand $moniker\n" if DEBUG;
 
   if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
-    @processed_files = $self->_process_many($moniker, @{ $self->{assets}{$moniker} });
+    @processed_files = $self->_process_many($moniker, @{$self->{assets}{$moniker}});
   }
-  elsif(ref $self->{processed}{$moniker} eq 'ARRAY') {
-    @processed_files = @{ $self->{processed}{$moniker} };
+  elsif (ref $self->{processed}{$moniker} eq 'ARRAY') {
+    @processed_files = @{$self->{processed}{$moniker}};
   }
   else {
     warn "[ASSETPACK] Cannot expand $moniker\n" if DEBUG;
     return b "<!-- Cannot expand $moniker -->";
   }
 
-  if($moniker =~ /\.js/) {
+  if ($moniker =~ /\.js/) {
     return b join "\n", map { $c->javascript($_) } @processed_files;
   }
   else {
@@ -285,7 +285,7 @@ sub fetch {
   }
 
   my $res = $self->_ua->get($url)->res;
-  my $ct = $res->headers->content_type // 'text/plain';
+  my $ct  = $res->headers->content_type // 'text/plain';
   my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
   my $path;
 
@@ -312,7 +312,7 @@ contain one file if the C<$moniker> is minified.
 =cut
 
 sub get {
-  my($self, $moniker) = @_;
+  my ($self, $moniker) = @_;
   my $files = $self->{processed}{$moniker};
 
   return unless $files;
@@ -334,7 +334,7 @@ The result file will be stored in L</Packed directory>.
 sub process {
   my ($self, $moniker, @files) = @_;
   my ($md5_sum, $files) = $self->_read_files(@files);
-  my $out_file = $moniker;
+  my $out_file  = $moniker;
   my $processed = '';
   my (@missing, $name);
 
@@ -342,11 +342,11 @@ sub process {
 
   if (!$ENV{MOJO_ASSETPACK_NO_CACHE} and $name = $self->_fluffy_find(qr{^$out_file(-$md5_sum)?\.\w+$})) {
     $self->{log}->debug("Using existing asset for $moniker");
-    $self->{processed}{$moniker} = $self->base_url .$name;
+    $self->{processed}{$moniker} = $self->base_url . $name;
     return $self;
   }
 
-  $out_file .= "-$md5_sum" .($moniker =~ m!(\.\w+)$!)[0];
+  $out_file .= "-$md5_sum" . ($moniker =~ m!(\.\w+)$!)[0];
 
   for my $file (@files) {
     my $data = $files->{$file};
@@ -372,7 +372,7 @@ sub process {
   else {
     spurt $processed, catfile $self->out_dir, $out_file;
     $self->{log}->debug("Built asset for $moniker ($out_file)");
-    $self->{processed}{$moniker} = $self->base_url .$out_file;
+    $self->{processed}{$moniker} = $self->base_url . $out_file;
   }
 
   $self;
@@ -392,48 +392,50 @@ Will register the C<compress> helper. All arguments are optional.
 =cut
 
 sub register {
-  my($self, $app, $config) = @_;
+  my ($self, $app, $config) = @_;
   my $minify = $config->{minify} // $app->mode eq 'production';
   my $helper = $config->{helper} || 'asset';
 
   $self->minify($minify);
   $self->base_url($config->{base_url}) if $config->{base_url};
 
-  $self->{assets} = {};
+  $self->{assets}    = {};
   $self->{processed} = {};
-  $self->{log} = $app->log;
-  $self->{static} = $app->static;
+  $self->{log}       = $app->log;
+  $self->{static}    = $app->static;
 
   warn "[ASSETPACK] Will rebuild assets on each request.\n" if DEBUG and $ENV{MOJO_ASSETPACK_NO_CACHE};
 
-  if($config->{out_dir}) {
+  if ($config->{out_dir}) {
     $self->out_dir($config->{out_dir});
-    push @{ $app->static->paths } , $config->{out_dir};
+    push @{$app->static->paths}, $config->{out_dir};
   }
   else {
-    for my $path (@{ $app->static->paths }) {
+    for my $path (@{$app->static->paths}) {
       next unless -w $path;
       $self->out_dir(catdir $path, 'packed');
     }
   }
 
-  unless(-d $self->out_dir) {
+  unless (-d $self->out_dir) {
     mkdir $self->out_dir or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
   }
 
-  $app->helper($helper => sub {
-    return $self if @_ == 1;
-    return shift, $self->add(@_) if @_ > 2;
-    return $self->expand(@_) unless $self->minify;
-    return $_[0]->javascript($self->{processed}{$_[1]}) if $_[1] =~ /\.js$/;
-    return $_[0]->stylesheet($self->{processed}{$_[1]});
-  });
+  $app->helper(
+    $helper => sub {
+      return $self if @_ == 1;
+      return shift, $self->add(@_) if @_ > 2;
+      return $self->expand(@_) unless $self->minify;
+      return $_[0]->javascript($self->{processed}{$_[1]}) if $_[1] =~ /\.js$/;
+      return $_[0]->stylesheet($self->{processed}{$_[1]});
+    }
+  );
 }
 
 sub _fluffy_find {
   my ($self, $re) = @_;
 
-  opendir (my $DH, $self->out_dir) or die "opendir @{[$self->out_dir]}: $!";
+  opendir(my $DH, $self->out_dir) or die "opendir @{[$self->out_dir]}: $!";
   for my $f (readdir $DH) {
     next unless $f =~ $re;
     return $f;
@@ -443,7 +445,7 @@ sub _fluffy_find {
 }
 
 sub _process_many {
-  my($self, $moniker, @files) = @_;
+  my ($self, $moniker, @files) = @_;
   my $ext = $moniker =~ /\.(\w+)$/ ? $1 : 'unknown_extension';
 
   for my $file (@files) {
@@ -466,9 +468,9 @@ sub _read_files {
   my ($self, @files) = @_;
   my (@checksum, %files);
 
-  FILE:
+FILE:
   for my $file (@files) {
-    my $data = $files{$file} = { ext => $file =~ /\.(\w+)$/ ? $1 : 'default' };
+    my $data = $files{$file} = {ext => $file =~ /\.(\w+)$/ ? $1 : 'default'};
 
     if ($file =~ /^https?:/) {
       $data->{path} = $self->fetch($file);
@@ -485,10 +487,7 @@ sub _read_files {
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
   }
 
-  return(
-    @checksum == 1 ? $checksum[0] : md5_sum(join '', @checksum),
-    \%files,
-  );
+  return (@checksum == 1 ? $checksum[0] : md5_sum(join '', @checksum), \%files,);
 }
 
 =head1 COPYRIGHT AND LICENSE

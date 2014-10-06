@@ -54,10 +54,10 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my @cmd = ( $self->executable );
+  my @cmd = ($self->executable);
   my $err;
 
-  push @cmd, '-'; # read from stdin
+  push @cmd, '-';                          # read from stdin
   push @cmd, '-x' if $assetpack->minify;
 
   $self->_run(\@cmd, $text, $text, \$err);
