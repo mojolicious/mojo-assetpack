@@ -86,6 +86,19 @@ my %PREPROCESSORS = (
   scss   => 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss',
 );
 
+=head1 ATTRIBUTES
+
+=head2 fallback
+
+TODO
+
+=cut
+
+has fallback => sub {
+  require Mojolicious::Plugin::AssetPack::Preprocessor::Fallback;
+  Mojolicious::Plugin::AssetPack::Preprocessor::Fallback->new;
+};
+
 =head1 METHODS
 
 =head2 add
@@ -160,7 +173,9 @@ sub checksum {
 
   eval {
     chdir dirname $filename if $filename;
-    push @checksum, $_->checksum($text, $filename) for $self->_preprocessors($extension);
+    for my $p ($self->_preprocessors($extension)) {
+      push @checksum, $p->checksum($text, $filename);
+    }
     1;
   } or do {
     $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
@@ -199,15 +214,18 @@ sub process {
 
   eval {
     chdir dirname $filename;
-    $_->($_, $assetpack, $text, $filename) for $self->_preprocessors($extension);
+    for my $p ($self->_preprocessors($extension)) {
+      $p->($p, $assetpack, $text, $filename);
+      $assetpack->{log}->error($p->errmsg) if $p->errmsg;
+      $err ||= $p->errmsg;
+    }
     1;
   } or do {
     $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
   };
 
   chdir $old_dir;
-  die $err if $err;
-  $self;
+  return $err;
 }
 
 =head2 map_type
@@ -238,7 +256,7 @@ sub _preprocessors {
     return $self->add($extension => $class->new);
   }
 
-  return;
+  return $self->fallback;
 }
 
 =head1 AUTHOR

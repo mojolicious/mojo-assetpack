@@ -14,12 +14,17 @@ use Mojo::Base -base;
 use Mojo::Util ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
-use overload (
-  q(&{}) => sub { shift->can('process') },
-  fallback => 1,
-);
+use overload (q(&{}) => sub { shift->can('process') }, fallback => 1,);
 
 =head1 ATTRIBUTES
+
+=head2 errmsg
+
+Holds the error from last L</process>.
+
+=cut
+
+has errmsg => '';
 
 =head1 METHODS
 
@@ -31,7 +36,7 @@ Returns true.
 
 =cut
 
-sub can_process { 1 }
+sub can_process {1}
 
 =head2 checksum
 
@@ -70,7 +75,9 @@ sub _make_css_error {
   $err =~ s!"!'!g;
   $err =~ s!\n!\\A!g;
   $err =~ s!\s! !g;
-  $$text = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+  $$text
+    = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+  $self->errmsg($err);
   $self;
 }
 
@@ -80,15 +87,17 @@ sub _make_js_error {
   $err =~ s!\n!\\n!g;
   $err =~ s!\s! !g;
   $$text = "alert('$err');";
+  $self->errmsg($err);
   $self;
 }
 
 sub _run {
   my ($self, @args) = @_;
-  my $cmd = join(' ', @{ $args[0] });
-  my $err = $_[-1];
+  my $cmd       = join(' ', @{$args[0]});
+  my $err       = $_[-1];
   my $exit_code = -1;
 
+  $self->errmsg('');
   local ($!, $?, $@);
 
   eval {
@@ -97,7 +106,7 @@ sub _run {
     $$err ||= sprintf '%s', $! if $?;
   } or do {
     $$err = $@;
-    $$err =~ s!\sat\s\S+.*!!s; # remove " at /some/file.pm line 308"
+    $$err =~ s!\sat\s\S+.*!!s;    # remove " at /some/file.pm line 308"
     chomp $$err;
   };
 

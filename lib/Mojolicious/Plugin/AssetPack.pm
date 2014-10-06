@@ -336,7 +336,7 @@ sub process {
   my ($md5_sum, $files) = $self->_read_files(@files);
   my $out_file  = $moniker;
   my $processed = '';
-  my (@missing, $name);
+  my (@err, $name);
 
   $out_file =~ s/\.(\w+)$// or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
 
@@ -346,26 +346,18 @@ sub process {
     return $self;
   }
 
-  $out_file .= "-$md5_sum" . ($moniker =~ m!(\.\w+)$!)[0];
-
   for my $file (@files) {
     my $data = $files->{$file};
-    if ($data->{path}) {
-      warn "[ASSETPACK] process $file ($data->{path})\n" if DEBUG;
-      $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
-      $processed .= $data->{body};
-    }
-    else {
-      my $error = $MISSING_ERROR{$data->{ext}} || $MISSING_ERROR{default};
-      push @missing, $data->{ext};
-      $self->{log}->error(sprintf "AssetPack: $error", $file);
-    }
+    warn "[ASSETPACK] process $file ($data->{path})\n" if DEBUG;
+    my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
+    push @err, $err if $err;
+    $processed .= $data->{body};
   }
 
-  if (@missing) {
-    $self->{processed}{$moniker} = "/Mojolicious/Plugin/AssetPack/could/not/compile/$moniker";
-  }
-  elsif ($md5_sum eq md5_sum($processed) and $files[0] !~ /^http\s?:/) {
+  $md5_sum .= '-with-error' if @err;
+  $out_file .= "-$md5_sum" . ($moniker =~ m!(\.\w+)$!)[0];
+
+  if ($md5_sum eq md5_sum($processed) and $files[0] !~ /^http\s?:/) {
     warn "[ASSETPACK] Same input as output for $files[0]\n" if DEBUG;
     $self->{processed}{$moniker} = $files[0];
   }
