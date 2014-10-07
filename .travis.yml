@@ -1,6 +1,8 @@
 language: perl
 perl:
+  - "5.20"
   - "5.16"
+  - "5.10"
 env:
   - "HARNESS_OPTIONS=j1 TEST_ONLINE=1"
 install:
