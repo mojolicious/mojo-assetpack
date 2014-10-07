@@ -1,5 +1,11 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.28
+       * Add support for %= asset "foo.js", { inline => 1 }
+       * Will also generate asset files with md5 from single files
+       * Remove expand()
+       * Remove rebuild()
+
 0.27     Tue Oct  7 00:28:39 2014
        * Fix t/google-font.t
 

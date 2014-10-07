@@ -35,6 +35,10 @@ In your template:
   %= asset 'app.js'
   %= asset 'app.css'
 
+Or if you want the asset inlined in the HTML:
+
+  %= asset 'app.css', { inline => 1 }
+
 Or if you need to add the tags manually:
 
   % for my $asset (asset->get('app.js')) {
@@ -85,6 +89,16 @@ TIP! Make morbo watch your less/sass files as well:
 You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
 convert your less/sass/coffee files each time their asset directive is expanded
 (only works when L</minify> is disabled).
+
+=head2 Inlined assets
+
+AssetPack is able to insert your assets directly into your markup. This is
+useful if you want to make a one-page app and want to keep the number of
+requests to the server at a minimum. However, the images, fonts or any other
+external asset which again is referred to require more requests to the
+server. See below on how to include the asset directly in your template:
+
+  %= asset 'app.css', { inline => 1 }
 
 =head2 Custom domain
 
@@ -276,12 +290,12 @@ sub process {
   my ($md5_sum, $files) = $self->_read_files(@files);
   my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/
     or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
+  my $disk_path = catfile $self->out_dir, "$name-$md5_sum.$ext";
   my $processed = '';
 
-  $self->{files}{$moniker} = catfile $self->out_dir, "$name-$md5_sum.$ext";
-  $self->{processed}{$moniker} = $self->base_url . "$name-$md5_sum.$ext";
+  $self->{processed}{$moniker} = "$name-$md5_sum.$ext";
 
-  if (-e $self->{files}{$moniker} and CACHE_ASSETS) {
+  if (-e $disk_path and CACHE_ASSETS) {
     $self->{log}->debug("Using existing asset for $moniker");
     return $self;
   }
@@ -294,12 +308,12 @@ sub process {
 
     if ($err) {
       $self->{log}->error($err);
-      $self->{files}{$moniker} = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
-      $self->{processed}{$moniker} = $self->base_url . "$name-$md5_sum-with-error.$ext";
+      $disk_path = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
+      $self->{processed}{$moniker} = "$name-$md5_sum-with-error.$ext";
     }
   }
 
-  spurt $processed => $self->{files}{$moniker};
+  spurt $processed => $disk_path;
   $self->{log}->debug("Built asset for $moniker");
   $self;
 }
@@ -326,7 +340,6 @@ sub register {
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
-  $self->{files}     = {};
   $self->{processed} = {};
   $self->{log}       = $app->log;
   $self->{static}    = $app->static;
@@ -351,7 +364,7 @@ sub register {
   $app->helper(
     $helper => sub {
       return $self if @_ == 1;
-      return shift, $self->add(@_) if @_ > 2;
+      return shift, $self->add(@_) if @_ > 2 and ref $_[-1] ne 'HASH';
       return $self->_inject(@_);
     }
   );
@@ -370,7 +383,7 @@ sub _fluffy_find {
 }
 
 sub _inject {
-  my ($self, $c, $moniker) = @_;
+  my ($self, $c, $moniker, $args) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
   my @processed_files;
 
@@ -389,7 +402,16 @@ sub _inject {
     return b "<!-- Asset '$moniker' is not defined. -->";
   }
 
-  return b join "\n", map { $c->$tag_helper($_) } @processed_files;
+  if ($args->{inline}) {
+    return $c->$tag_helper(
+      sub {
+        join "\n", map { slurp(catfile $self->out_dir, $_) } @processed_files;
+      }
+    );
+  }
+  else {
+    return b join "\n", map { $c->$tag_helper($self->base_url . $_) } @processed_files;
+  }
 }
 
 sub _process_many {

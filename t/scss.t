@@ -2,7 +2,7 @@ use t::Helper;
 
 {
   diag "minify=0";
-  my $t = t::Helper->t({ minify => 0 });
+  my $t = t::Helper->t({minify => 0});
 
   plan skip_all => 'Could not find preprocessors for scss', 6 unless $t->app->asset->preprocessors->can_process('scss');
 
@@ -16,43 +16,27 @@ use t::Helper;
   $t->app->asset('x.css' => '/sass/x.scss');
   $t->app->routes->get('/x' => 'x');
 
-  $t->get_ok('/scss')
-    ->status_is(200)
-    ->content_like(qr{<link href="/packed/a-\w+\.css"})
-    ->content_like(qr{<link href="/packed/b-\w+\.css"})
-    ;
+  $t->get_ok('/scss')->status_is(200)->content_like(qr{<link href="/packed/a-\w+\.css"})
+    ->content_like(qr{<link href="/packed/b-\w+\.css"});
 
-  $t->get_ok('/x')
-    ->status_is(200)
-    ->content_like(qr{<link href="/packed/x-\w+\.css"})
-    ;
+  $t->get_ok('/x')->status_is(200)->content_like(qr{<link href="/packed/x-\w+\.css"});
 
-  $t->get_ok($t->tx->res->dom->at('link')->{href})
-    ->status_is(200)
-    ->content_like(qr{background: \#abcdef})
-    ;
+  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{background: \#abcdef});
 
-  $t->get_ok('/include-dir')
-    ->content_like(qr{<link href="/packed/y-ac21fd5d420c2fbd1c41eec8bfcefb62\.css".*}m)
-    ->status_is(200)
-    ;
+  $t->get_ok('/include-dir')->content_like(qr{<link href="/packed/y-47cfc3af7162086fe15b5b8d1623f8c9\.css".*}m)
+    ->status_is(200);
 }
 
 {
   diag "minify=1";
-  my $t = t::Helper->t({ minify => 1 });
+  my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('scss.css' => '/css/a.scss', '/css/b.scss');
 
-  $t->get_ok('/scss')
-    ->status_is(200)
-    ->content_like(qr{<link href="/packed/scss-53f756a54b650d23d1ddb705c10c97d6\.css".*}m)
-    ;
+  $t->get_ok('/scss')->status_is(200)
+    ->content_like(qr{<link href="/packed/scss-53f756a54b650d23d1ddb705c10c97d6\.css".*}m);
 
-  $t->get_ok($t->tx->res->dom->at('link')->{href})
-    ->status_is(200)
-    ->content_like(qr{a1a1a1.*b1b1b1}s)
-    ;
+  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{a1a1a1.*b1b1b1}s);
 }
 
 done_testing;
