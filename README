@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.27
+    0.28
 
 SYNOPSIS
     In your application:
@@ -30,6 +30,10 @@ SYNOPSIS
 
       %= asset 'app.js'
       %= asset 'app.css'
+
+    Or if you want the asset inlined in the HTML:
+
+      %= asset 'app.css', { inline => 1 }
 
     Or if you need to add the tags manually:
 
@@ -79,6 +83,22 @@ DESCRIPTION
     You can also set the "MOJO_ASSETPACK_NO_CACHE" environment variable to 1
     to convert your less/sass/coffee files each time their asset directive
     is expanded (only works when "minify" is disabled).
+
+  Inlined assets
+    AssetPack is able to insert your assets directly into your markup. This
+    is useful if you want to make a one-page app and want to keep the number
+    of requests to the server at a minimum. However, the images, fonts or
+    any other external asset which again is referred to require more
+    requests to the server. See below on how to include the asset directly
+    in your template:
+
+      %= asset 'app.css', { inline => 1 }
+
+    Or for manual inspection:
+
+      % for my $data (asset->get('app.js', { inline => 1 })) {
+        %== $data;
+      }
 
   Custom domain
     You might want to serve the assets from a domain different from where
@@ -131,28 +151,12 @@ ATTRIBUTES
     defaults to "mojo-assetpack" directory in temp unless a static directory
     is writeable.
 
-  rebuild
-    Deprecated.
-
 METHODS
   add
       $self->add($moniker => @rel_files);
 
     Used to define new assets aliases. This method is called when the
     "asset()" helper is called on the app.
-
-  expand
-      $bytestream = $self->expand($c, $moniker);
-
-    This method will return one tag for each asset defined by the
-    "$moniker".
-
-    Will also run "less", "sass" or "coffee" on the files to convert them to
-    css or js, which the browser understands. (With
-    "MOJO_ASSETPACK_NO_CACHE" enabled, this is done each time on expand;
-    with it disabled, this is done once when the asset is added.)
-
-    The returning bytestream will contain style or script tags.
 
   fetch
       $path = $self->fetch($url);
