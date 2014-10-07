@@ -100,6 +100,12 @@ server. See below on how to include the asset directly in your template:
 
   %= asset 'app.css', { inline => 1 }
 
+Or for manual inspection:
+
+  % for my $data (asset->get('app.js', { inline => 1 })) {
+    %== $data;
+  }
+
 =head2 Custom domain
 
 You might want to serve the assets from a domain different from where the
@@ -267,11 +273,15 @@ contain one file if the C<$moniker> is minified.
 =cut
 
 sub get {
-  my ($self, $moniker) = @_;
+  my ($self, $moniker, $args) = @_;
   my $files = $self->{processed}{$moniker} || [];
 
-  return $self->base_url . $files unless ref $files;
-  return map { $self->base_url . $_ } @$files;
+  if ($args->{inline}) {
+    return map { slurp(catfile $self->out_dir, $_) } @$files;
+  }
+  else {
+    return map { $self->base_url . $_ } @$files;
+  }
 }
 
 =head2 process
@@ -293,7 +303,7 @@ sub process {
   my $disk_path = catfile $self->out_dir, "$name-$md5_sum.$ext";
   my $processed = '';
 
-  $self->{processed}{$moniker} = "$name-$md5_sum.$ext";
+  $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
 
   if (-e $disk_path and CACHE_ASSETS) {
     $self->{log}->debug("Using existing asset for $moniker");
@@ -309,7 +319,7 @@ sub process {
     if ($err) {
       $self->{log}->error($err);
       $disk_path = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
-      $self->{processed}{$moniker} = "$name-$md5_sum-with-error.$ext";
+      $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
     }
   }
 
@@ -385,32 +395,22 @@ sub _fluffy_find {
 sub _inject {
   my ($self, $c, $moniker, $args) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
-  my @processed_files;
 
-  if (!CACHE_ASSETS) {
-    $self->_process_many($moniker);
-  }
+  $self->_process_many($moniker) unless CACHE_ASSETS;
+  my $processed = $self->{processed}{$moniker} || [];
 
-  if (ref $self->{processed}{$moniker} eq 'ARRAY') {
-    @processed_files = @{$self->{processed}{$moniker}};
-  }
-  elsif ($self->{processed}{$moniker}) {
-    @processed_files = ($self->{processed}{$moniker});
-  }
-
-  if (!@processed_files) {
+  if (!@$processed) {
     return b "<!-- Asset '$moniker' is not defined. -->";
   }
-
-  if ($args->{inline}) {
+  elsif ($args->{inline}) {
     return $c->$tag_helper(
       sub {
-        join "\n", map { slurp(catfile $self->out_dir, $_) } @processed_files;
+        join "\n", map { slurp(catfile $self->out_dir, $_) } @$processed;
       }
     );
   }
   else {
-    return b join "\n", map { $c->$tag_helper($self->base_url . $_) } @processed_files;
+    return b join "\n", map { $c->$tag_helper($self->base_url . $_) } @$processed;
   }
 }
 
@@ -432,7 +432,7 @@ sub _process_many {
     }
 
     $self->process($moniker => $file);
-    $file = $self->{processed}{$moniker};
+    $file = $self->{processed}{$moniker}[0];
   }
 
   $self->{processed}{$moniker} = \@files;
