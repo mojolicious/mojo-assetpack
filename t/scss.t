@@ -16,7 +16,7 @@ use t::Helper;
   $t->app->asset('x.css' => '/sass/x.scss');
   $t->app->routes->get('/x' => 'x');
 
-  $t->get_ok('/scss')->status_is(200)->content_like(qr{<link href="/packed/a-\w+\.css"})
+  $t->get_ok('/test1')->status_is(200)->content_like(qr{<link href="/packed/a-\w+\.css"})
     ->content_like(qr{<link href="/packed/b-\w+\.css"});
 
   $t->get_ok('/x')->status_is(200)->content_like(qr{<link href="/packed/x-\w+\.css"});
@@ -33,7 +33,7 @@ use t::Helper;
 
   $t->app->asset('scss.css' => '/css/a.scss', '/css/b.scss');
 
-  $t->get_ok('/scss')->status_is(200)
+  $t->get_ok('/test1')->status_is(200)
     ->content_like(qr{<link href="/packed/scss-53f756a54b650d23d1ddb705c10c97d6\.css".*}m);
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{a1a1a1.*b1b1b1}s);
@@ -42,7 +42,7 @@ use t::Helper;
 done_testing;
 
 __DATA__
-@@ scss.html.ep
+@@ test1.html.ep
 %= asset 'scss.css'
 @@ x.html.ep
 %= asset 'x.css'

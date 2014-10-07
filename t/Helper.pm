@@ -8,21 +8,15 @@ use Cwd ();
 sub t {
   my ($class, $args) = @_;
   my $t = Test::Mojo->new(Mojolicious->new);
-  my $route = $0;
 
-  $route =~ s!\.t!!;
-  $route =~ s!.*/!!;
-
-  diag "Add route /$route";
-
-  $t->app->static->paths([ Cwd::abs_path('t/public') ]);
+  $t->app->static->paths([Cwd::abs_path('t/public')]);
   $t->app->plugin(AssetPack => $args || {});
-  $t->app->routes->get("/$route" => $route);
+  $t->app->routes->get("/test1" => 'test1');
   $t;
 }
 
 sub import {
-  my $class = shift;
+  my $class  = shift;
   my $caller = caller;
 
   plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';

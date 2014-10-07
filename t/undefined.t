@@ -4,11 +4,11 @@ use t::Helper;
   diag "minify=0";
   my $t = t::Helper->t({minify => 0});
 
-  $t->get_ok('/undefined')->status_is(200)->content_like(qr{<!-- Asset 'undefined\.css' is not defined\. -->});
+  $t->get_ok('/test1')->status_is(200)->content_like(qr{<!-- Asset 'undefined\.css' is not defined\. -->});
 }
 
 done_testing;
 
 __DATA__
-@@ undefined.html.ep
+@@ test1.html.ep
 %= asset 'undefined.css'

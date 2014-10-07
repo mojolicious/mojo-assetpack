@@ -8,12 +8,12 @@ my $i;
   my @files;
 
   $i = 42;
-  $t->get_ok('/no-cache');
+  $t->get_ok('/test1');
   push @files, $t->tx->res->dom->at('script')->{src};
   $t->get_ok($files[-1])->status_is(200)->content_like(qr{var i = 42;}, 'var i = 40');
 
   $i = 60;
-  $t->get_ok('/no-cache');
+  $t->get_ok('/test1');
   push @files, $t->tx->res->dom->at('script')->{src};
   $t->get_ok($files[-1])->status_is(200)->content_like(qr{var i = 60;}, 'var i = 61');
 
@@ -27,12 +27,12 @@ my $i;
   my @files;
 
   $i = 40;
-  $t->get_ok('/no-cache');
+  $t->get_ok('/test1');
   push @files, $t->tx->res->dom->at('script')->{src};
   $t->get_ok($files[-1])->status_is(200)->content_like(qr{var i = 40; // minified}, 'var i = 40');
 
   $i = 61;
-  $t->get_ok('/no-cache');
+  $t->get_ok('/test1');
   push @files, $t->tx->res->dom->at('script')->{src};
   $t->get_ok($files[-1])->status_is(200)->content_like(qr{var i = 61; // minified}, 'var i = 61');
 
@@ -61,5 +61,5 @@ sub add_preprocessor {
 done_testing;
 
 __DATA__
-@@ no-cache.html.ep
+@@ test1.html.ep
 %= asset 'app.js'

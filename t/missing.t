@@ -25,7 +25,7 @@ for my $x (0, 1) {
   $t->app->asset('style.css'   => '/sass/x.scss');
   $t->app->asset('invalid.foo' => '/dummy.foo');
 
-  $t->get_ok('/missing')->status_is(200);
+  $t->get_ok('/test1')->status_is(200);
 
   my %src = (
     coffee  => eval { $t->tx->res->dom->at('script[src]')->{src} },
@@ -53,7 +53,7 @@ for my $x (0, 1) {
 
 done_testing;
 __DATA__
-@@ missing.html.ep
+@@ test1.html.ep
 %= asset 'coffee.js'
 %= asset 'invalid.foo'
 %= asset 'style.css'

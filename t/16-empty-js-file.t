@@ -16,7 +16,3 @@ $SIG{__WARN__} = sub { push @warn, $_[0]; warn $_[0]; };
 }
 
 done_testing;
-
-__DATA__
-@@ empty-js-file.html.ep
-%= asset 'e.js'
