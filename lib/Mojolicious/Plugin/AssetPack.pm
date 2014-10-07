@@ -193,58 +193,16 @@ sub add {
   my ($self, $moniker, @files) = @_;
 
   warn "[ASSETPACK] add $moniker => @files\n" if DEBUG;
-
   $self->{assets}{$moniker} = \@files;
 
   if ($self->minify) {
     $self->process($moniker => @files);
   }
   elsif (CACHE_ASSETS) {
-    $self->{processed}{$moniker} = [$self->_process_many($moniker)];
+    $self->_process_many($moniker);
   }
 
   $self;
-}
-
-=head2 expand
-
-  $bytestream = $self->expand($c, $moniker);
-
-This method will return one tag for each asset defined by the "$moniker".
-
-Will also run C<less>, C<sass> or C<coffee> on the files to convert them to
-css or js, which the browser understands. (With L</MOJO_ASSETPACK_NO_CACHE>
-enabled, this is done each time on expand; with it disabled, this is done once
-when the asset is added.)
-
-The returning bytestream will contain style or script tags.
-
-=cut
-
-sub expand {
-  my ($self, $c, $moniker) = @_;
-  my @processed_files;
-
-  warn "[ASSETPACK] expand $moniker\n" if DEBUG;
-
-  if (CACHE_ASSETS) {
-    @processed_files = $self->_process_many($moniker);
-  }
-  elsif (ref $self->{processed}{$moniker} eq 'ARRAY') {
-    @processed_files = @{$self->{processed}{$moniker}};
-  }
-
-  if (!@processed_files) {
-    warn "[ASSETPACK] Cannot expand $moniker\n" if DEBUG;
-    return b "<!-- Cannot expand $moniker -->";
-  }
-
-  if ($moniker =~ /\.js/) {
-    return b join "\n", map { $c->javascript($_) } @processed_files;
-  }
-  else {
-    return b join "\n", map { $c->stylesheet($_) } @processed_files;
-  }
 }
 
 =head2 fetch
@@ -394,9 +352,7 @@ sub register {
     $helper => sub {
       return $self if @_ == 1;
       return shift, $self->add(@_) if @_ > 2;
-      return $self->expand(@_) unless $self->minify;
-      return $_[0]->javascript($self->{processed}{$_[1]}) if $_[1] =~ /\.js$/;
-      return $_[0]->stylesheet($self->{processed}{$_[1]});
+      return $self->_inject(@_);
     }
   );
 }
@@ -411,6 +367,29 @@ sub _fluffy_find {
   }
 
   return;
+}
+
+sub _inject {
+  my ($self, $c, $moniker) = @_;
+  my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
+  my @processed_files;
+
+  if (!CACHE_ASSETS) {
+    $self->_process_many($moniker);
+  }
+
+  if (ref $self->{processed}{$moniker} eq 'ARRAY') {
+    @processed_files = @{$self->{processed}{$moniker}};
+  }
+  elsif ($self->{processed}{$moniker}) {
+    @processed_files = ($self->{processed}{$moniker});
+  }
+
+  if (!@processed_files) {
+    return b "<!-- Asset '$moniker' is not defined. -->";
+  }
+
+  return b join "\n", map { $c->$tag_helper($_) } @processed_files;
 }
 
 sub _process_many {
@@ -434,7 +413,7 @@ sub _process_many {
     $file = $self->{processed}{$moniker};
   }
 
-  return @files;
+  $self->{processed}{$moniker} = \@files;
 }
 
 sub _read_files {
