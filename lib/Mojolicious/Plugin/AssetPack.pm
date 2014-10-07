@@ -199,7 +199,7 @@ sub add {
     $self->process($moniker => @files);
   }
   elsif (!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
-    $self->{processed}{$moniker} = [$self->_process_many($moniker, @files)];
+    $self->{processed}{$moniker} = [$self->_process_many($moniker)];
   }
 
   $self;
@@ -227,7 +227,7 @@ sub expand {
   warn "[ASSETPACK] expand $moniker\n" if DEBUG;
 
   if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
-    @processed_files = $self->_process_many($moniker, @{$self->{assets}{$moniker}});
+    @processed_files = $self->_process_many($moniker);
   }
   elsif (ref $self->{processed}{$moniker} eq 'ARRAY') {
     @processed_files = @{$self->{processed}{$moniker}};
@@ -418,7 +418,8 @@ sub _fluffy_find {
 }
 
 sub _process_many {
-  my ($self, $moniker, @files) = @_;
+  my ($self, $moniker) = @_;
+  my @files = @{$self->{assets}{$moniker}};
   my $ext = $moniker =~ /\.(\w+)$/ ? $1 : 'unknown_extension';
 
   for my $file (@files) {
