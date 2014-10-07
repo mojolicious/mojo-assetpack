@@ -139,15 +139,6 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.27';
 
-our %MISSING_ERROR = (
-  default => '%s has no preprocessor. https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors',
-  coffee  => '%s require "coffee". http://coffeescript.org/#installation',
-  jsx     => '%s require "jsx". http://facebook.github.io/react',
-  less    => '%s require "less". http://lesscss.org/#usage',
-  sass    => '%s require "sass". http://sass-lang.com/install',
-  scss    => '%s require "sass". http://sass-lang.com/install',
-);
-
 =head1 ATTRIBUTES
 
 =head2 base_url
