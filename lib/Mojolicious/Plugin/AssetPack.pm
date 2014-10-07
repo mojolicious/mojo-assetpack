@@ -181,16 +181,6 @@ has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => sub { catdir File::Spec::Functions::tmpdir(), 'mojo-assetpack' };
 
-=head2 rebuild
-
-Deprecated.
-
-=cut
-
-sub rebuild {
-  warn "rebuild() has no effect any more. Will soon be removed.";
-}
-
 has _ua => sub {
   require Mojo::UserAgent;
   Mojo::UserAgent->new(max_redirects => 3);
