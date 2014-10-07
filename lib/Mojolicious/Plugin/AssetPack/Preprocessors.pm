@@ -68,7 +68,6 @@ You can also define your own preprocessors. Example code:
 use Mojo::Base 'Mojo::EventEmitter';
 use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Preprocessor;
-use Cwd;
 use File::Basename;
 use File::Which;
 use IPC::Run3 ();
@@ -165,24 +164,13 @@ and returns a combined checksum.
 
 sub checksum {
   my ($self, $extension, $text, $filename) = @_;
-  my $old_dir = getcwd;
-  my $err     = '';
+  my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $filename);
   my @checksum;
 
-  local $@;
+  for my $p ($self->_preprocessors($extension)) {
+    push @checksum, $p->checksum($text, $filename);
+  }
 
-  eval {
-    chdir dirname $filename if $filename;
-    for my $p ($self->_preprocessors($extension)) {
-      push @checksum, $p->checksum($text, $filename);
-    }
-    1;
-  } or do {
-    $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
-  };
-
-  chdir $old_dir;
-  die $err if $err;
   return @checksum == 1 ? $checksum[0] : Mojo::Util::md5_sum(join '', @checksum);
 }
 
@@ -207,25 +195,14 @@ called with the C<$assetpack> object as the first argument.
 
 sub process {
   my ($self, $extension, $assetpack, $text, $filename) = @_;
-  my $old_dir = getcwd;
-  my $err     = '';
+  my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $filename);
 
-  local $@;
+  for my $p ($self->_preprocessors($extension)) {
+    $p->($p, $assetpack, $text, $filename);
+    die $p->errmsg if $p->errmsg;
+  }
 
-  eval {
-    chdir dirname $filename;
-    for my $p ($self->_preprocessors($extension)) {
-      $p->($p, $assetpack, $text, $filename);
-      $assetpack->{log}->error($p->errmsg) if $p->errmsg;
-      $err ||= $p->errmsg;
-    }
-    1;
-  } or do {
-    $err = $@ || "AssetPack failed with unknown error while processing $filename.\n";
-  };
-
-  chdir $old_dir;
-  return $err;
+  return $self;
 }
 
 =head2 map_type
@@ -264,5 +241,10 @@ sub _preprocessors {
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
 
 =cut
+
+package Mojolicious::Plugin::AssetPack::Preprocessors::CWD;
+use Cwd;
+sub new { my $self = bless [getcwd], $_[0]; chdir $_[1]; return $self; }
+sub DESTROY { chdir $_[0]->[0]; }
 
 1;
