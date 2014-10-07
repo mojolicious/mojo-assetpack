@@ -196,13 +196,16 @@ called with the C<$assetpack> object as the first argument.
 sub process {
   my ($self, $extension, $assetpack, $text, $filename) = @_;
   my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $filename);
+  my @err;
+
+  warn "[ASSETPACK] Process $filename\n" if DEBUG;
 
   for my $p ($self->_preprocessors($extension)) {
     $p->($p, $assetpack, $text, $filename);
-    die $p->errmsg if $p->errmsg;
+    push @err, $p->errmsg if $p->errmsg;
   }
 
-  return $self;
+  return join ' ', @err;
 }
 
 =head2 map_type

@@ -136,6 +136,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
+use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
 
 our $VERSION = '0.27';
 
@@ -198,7 +199,7 @@ sub add {
   if ($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif (!$ENV{MOJO_ASSETPACK_NO_CACHE}) {
+  elsif (CACHE_ASSETS) {
     $self->{processed}{$moniker} = [$self->_process_many($moniker)];
   }
 
@@ -226,13 +227,14 @@ sub expand {
 
   warn "[ASSETPACK] expand $moniker\n" if DEBUG;
 
-  if ($ENV{MOJO_ASSETPACK_NO_CACHE}) {
+  if (CACHE_ASSETS) {
     @processed_files = $self->_process_many($moniker);
   }
   elsif (ref $self->{processed}{$moniker} eq 'ARRAY') {
     @processed_files = @{$self->{processed}{$moniker}};
   }
-  else {
+
+  if (!@processed_files) {
     warn "[ASSETPACK] Cannot expand $moniker\n" if DEBUG;
     return b "<!-- Cannot expand $moniker -->";
   }
@@ -294,11 +296,10 @@ contain one file if the C<$moniker> is minified.
 
 sub get {
   my ($self, $moniker) = @_;
-  my $files = $self->{processed}{$moniker};
+  my $files = $self->{processed}{$moniker} || [];
 
-  return unless $files;
-  return @$files if ref $files;
-  return $files;
+  return $self->base_url . $files unless ref $files;
+  return map { $self->base_url . $_ } @$files;
 }
 
 =head2 process
@@ -315,39 +316,33 @@ The result file will be stored in L</Packed directory>.
 sub process {
   my ($self, $moniker, @files) = @_;
   my ($md5_sum, $files) = $self->_read_files(@files);
-  my $out_file  = $moniker;
+  my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/
+    or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
   my $processed = '';
-  my (@err, $name);
 
-  $out_file =~ s/\.(\w+)$// or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
+  $self->{files}{$moniker} = catfile $self->out_dir, "$name-$md5_sum.$ext";
+  $self->{processed}{$moniker} = $self->base_url . "$name-$md5_sum.$ext";
 
-  if (!$ENV{MOJO_ASSETPACK_NO_CACHE} and $name = $self->_fluffy_find(qr{^$out_file(-$md5_sum)?\.\w+$})) {
+  if (-e $self->{files}{$moniker} and CACHE_ASSETS) {
     $self->{log}->debug("Using existing asset for $moniker");
-    $self->{processed}{$moniker} = $self->base_url . $name;
     return $self;
   }
 
   for my $file (@files) {
     my $data = $files->{$file};
-    warn "[ASSETPACK] process $file ($data->{path})\n" if DEBUG;
     my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
-    push @err, $err if $err;
-    $processed .= $data->{body};
+
+    $processed .= delete $data->{body};
+
+    if ($err) {
+      $self->{log}->error($err);
+      $self->{files}{$moniker} = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
+      $self->{processed}{$moniker} = $self->base_url . "$name-$md5_sum-with-error.$ext";
+    }
   }
 
-  $md5_sum .= '-with-error' if @err;
-  $out_file .= "-$md5_sum" . ($moniker =~ m!(\.\w+)$!)[0];
-
-  if ($md5_sum eq md5_sum($processed) and $files[0] !~ /^http\s?:/) {
-    warn "[ASSETPACK] Same input as output for $files[0]\n" if DEBUG;
-    $self->{processed}{$moniker} = $files[0];
-  }
-  else {
-    spurt $processed, catfile $self->out_dir, $out_file;
-    $self->{log}->debug("Built asset for $moniker ($out_file)");
-    $self->{processed}{$moniker} = $self->base_url . $out_file;
-  }
-
+  spurt $processed => $self->{files}{$moniker};
+  $self->{log}->debug("Built asset for $moniker");
   $self;
 }
 
@@ -373,11 +368,12 @@ sub register {
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
+  $self->{files}     = {};
   $self->{processed} = {};
   $self->{log}       = $app->log;
   $self->{static}    = $app->static;
 
-  warn "[ASSETPACK] Will rebuild assets on each request.\n" if DEBUG and $ENV{MOJO_ASSETPACK_NO_CACHE};
+  warn "[ASSETPACK] Will rebuild assets on each request.\n" if DEBUG and !CACHE_ASSETS;
 
   if ($config->{out_dir}) {
     $self->out_dir($config->{out_dir});
@@ -419,8 +415,11 @@ sub _fluffy_find {
 
 sub _process_many {
   my ($self, $moniker) = @_;
-  my @files = @{$self->{assets}{$moniker}};
-  my $ext = $moniker =~ /\.(\w+)$/ ? $1 : 'unknown_extension';
+  my @files = @{$self->{assets}{$moniker} || []};
+  my $ext;
+
+  $moniker =~ /\.(\w+)$/ or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
+  $ext = $1;
 
   for my $file (@files) {
     my $moniker = basename $file;
