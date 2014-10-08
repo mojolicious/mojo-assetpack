@@ -6,7 +6,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.28
+0.29
 
 =head1 SYNOPSIS
 
@@ -157,7 +157,7 @@ use File::Basename qw( basename );
 use File::Spec::Functions qw( catdir catfile );
 use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
 
-our $VERSION = '0.28';
+our $VERSION = '0.29';
 
 =head1 ATTRIBUTES
 

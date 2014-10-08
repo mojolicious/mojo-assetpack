@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.29
+0.29     Wed Oct  8 20:53:32 2014
        * Improved error message when unable to find external preprocessor
          (regression)
 
