@@ -277,7 +277,7 @@ sub get {
   my $files = $self->{processed}{$moniker} || [];
 
   if ($args->{inline}) {
-    return map { slurp(catfile $self->out_dir, $_) } @$files;
+    return map { $self->{static}->file("packed/$_")->slurp } @$files;
   }
   else {
     return map { $self->base_url . $_ } @$files;
@@ -405,7 +405,7 @@ sub _inject {
   elsif ($args->{inline}) {
     return $c->$tag_helper(
       sub {
-        join "\n", map { slurp(catfile $self->out_dir, $_) } @$processed;
+        join "\n", map { $self->{static}->file("packed/$_")->slurp } @$processed;
       }
     );
   }
