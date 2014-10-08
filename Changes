@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.30
+0.30     Wed Oct  8 21:55:37 2014
        * Processed assets can be other places than out_dir()
 
 0.29     Wed Oct  8 20:53:32 2014
