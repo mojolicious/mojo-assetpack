@@ -36,19 +36,20 @@ for my $x (0, 1) {
   is_deeply(\%src, shift(@res), 'found elements');
 
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('AssetPack failed to run.*exit_code=42.*'\);$});
+    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie\\n'\);$}, "coffee 42 ($x)");
 
   $t->get_ok($src{invalid})->status_is(200)
-    ->content_like(qr/^html:before{.*content:"No preprocessor defined for .*dummy\.foo";}/);
+    ->content_like(qr/^html:before{.*content:"No preprocessor defined for .*dummy\.foo";}/, "invalid ($x)");
 
   $t->get_ok($src{style})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr/^html:before{.*AssetPack failed to run.*exit_code=-1.*";}$/);
+    ->content_like(qr|^html:before{.*content:"Cannot execute 'sass'\. See http://sass-lang\.com/install"|,
+    "style ($x)");
 
   diag 'with-error files are always generated';
   $ENV{EXITCODE} = 31;
   $t->app->asset('coffee.js' => '/js/c.coffee');
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('AssetPack failed to run.*exit_code=31.*'\);$});
+    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie\\n'\);$}, "coffee 31 ($x)");
 }
 
 done_testing;

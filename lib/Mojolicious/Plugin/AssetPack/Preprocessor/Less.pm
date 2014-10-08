@@ -64,6 +64,8 @@ sub process {
   $self->_make_css_error($err, $text) if length $err;
 }
 
+sub _url {'http://lesscss.org/#usage'}
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2014, Jan Henning Thorsen

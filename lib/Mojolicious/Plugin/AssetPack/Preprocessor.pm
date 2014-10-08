@@ -92,29 +92,28 @@ sub _make_js_error {
 }
 
 sub _run {
-  my ($self, @args) = @_;
-  my $cmd       = join(' ', @{$args[0]});
-  my $err       = $_[-1];
-  my $exit_code = -1;
+  my ($self, $cmd, $in, $out, $err) = @_;
 
   $self->errmsg('');
-  local ($!, $?, $@);
+  local ($!, $?) = (0, -1, '');
+  IPC::Run3::run3($cmd, $in, $out, $err, {return_if_system_error => 1});
 
-  eval {
-    IPC::Run3::run3(@args);
-    $exit_code = $? > 0 ? $? >> 8 : $?;
-    $$err ||= sprintf '%s', $! if $?;
-  } or do {
-    $$err = $@;
-    $$err =~ s!\sat\s\S+.*!!s;    # remove " at /some/file.pm line 308"
-    chomp $$err;
-  };
+  warn "[ASSETPACK] @$cmd \$?=$? \$!=$! $$err\n" if DEBUG;
 
-  warn "[ASSETPACK] $cmd ($exit_code) $$err\n" if DEBUG;
-  return $self unless $exit_code;
-  $$err = sprintf "AssetPack failed to run '%s'. exit_code=%s %s", $cmd, $exit_code, $$err;
-  $self;
+  if (!$?) {
+    $$err = '';
+  }
+  elsif ($! == 2) {
+    $$err = sprintf "Cannot execute '%s'. See %s", $cmd->[0], $self->_url;
+  }
+  else {
+    $$err = sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8, int($!), $$err;
+  }
+
+  return $self;
 }
+
+sub _url {'https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors'}
 
 =head1 COPYRIGHT AND LICENSE
 

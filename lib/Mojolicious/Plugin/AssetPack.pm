@@ -155,7 +155,6 @@ use Mojo::Util qw( md5_sum slurp spurt );
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Spec::Functions qw( catdir catfile );
-use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
 
 our $VERSION = '0.28';
@@ -212,7 +211,6 @@ helper is called on the app.
 sub add {
   my ($self, $moniker, @files) = @_;
 
-  warn "[ASSETPACK] add $moniker => @files\n" if DEBUG;
   $self->{assets}{$moniker} = \@files;
 
   if ($self->minify) {
@@ -238,17 +236,19 @@ value is the absolute path to the downloaded file.
 sub fetch {
   my ($self, $url, $destination) = @_;
   my $lookup = $url;
+  my $path;
 
   $lookup =~ s![^\w-]!_!g;
 
   if (my $name = $self->_fluffy_find(qr{^$lookup\.\w+$})) {
-    return catfile $self->out_dir, $name;
+    $path = catfile $self->out_dir, $name;
+    $self->{log}->debug("Asset $url is downloaded: $path");
+    return $path;
   }
 
   my $res = $self->_ua->get($url)->res;
   my $ct  = $res->headers->content_type // 'text/plain';
   my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
-  my $path;
 
   $ext = $ext->[0] if ref $ext;
   $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
@@ -259,7 +259,7 @@ sub fetch {
 
   $path = catfile $self->out_dir, "$lookup.$ext";
   spurt $res->body, $path;
-  $self->{log}->info("Downloaded asset $url to $path");
+  $self->{log}->info("Downloaded asset $url: $path");
   return $path;
 }
 
@@ -300,13 +300,13 @@ sub process {
   my ($md5_sum, $files) = $self->_read_files(@files);
   my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/
     or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
-  my $disk_path = catfile $self->out_dir, "$name-$md5_sum.$ext";
+  my $path = catfile $self->out_dir, "$name-$md5_sum.$ext";
   my $processed = '';
 
   $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
 
-  if (-e $disk_path and CACHE_ASSETS) {
-    $self->{log}->debug("Using existing asset for $moniker");
+  if (-e $path and CACHE_ASSETS) {
+    $self->{log}->debug("Using existing asset for $moniker: $path");
     return $self;
   }
 
@@ -318,13 +318,13 @@ sub process {
 
     if ($err) {
       $self->{log}->error($err);
-      $disk_path = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
+      $path = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
       $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
     }
   }
 
-  spurt $processed => $disk_path;
-  $self->{log}->debug("Built asset for $moniker");
+  spurt $processed => $path;
+  $self->{log}->info("Built asset for $moniker: $path");
   $self;
 }
 
@@ -354,7 +354,7 @@ sub register {
   $self->{log}       = $app->log;
   $self->{static}    = $app->static;
 
-  warn "[ASSETPACK] Will rebuild assets on each request.\n" if DEBUG and !CACHE_ASSETS;
+  $self->{log}->info('AssetPack Will rebuild assets on each request') unless CACHE_ASSETS;
 
   if ($config->{out_dir}) {
     $self->out_dir($config->{out_dir});

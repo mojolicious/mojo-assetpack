@@ -1,5 +1,9 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.29
+       * Improved error message when unable to find external preprocessor
+         (regression)
+
 0.28     Tue Oct  7 23:58:45 2014
        * Add support for %= asset "foo.js", { inline => 1 }
        * Will also generate asset files with md5 from single files

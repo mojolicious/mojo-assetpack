@@ -198,8 +198,6 @@ sub process {
   my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $filename);
   my @err;
 
-  warn "[ASSETPACK] Process $filename\n" if DEBUG;
-
   for my $p ($self->_preprocessors($extension)) {
     $p->($p, $assetpack, $text, $filename);
     push @err, $p->errmsg if $p->errmsg;

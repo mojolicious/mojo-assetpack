@@ -98,6 +98,7 @@ sub process {
 }
 
 sub _extension {'sass'}
+sub _url       {'http://sass-lang.com/install'}
 
 =head1 COPYRIGHT AND LICENSE
 

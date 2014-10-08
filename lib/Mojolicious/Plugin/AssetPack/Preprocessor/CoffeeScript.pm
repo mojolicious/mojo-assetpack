@@ -71,6 +71,8 @@ sub process {
   return $self;
 }
 
+sub _url {'http://coffeescript.org/#installation'}
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2014, Jan Henning Thorsen

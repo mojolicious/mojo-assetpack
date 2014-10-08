@@ -1,2 +1,3 @@
 #!/bin/sh
+echo Whoopsie 1>&2
 exit $EXITCODE;

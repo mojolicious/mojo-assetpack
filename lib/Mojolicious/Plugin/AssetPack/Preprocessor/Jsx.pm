@@ -72,6 +72,8 @@ sub process {
   return $self;
 }
 
+sub _url {'http://facebook.github.io/react'}
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2014, Jan Henning Thorsen
