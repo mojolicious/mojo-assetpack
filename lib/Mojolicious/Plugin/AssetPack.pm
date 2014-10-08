@@ -306,7 +306,7 @@ sub process {
 
   # Need to scan all directories and not just out_dir()
   if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext") and CACHE_ASSETS) {
-    $self->{log}->debug("Using existing asset for $moniker: @{$file->path}");
+    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}");
     return $self;
   }
 

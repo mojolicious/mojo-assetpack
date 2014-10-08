@@ -29,6 +29,12 @@ use t::Helper;
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{c1c1c1.*d1d1d1});
 }
 
+{
+  diag "skip process";
+  my $t = t::Helper->t({minify => 1});
+  $t->app->asset('app.css' => '/css/c.css', '/css/d.css');
+}
+
 done_testing;
 
 __DATA__
