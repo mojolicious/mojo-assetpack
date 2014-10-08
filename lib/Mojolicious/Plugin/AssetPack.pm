@@ -300,13 +300,13 @@ sub process {
   my ($md5_sum, $files) = $self->_read_files(@files);
   my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/
     or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
-  my $path = catfile $self->out_dir, "$name-$md5_sum.$ext";
   my $processed = '';
 
   $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
 
-  if (-e $path and CACHE_ASSETS) {
-    $self->{log}->debug("Using existing asset for $moniker: $path");
+  # Need to scan all directories and not just out_dir()
+  if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext") and CACHE_ASSETS) {
+    $self->{log}->debug("Using existing asset for $moniker: @{$file->path}");
     return $self;
   }
 
@@ -318,11 +318,11 @@ sub process {
 
     if ($err) {
       $self->{log}->error($err);
-      $path = catfile $self->out_dir, "$name-$md5_sum-with-error.$ext";
       $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
     }
   }
 
+  my $path = catfile $self->out_dir, $self->{processed}{$moniker}[0];
   spurt $processed => $path;
   $self->{log}->info("Built asset for $moniker: $path");
   $self;
