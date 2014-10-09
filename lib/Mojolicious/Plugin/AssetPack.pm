@@ -350,6 +350,7 @@ sub register {
 
   $self->minify($minify);
   $self->base_url($config->{base_url}) if $config->{base_url};
+  $self->_ua->server->app($app);
 
   $self->{assets}    = {};
   $self->{processed} = {};
@@ -455,18 +456,15 @@ FILE:
   for my $file (@files) {
     my $data = $files{$file} = {ext => 'unknown_extension'};
 
-    if ($file =~ /^https?:/) {
-      $data->{path} = $self->fetch($file);
-      $data->{body} = slurp $data->{path};
-      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
-    }
-    elsif (my $asset = $self->{static}->file($file)) {
+    if ($file !~ /^https?:/ && (my $asset = $self->{static}->file($file))) {
       $data->{path} = $asset->path;
       $data->{body} = slurp $asset->path;
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     else {
-      die "AssetPack cannot find input file '$file'\n";
+      $data->{path} = $self->fetch($file);
+      $data->{body} = slurp $data->{path};
+      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
 
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
