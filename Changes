@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.31
+0.31     Thu Oct  9 13:19:44 2014
        * Fixed and wrote tests for external AssetPack plugins
 
 0.30     Wed Oct  8 21:55:37 2014

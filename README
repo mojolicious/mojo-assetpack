@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.30
+    0.31
 
 SYNOPSIS
     In your application:
@@ -148,8 +148,8 @@ ATTRIBUTES
 
   out_dir
     Holds the path to the directory where packed files can be written. It
-    defaults to "mojo-assetpack" directory in temp unless a static directory
-    is writeable.
+    defaults to "mojo-assetpack-public/packed" directory in temp unless a
+    static directory is writeable.
 
 METHODS
   add
