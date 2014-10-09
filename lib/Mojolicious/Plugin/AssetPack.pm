@@ -183,7 +183,7 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 =head2 out_dir
 
 Holds the path to the directory where packed files can be written. It
-defaults to "mojo-assetpack" directory in L<temp|File::Spec/tmpdir>
+defaults to "mojo-assetpack-public/packed" directory in L<temp|File::Spec/tmpdir>
 unless a L<static directory|Mojolicious::Static/paths> is writeable.
 
 =cut
@@ -316,7 +316,7 @@ sub process {
     my $data = $files->{$file};
     my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
 
-    $processed .= delete $data->{body};
+    $processed .= $data->{body};
 
     if ($err) {
       $self->{log}->error($err);
@@ -360,7 +360,6 @@ sub register {
 
   if ($config->{out_dir}) {
     $self->out_dir($config->{out_dir});
-    push @{$app->static->paths}, $config->{out_dir};
   }
   else {
     for my $path (@{$app->static->paths}) {
@@ -370,6 +369,9 @@ sub register {
     }
   }
 
+  unless ($self->{out_dir}) {
+    push @{$app->static->paths}, File::Spec->catdir($self->out_dir, File::Spec->updir);
+  }
   unless (-d $self->out_dir) {
     File::Path::make_path($self->out_dir) or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
   }
@@ -384,7 +386,7 @@ sub register {
 }
 
 sub _build_out_dir {
-  File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack');
+  File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack-public', 'packed');
 }
 
 sub _fluffy_find {
