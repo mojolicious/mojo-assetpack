@@ -154,7 +154,8 @@ use Mojo::ByteStream 'b';
 use Mojo::Util qw( md5_sum slurp spurt );
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
+use File::Path ();
+use File::Spec ();
 use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
 
 our $VERSION = '0.30';
@@ -182,7 +183,7 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 =head2 out_dir
 
 Holds the path to the directory where packed files can be written. It
-defaults to "mojo-assetpack" directory in L<temp|File::Spec::Functions/tmpdir>
+defaults to "mojo-assetpack" directory in L<temp|File::Spec/tmpdir>
 unless a L<static directory|Mojolicious::Static/paths> is writeable.
 
 =cut
@@ -190,7 +191,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir       => sub { catdir File::Spec::Functions::tmpdir(), 'mojo-assetpack' };
+has out_dir       => sub { shift->_build_out_dir };
 
 has _ua => sub {
   require Mojo::UserAgent;
@@ -241,7 +242,7 @@ sub fetch {
   $lookup =~ s![^\w-]!_!g;
 
   if (my $name = $self->_fluffy_find(qr{^$lookup\.\w+$})) {
-    $path = catfile $self->out_dir, $name;
+    $path = File::Spec->catfile($self->out_dir, $name);
     $self->{log}->debug("Asset $url is downloaded: $path");
     return $path;
   }
@@ -257,7 +258,7 @@ sub fetch {
     die "AssetPack could not download asset from '$url': $e->{message}\n";
   }
 
-  $path = catfile $self->out_dir, "$lookup.$ext";
+  $path = File::Spec->catfile($self->out_dir, "$lookup.$ext");
   spurt $res->body, $path;
   $self->{log}->info("Downloaded asset $url: $path");
   return $path;
@@ -298,10 +299,11 @@ The result file will be stored in L</Packed directory>.
 sub process {
   my ($self, $moniker, @files) = @_;
   my ($md5_sum, $files) = $self->_read_files(@files);
-  my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/
-    or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
+  my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/;
   my $processed = '';
+  my $path;
 
+  $ext or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
   $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
 
   # Need to scan all directories and not just out_dir()
@@ -322,7 +324,7 @@ sub process {
     }
   }
 
-  my $path = catfile $self->out_dir, $self->{processed}{$moniker}[0];
+  $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);
   spurt $processed => $path;
   $self->{log}->info("Built asset for $moniker: $path");
   $self;
@@ -363,12 +365,13 @@ sub register {
   else {
     for my $path (@{$app->static->paths}) {
       next unless -w $path;
-      $self->out_dir(catdir $path, 'packed');
+      $self->out_dir(File::Spec->catdir($path, 'packed'));
+      last;
     }
   }
 
   unless (-d $self->out_dir) {
-    mkdir $self->out_dir or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
+    File::Path::make_path($self->out_dir) or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
   }
 
   $app->helper(
@@ -378,6 +381,10 @@ sub register {
       return $self->_inject(@_);
     }
   );
+}
+
+sub _build_out_dir {
+  File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack');
 }
 
 sub _fluffy_find {
