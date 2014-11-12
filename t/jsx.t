@@ -7,11 +7,8 @@ use t::Helper;
   plan skip_all => 'Could not find preprocessors for jsx', 6 unless $t->app->asset->preprocessors->can_process('jsx');
 
   $t->app->asset('jsx.js' => '/js/c.jsx');
-
-  $t->get_ok('/test1')->status_is(200)->content_like(qr{<script src="/packed/c-\w+\.js"});
-
-  $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{;[\n\s]+React})
-    ->content_like(qr{var app\s*=\s*React\.DOM\.div\(\s*{.*"appClass"},\s*"Hello, React!"\)});
+  $t->get_ok('/test1')->status_is(200)->content_like(qr{;[\n\s]+React})
+    ->content_like(qr{var app\s*=\s*React\..*div.*{.*"appClass"},\s*"Hello, React!"\)});
 }
 
 {
@@ -19,15 +16,12 @@ use t::Helper;
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('jsx.js' => '/js/c.jsx');
-
   $t->get_ok('/test1')->status_is(200)
-    ->content_like(qr{<script src="/packed/jsx-f222ca932c5593c33e0b71688fb96a1c\.js".*}m);
-
-  $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{;React});
+    ->content_like(qr{var c=\(function\(\)\{var module=\{exports:\{\}\};module\.export=React\.createClass});
 }
 
 done_testing;
 
 __DATA__
 @@ test1.html.ep
-%= asset 'jsx.js'
+%= asset 'jsx.js', { inline => 1 }

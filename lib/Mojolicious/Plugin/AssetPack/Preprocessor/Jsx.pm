@@ -20,9 +20,8 @@ Installation on Ubuntu and Debian:
 
 =cut
 
-use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use File::Which              ();
-use JavaScript::Minifier::XS ();
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
+use File::Which ();
 
 =head1 ATTRIBUTES
 
@@ -58,7 +57,10 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my $err;
 
-  # TODO: Add --follow-requires ?
+  if (!$ENV{MOJO_ASSETPACK_NO_FOLLOW_REQUIRES}) {
+    $self->_follow_requires($assetpack, $text, $path);
+  }
+
   $self->_run([$self->executable], $text, $text, \$err);
 
   if (length $err) {

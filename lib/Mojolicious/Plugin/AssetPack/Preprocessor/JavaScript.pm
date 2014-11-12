@@ -17,7 +17,11 @@ NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+use Mojo::Util 'slurp';
+use File::Basename 'dirname';
 use JavaScript::Minifier::XS;
+
+require Mojolicious::Plugin::AssetPack::Preprocessors;    # Mojolicious::Plugin::AssetPack::Preprocessors::CWD
 
 =head1 METHODS
 
@@ -32,12 +36,28 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
+  if (!$ENV{MOJO_ASSETPACK_NO_FOLLOW_REQUIRES}) {
+    $self->_follow_requires($assetpack, $text, $path);
+  }
+
   if ($assetpack->minify and $path !~ /\bmin\b/ and length $$text) {
     $$text = JavaScript::Minifier::XS::minify($$text);
     $$text = "alert('Failed to minify $path')\n" unless defined $$text;
   }
 
   return $self;
+}
+
+sub _follow_requires {
+  my ($self, $assetpack, $text, $path) = @_;
+  my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $path);
+  my $ext = $path =~ /\.(\w+)$/ ? $1 : 'js';
+
+  $$text =~ s!\brequire\s*\(\s*(["'])(.+)+\1\s*\)\s*!{
+    my $text = slurp "$2.$ext";
+    $self->process($assetpack, \$text, "$2.$ext");
+    "(function() { var module = {exports:{}};\n$text\nreturn module.exports; })()";
+  }!ge;
 }
 
 =head1 COPYRIGHT AND LICENSE

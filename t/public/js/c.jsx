@@ -1,4 +1,6 @@
 /** @jsx React.DOM */
+
+var c = require("comment-box");
 var app = <div className="appClass">Hello, React!</div>;
 
 React.renderComponent(
