@@ -21,6 +21,7 @@ Installation on Ubuntu and Debian:
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
+use File::Basename 'dirname';
 use File::Which ();
 
 =head1 ATTRIBUTES
@@ -58,7 +59,8 @@ sub process {
   my $err;
 
   if (!$ENV{MOJO_ASSETPACK_NO_FOLLOW_REQUIRES}) {
-    $self->_follow_requires($assetpack, $text, $path);
+    my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $path);
+    $self->_follow_requires($text, $path, {});
   }
 
   $self->_run([$self->executable], $text, $text, \$err);

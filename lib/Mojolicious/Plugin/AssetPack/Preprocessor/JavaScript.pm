@@ -37,7 +37,8 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
   if (!$ENV{MOJO_ASSETPACK_NO_FOLLOW_REQUIRES}) {
-    $self->_follow_requires($assetpack, $text, $path);
+    my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $path);
+    $self->_follow_requires($text, $path, {});
   }
 
   if ($assetpack->minify and $path !~ /\bmin\b/ and length $$text) {
@@ -49,15 +50,26 @@ sub process {
 }
 
 sub _follow_requires {
-  my ($self, $assetpack, $text, $path) = @_;
-  my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $path);
-  my $ext = $path =~ /\.(\w+)$/ ? $1 : 'js';
+  my ($self, $text, $path, $uniq) = @_;
 
-  $$text =~ s!\brequire\s*\(\s*(["'])(.+)+\1\s*\)\s*!{
-    my $text = slurp "$2.$ext";
-    $self->process($assetpack, \$text, "$2.$ext");
-    "(function() { var module = {exports:{}};\n$text\nreturn module.exports; })()";
-  }!ge;
+  local $self->{require_js} = '';
+  $$text =~ s!\brequire\s*\(\s*(["'])(.+)+\1\s*\)\s*!{ $self->_inline_module($2, $path, $uniq) }!ge;
+  $$text = $self->{require_js} . $$text;
+}
+
+sub _inline_module {
+  my ($self, $id, $path, $uniq) = @_;
+  my $file = sprintf '%s.%s', $id, $path =~ /\.(\w+)$/ ? $1 : 'js';
+  my $first = !keys %$uniq;
+  my $js;
+
+  $id =~ s!'!\\'!g;
+  $self->{require_js} = 'var require=function(){}; require.modules={};' unless keys %$uniq;
+  return qq[require.modules['$id'].exports] if $uniq->{$id}++;
+
+  $js = slurp $file;
+  $self->_follow_requires(\$js, $file, $uniq);
+  return qq[(function(){var module={exports:{}};require.modules['$id']=module;\n$js\nreturn module.exports;})()];
 }
 
 =head1 COPYRIGHT AND LICENSE
