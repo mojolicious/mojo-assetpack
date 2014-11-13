@@ -92,7 +92,7 @@ sub _inline_module {
   $self->{require_js} = 'var require=function(){}; require.modules={};' unless keys %$uniq;
   return qq[require.modules['$id'].exports] if $uniq->{$id}++;
 
-  my $js = $self->_slurp($file, $path =~ /\.(\w+)/ ? $1 : $self->_default_ext);
+  my $js = $self->_slurp($file, $path =~ /\.(\w+)$/ ? $1 : $self->_default_ext);
   $self->_follow_requires(\$js, $file, $uniq);
   return
     qq[(function(){var exports={};var module={exports:exports};require.modules['$id']=module;\n$js\nreturn module.exports;})()];
