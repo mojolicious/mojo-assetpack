@@ -18,6 +18,10 @@ Installation on Ubuntu and Debian:
   $ sudo apt-get install npm
   $ sudo npm install -g react-tools
 
+=head2 require()
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript/require()>.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
@@ -76,7 +80,8 @@ sub process {
   return $self;
 }
 
-sub _url {'http://facebook.github.io/react'}
+sub _default_ext {'jsx'}
+sub _url         {'http://facebook.github.io/react'}
 
 =head1 COPYRIGHT AND LICENSE
 

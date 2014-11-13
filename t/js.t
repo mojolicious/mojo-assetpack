@@ -1,4 +1,5 @@
 use t::Helper;
+use Cwd;
 
 {
   diag "minify=0";
@@ -36,10 +37,18 @@ use t::Helper;
   my $require_js = quotemeta 'var require=function(){};require.modules={}';
   my $a_js       = quotemeta q(require.modules['exports-foo'].exports);
   my $b_js       = quotemeta
-    '(function(){var module={exports:{}};require.modules[\'exports\']=module;var i=200;var foo=(function(){var module={exports:{}};require.modules[\'exports-foo\']=module;module.exports.fn=function(n){return"foo:"+n};return module.exports;})();module.exports=function(n){return foo.fn(n*i)};return module.exports;})()';
+    '(function(){var exports={};var module={exports:exports};require.modules[\'exports\']=module;var i=200;var foo=(function(){var exports={};var module={exports:exports};require.modules[\'exports-foo\']=module;module.exports.fn=function(n){return"foo:"+n};return module.exports;})();module.exports=function(n){return foo.fn(n*i)};return module.exports;})()';
 
   $t->app->asset('require.js' => '/js/require.js');
   $t->get_ok('/test1')->content_like(qr{$require_js;var a=1;var b=$b_js;a=$a_js;}, $require_js);
+
+  local $ENV{NODE_PATH} = '';
+  eval { $t->app->asset('node_path.js' => '/js/node_path.js'); };
+  like $@, qr{JavaScript module}, 'not found';
+
+  $ENV{NODE_PATH} = File::Spec->catdir(getcwd, qw( t modules ));
+  $t->app->asset('node_path.js' => '/js/node_path.js');
+  $t->get_ok('/test1')->content_like(qr{$require_js;.*require\.modules\['circle\.js'\]}, $require_js);
 }
 
 done_testing;
@@ -48,3 +57,4 @@ __DATA__
 @@ test1.html.ep
 %= asset 'app.js'
 %= asset 'require.js', { inline => 1 }
+%= asset 'node_path.js', { inline => 1 }

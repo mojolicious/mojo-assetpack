@@ -9,19 +9,42 @@ Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript - Preprocessor for Java
 L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript> is a preprocessor for
 C<.js> files.
 
-Javascript is minified using L<JavaScript::Minifier::XS>. This module is
+JavaScript is minified using L<JavaScript::Minifier::XS>. This module is
 optional and must be installed manually.
 
 NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
 
+=head2 require()
+
+L<nodejs|http://nodejs.org/api/modules.html> support modules. This system
+is very handy, since it allows chunks of JavaScript code to be insolated in
+a closure. L<Mojolicious::Plugin::AssetPack> provides a naive implementation
+of this module system, allowing you to write this code:
+
+  // foo.js
+  var circle = require('./circle.js');
+  console.log('The area of a circle of radius 4 is ' + circle.area(4));
+
+  // circle.js
+  var PI = Math.PI;
+  module.exports.area = function(r) { return PI * r * r; };
+  module.exports.circumference = function(r) { return 2 * PI * r; };
+
+The C<circle.js> code is isolated from the C<foo.js> code, meaning the C<PI>
+variable is not accessible. On the other hand, the C<module.exports> variable
+will be the return value from C<require()>.
+
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use Mojo::Util 'slurp';
+use Mojo::Util;
 use File::Basename 'dirname';
+use File::Spec;
 use JavaScript::Minifier::XS;
 
 require Mojolicious::Plugin::AssetPack::Preprocessors;    # Mojolicious::Plugin::AssetPack::Preprocessors::CWD
+
+$ENV{NODE_PATH} ||= '';
 
 =head1 METHODS
 
@@ -49,6 +72,8 @@ sub process {
   return $self;
 }
 
+sub _default_ext {'js'}
+
 sub _follow_requires {
   my ($self, $text, $path, $uniq) = @_;
 
@@ -58,18 +83,31 @@ sub _follow_requires {
 }
 
 sub _inline_module {
-  my ($self, $id, $path, $uniq) = @_;
-  my $file = sprintf '%s.%s', $id, $path =~ /\.(\w+)$/ ? $1 : 'js';
-  my $first = !keys %$uniq;
-  my $js;
+  my ($self, $file, $path, $uniq) = @_;
+  my $id = $file;
 
   $id =~ s!'!\\'!g;
+  $id =~ s!^\./!!g;
   $self->{require_js} = 'var require=function(){}; require.modules={};' unless keys %$uniq;
   return qq[require.modules['$id'].exports] if $uniq->{$id}++;
 
-  $js = slurp $file;
+  my $js = $self->_slurp($file, $path =~ /\.(\w+)/ ? $1 : $self->_default_ext);
   $self->_follow_requires(\$js, $file, $uniq);
-  return qq[(function(){var module={exports:{}};require.modules['$id']=module;\n$js\nreturn module.exports;})()];
+  return
+    qq[(function(){var exports={};var module={exports:exports};require.modules['$id']=module;\n$js\nreturn module.exports;})()];
+}
+
+sub _slurp {
+  my ($self, $file, $ext) = @_;
+
+  for my $mod_dir (File::Spec->curdir, split /:/, $ENV{NODE_PATH}) {
+    for ($file, "$file.$ext") {
+      my $abs_path = File::Spec->catfile($mod_dir, $_);
+      return Mojo::Util::slurp($abs_path) if -e $abs_path;
+    }
+  }
+
+  die "JavaScript module '$file' could not be found.";
 }
 
 =head1 COPYRIGHT AND LICENSE
