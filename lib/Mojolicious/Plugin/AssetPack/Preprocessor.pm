@@ -83,10 +83,14 @@ sub _make_css_error {
 
 sub _make_js_error {
   my ($self, $err, $text) = @_;
-  $err =~ s!'!"!g;
-  $err =~ s!\n!\\n!g;
-  $err =~ s!\s! !g;
-  $$text = "alert('$err');";
+
+  for (\$err, $text) {
+    $$_ =~ s!'!"!g;
+    $$_ =~ s!\n!\\n!g;
+    $$_ =~ s!\s! !g;
+  }
+
+  $$text = "alert('$err');console.log({err:'$err',code:'$$text'});";
   $self->errmsg($err);
   $self;
 }

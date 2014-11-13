@@ -36,7 +36,8 @@ for my $x (0, 1) {
   is_deeply(\%src, shift(@res), 'found elements');
 
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie\\n'\);$}, "coffee 42 ($x)");
+    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie\\n'\);console\.log},
+    "coffee 42 ($x)");
 
   $t->get_ok($src{invalid})->status_is(200)
     ->content_like(qr/^html:before{.*content:"No preprocessor defined for .*dummy\.foo";}/, "invalid ($x)");
@@ -49,7 +50,8 @@ for my $x (0, 1) {
   $ENV{EXITCODE} = 31;
   $t->app->asset('coffee.js' => '/js/c.coffee');
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie\\n'\);$}, "coffee 31 ($x)");
+    ->content_like(qr{^alert\('Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie\\n'\);console\.log},
+    "coffee 31 ($x)");
 }
 
 done_testing;
