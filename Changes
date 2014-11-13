@@ -1,5 +1,10 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.32
+       * Change react (jsx) and javascript to follow require("file")
+         Can be disabled with MOJO_ASSETPACK_NO_FOLLOW_REQUIRES=1
+       * Add logging of JavaScript code to console on error
+
 0.31     Thu Oct  9 13:19:44 2014
        * Fixed and wrote tests for external AssetPack plugins
 

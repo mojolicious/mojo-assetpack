@@ -31,8 +31,23 @@ use t::Helper;
     ->content_like(qr{<script src="/packed/app-ec1f584de6b736ca6aea95c003e498aa\.js".*}m);
 
   $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{["']a["'].*["']b["']}s);
-
   is_deeply([$t->app->asset->get('app.js')], ['/packed/app-ec1f584de6b736ca6aea95c003e498aa.js'], 'get(app.js)');
+
+  my $require_js = quotemeta 'var require=function(){};require.modules={}';
+  my $a_js       = quotemeta q(require.modules['exports-foo'].exports);
+  my $b_js       = quotemeta
+    '(function(){var exports={};var module={exports:exports};require.modules[\'exports\']=module;var i=200;var foo=(function(){var exports={};var module={exports:exports};require.modules[\'exports-foo\']=module;module.exports.fn=function(n){return"foo:"+n};return module.exports;})();module.exports=function(n){return foo.fn(n*i)};return module.exports;})()';
+
+  $t->app->asset('require.js' => '/js/require.js');
+  $t->get_ok('/test1')->content_like(qr{$require_js;var a=1;var b=$b_js;a=$a_js;}, $require_js);
+
+  local $ENV{NODE_PATH} = '';
+  eval { $t->app->asset('node_path.js' => '/js/node_path.js'); };
+  like $@, qr{Could not find JavaScript module}, 'not found';
+
+  $ENV{NODE_PATH} = File::Spec->catdir(Cwd::getcwd, qw( t modules ));
+  $t->app->asset('node_path.js' => '/js/node_path.js');
+  $t->get_ok('/test1')->content_like(qr{$require_js;.*require\.modules\['circle\.js'\]}, $require_js);
 }
 
 done_testing;
@@ -40,3 +55,5 @@ done_testing;
 __DATA__
 @@ test1.html.ep
 %= asset 'app.js'
+%= asset 'require.js', { inline => 1 }
+%= asset 'node_path.js', { inline => 1 }
