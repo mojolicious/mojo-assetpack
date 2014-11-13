@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.32
+       * Add logging of JavaScript code to console on error
+
 0.31     Thu Oct  9 13:19:44 2014
        * Fixed and wrote tests for external AssetPack plugins
 
