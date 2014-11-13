@@ -38,6 +38,7 @@ will be the return value from C<require()>.
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use Mojo::Util;
+use Cwd ();
 use File::Basename 'dirname';
 use File::Spec;
 use JavaScript::Minifier::XS;
@@ -99,15 +100,16 @@ sub _inline_module {
 
 sub _slurp {
   my ($self, $file, $ext) = @_;
+  my @path = (Cwd::getcwd, split /:/, $ENV{NODE_PATH});
 
-  for my $mod_dir (File::Spec->curdir, split /:/, $ENV{NODE_PATH}) {
+  for my $mod_dir (@path) {
     for ($file, "$file.$ext") {
       my $abs_path = File::Spec->catfile($mod_dir, $_);
       return Mojo::Util::slurp($abs_path) if -e $abs_path;
     }
   }
 
-  die "JavaScript module '$file' could not be found.";
+  die "Could not find JavaScript module '$file' in @path.";
 }
 
 =head1 COPYRIGHT AND LICENSE

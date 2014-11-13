@@ -1,5 +1,4 @@
 use t::Helper;
-use Cwd;
 
 {
   diag "minify=0";
@@ -44,9 +43,9 @@ use Cwd;
 
   local $ENV{NODE_PATH} = '';
   eval { $t->app->asset('node_path.js' => '/js/node_path.js'); };
-  like $@, qr{JavaScript module}, 'not found';
+  like $@, qr{Could not find JavaScript module}, 'not found';
 
-  $ENV{NODE_PATH} = File::Spec->catdir(getcwd, qw( t modules ));
+  $ENV{NODE_PATH} = File::Spec->catdir(Cwd::getcwd, qw( t modules ));
   $t->app->asset('node_path.js' => '/js/node_path.js');
   $t->get_ok('/test1')->content_like(qr{$require_js;.*require\.modules\['circle\.js'\]}, $require_js);
 }
