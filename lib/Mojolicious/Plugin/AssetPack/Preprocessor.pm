@@ -11,6 +11,7 @@ L<Mojolicious::Plugin::AssetPack::Preprocessor> is a base class for preprocessor
 =cut
 
 use Mojo::Base -base;
+use Mojo::JSON 'encode_json';
 use Mojo::Util ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
@@ -83,14 +84,12 @@ sub _make_css_error {
 
 sub _make_js_error {
   my ($self, $err, $text) = @_;
+  my $code = encode_json([split /\n/, $$text]);
 
-  for (\$err, $text) {
-    $$_ =~ s!'!"!g;
-    $$_ =~ s!\n!\\n!g;
-    $$_ =~ s!\s! !g;
-  }
-
-  $$text = "alert('$err');console.log({err:'$err',code:'$$text'});";
+  $err =~ s!'!"!g;
+  $err =~ s!\n!\\n!g;
+  $err =~ s!\s! !g;
+  $$text = "alert('$err');console.log(@{[encode_json({code => [split /\n/, $$text], err => $err})]});";
   $self->errmsg($err);
   $self;
 }

@@ -60,20 +60,22 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my $err;
+  my ($err, $out);
 
   if (!$ENV{MOJO_ASSETPACK_NO_FOLLOW_REQUIRES}) {
     my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new(dirname $path);
     $self->_follow_requires($text, $path, {});
   }
 
-  $self->_run([$self->executable], $text, $text, \$err);
+  $self->_run([$self->executable], $text, \$out, \$err);
 
   if (length $err) {
+    $err =~ s!\s*at throwError.*!!s unless $ENV{MOJO_ASSETPACK_DEBUG};
+    $err =~ s!\x1B\[\d{1,2}m!!g;    # remove color codes
     $self->_make_js_error($err, $text);
   }
-  elsif ($assetpack->minify and length $$text) {
-    $$text = JavaScript::Minifier::XS::minify($$text);
+  else {
+    $$text = ($assetpack->minify and length $out) ? JavaScript::Minifier::XS::minify($out) : $out;
     $$text = "alert('Failed to minify $path')" unless defined $$text;
   }
 
