@@ -64,6 +64,7 @@ sub process {
   if (length $err) {
     $err =~ s!\s*at throwError.*!!s unless $ENV{MOJO_ASSETPACK_DEBUG};
     $err =~ s!\x1B\[\d{1,2}m!!g;    # remove color codes
+    $err .= " (src=$path)";
     $self->_make_js_error($err, $text);
   }
   else {

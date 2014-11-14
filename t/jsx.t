@@ -12,7 +12,7 @@ use t::Helper;
 
   $t->app->asset('error.js' => '/js/error.jsx');
   $t->get_ok('/test1')->status_is(200)->content_like(qr{alert\('Failed to run})->content_like(qr{console\.log\(\{})
-    ->content_like(qr{console\.log.*"err":"Failed to run})
+    ->content_like(qr{\s\(src=.*error\.jsx\)"})->content_like(qr{console\.log.*"err":"Failed to run})
     ->content_like(qr{console\.log.*"code":\["React\.renderComponent});
 }
 
