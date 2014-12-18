@@ -39,6 +39,10 @@ Or if you want the asset inlined in the HTML:
 
   %= asset 'app.css', { inline => 1 }
 
+You can also pass on attributes to the generated HTML tag:
+
+  %= asset 'app.css', {}, media => "print,handheld,embossed"
+
 Or if you need to add the tags manually:
 
   % for my $asset (asset->get('app.js')) {
@@ -379,7 +383,7 @@ sub register {
   $app->helper(
     $helper => sub {
       return $self if @_ == 1;
-      return shift, $self->add(@_) if @_ > 2 and ref $_[-1] ne 'HASH';
+      return shift, $self->add(@_) if @_ > 2 and ref $_[2] ne 'HASH';
       return $self->_inject(@_);
     }
   );
@@ -402,7 +406,7 @@ sub _fluffy_find {
 }
 
 sub _inject {
-  my ($self, $c, $moniker, $args) = @_;
+  my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
   $self->_process_many($moniker) unless CACHE_ASSETS;
@@ -413,13 +417,14 @@ sub _inject {
   }
   elsif ($args->{inline}) {
     return $c->$tag_helper(
+      @attrs,
       sub {
         join "\n", map { $self->{static}->file("packed/$_")->slurp } @$processed;
       }
     );
   }
   else {
-    return b join "\n", map { $c->$tag_helper($self->base_url . $_) } @$processed;
+    return b join "\n", map { $c->$tag_helper($self->base_url . $_, @attrs) } @$processed;
   }
 }
 
