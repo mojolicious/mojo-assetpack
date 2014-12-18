@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.31
+    0.32
 
 SYNOPSIS
     In your application:
@@ -34,6 +34,10 @@ SYNOPSIS
     Or if you want the asset inlined in the HTML:
 
       %= asset 'app.css', { inline => 1 }
+
+    You can also pass on attributes to the generated HTML tag:
+
+      %= asset 'app.css', {}, media => "print,handheld,embossed"
 
     Or if you need to add the tags manually:
 
