@@ -72,7 +72,6 @@ use File::Path 'make_path';
 use File::Spec;
 use File::Which ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
-use constant CACHE_DIR => '.browserify';
 
 =head1 ATTRIBUTES
 
@@ -153,7 +152,7 @@ Used to process the JavaScript using C<browserify>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my $environment = $self->environment;
-  my $cache_dir   = File::Spec->catdir($assetpack->out_dir, CACHE_DIR);
+  my $cache_dir   = $assetpack->out_dir;
   my $map         = {};
   my @extra       = @{$self->browserify_args};
   my ($err, @modules);
@@ -288,10 +287,10 @@ sub _node_module_path {
 
 sub _outfile {
   my ($self, $assetpack, $name) = @_;
-  my $path = $assetpack->{static}->file(File::Spec->catfile(CACHE_DIR, $name));
+  my $path = $assetpack->{static}->file($name);
 
   return $path if $path and -e $path;
-  return File::Spec->catfile($assetpack->out_dir, CACHE_DIR, $name);
+  return File::Spec->catfile($assetpack->out_dir, $name);
 }
 
 =head1 COPYRIGHT AND LICENSE
