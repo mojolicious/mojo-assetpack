@@ -101,9 +101,18 @@ Specifies the extensions browserify should look for.
 
   $path = $self->executable;
 
-Holds the path to the "browserify" executable. Default to just "browserify".
+Holds the path to the "browserify" executable. Defaults to just "browserify".
 C<browserify> can also be found in C<./node_modules/.bin/browserify>, in the
 current project directory.
+
+=head2 npm_executable
+
+  $path = $self->npm_executable;
+
+Holds the path to the L<npm|https://www.npmjs.org/> executable which is used
+to install node modules which is found when scanning for C<require()>
+statements. Set this attribute to C<undef> to disable automatic installation
+to C<node_modules> directory.
 
 =cut
 
@@ -111,6 +120,22 @@ has browserify_args => sub { [] };
 has environment     => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
 has extensions      => sub { ['js'] };
 has executable => sub { shift->_executable('browserify') || 'browserify' };
+has npm_executable => sub { File::Which::which('npm') };
+
+has _node_module_paths => sub {
+  my $self = shift;
+  my @cwd  = File::Spec->splitdir(Cwd::getcwd);
+  my @path;
+
+  do {
+    my $p = File::Spec->catdir(@cwd, 'node_modules');
+    pop @cwd;
+    push @path, $p if -d $p;
+  } while @cwd;
+
+  warn "[Browserify] node_module_path=[@path]\n" if DEBUG;
+  return \@path;
+};
 
 =head1 METHODS
 
@@ -138,7 +163,7 @@ sub checksum {
   my ($self, $text, $path) = @_;
   my $map = {};
 
-  $self->_node_module_path;
+  delete $self->{_node_module_paths};
   $self->_find_node_modules($text, $path, $map);
   Mojo::Util::md5_sum($$text, join '', map { Mojo::Util::slurp($map->{$_}) } sort keys %$map);
 }
@@ -159,7 +184,7 @@ sub process {
 
   local $ENV{NODE_ENV} = $environment;
   mkdir $cache_dir or die "mkdir $cache_dir: $!" unless -d $cache_dir;
-  $self->_node_module_path;
+  delete $self->{_node_module_paths};
   $self->_find_node_modules($text, $path, $map);
   $self->{node_modules} = $map;
 
@@ -193,14 +218,12 @@ sub process {
 
 sub _executable {
   my ($self, $name) = @_;
-  my $paths = $self->{node_module_path} || $self->_node_module_path;
+  my $exe;
 
-  for my $p (@$paths) {
-    my $local = Cwd::abs_path(File::Spec->catfile($p, '.bin', $name));
-    return $local if $local and -e $local;
-  }
-
-  return File::Which::which($name);
+  $exe = $self->_node_module_path('.bin', $name);
+  eval { $self->_install_node_module($name) } unless $exe;
+  $exe = $self->_node_module_path('.bin', $name);
+  return $exe || File::Which::which($name);
 }
 
 sub _find_node_modules {
@@ -242,13 +265,27 @@ sub _follow_system_node_module {
   my ($self, $module, $path, $uniq) = @_;
   my $p;
 
-  for my $prefix (@{$self->{node_module_path}}) {
+  $self->_install_node_module($module);
+
+  for my $prefix (@{$self->_node_module_paths}) {
     return $uniq->{$module} = $p if -e ($p = File::Spec->catfile($prefix, $module, 'package.json'));
     return $uniq->{$module} = $p if -e ($p = File::Spec->catfile($prefix, $module, 'index.js'));
     return $uniq->{$module} = $p if -e ($p = File::Spec->catfile($prefix, "$module.js"));
   }
 
-  die "Could not find JavaScript module '$module' in @{$self->{node_module_path}}";
+  die "Could not find JavaScript module '$module' in @{$self->_node_module_paths}";
+}
+
+sub _install_node_module {
+  my ($self, $module) = @_;
+  my $cwd = Cwd::getcwd;
+
+  local ($?, $!);
+  return unless $self->npm_executable;
+  return $self if -d File::Spec->catdir($cwd, 'node_modules', $module);
+  system $self->npm_executable, install => $module;
+  die "Failed to run 'npm install $module': $?" if $?;
+  return $self;
 }
 
 sub _minify {
@@ -256,14 +293,7 @@ sub _minify {
   my $uglifyjs = $self->_executable('uglifyjs');
   my $err      = '';
 
-  if ($uglifyjs) {
-    $self->_run([$uglifyjs, qw( -m -c  )], $text, $text, \$err);
-  }
-  else {
-    require JavaScript::Minifier::XS;
-    $$text = JavaScript::Minifier::XS::minify($$text);
-    $err = 'JavaScript::Minifier::XS failed' unless $$text;
-  }
+  $self->_run([$uglifyjs, qw( -m -c  )], $text, $text, \$err);
 
   if (length $err) {
     $self->_make_js_error($err, $text);
@@ -272,17 +302,13 @@ sub _minify {
 
 sub _node_module_path {
   my $self = shift;
-  my @cwd  = File::Spec->splitdir(Cwd::getcwd);
-  my @path;
 
-  do {
-    my $p = File::Spec->catdir(@cwd, 'node_modules');
-    pop @cwd;
-    push @path, $p if -d $p;
-  } while (@cwd);
+  for my $path (@{$self->_node_module_paths}) {
+    my $local = Cwd::abs_path(File::Spec->catfile($path, @_));
+    return $local if $local and -e $local;
+  }
 
-  warn "[Browserify] node_module_path=[@path]\n" if DEBUG;
-  return $self->{node_module_path} = \@path;
+  return;
 }
 
 sub _outfile {

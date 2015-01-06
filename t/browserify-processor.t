@@ -4,11 +4,10 @@ use Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
 
-plan skip_all => 'npm install browserify' if $p->executable eq 'browserify';
-plan skip_all => 'npm install react'            unless -d 'node_modules/react';
+plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
 plan skip_all => "Cannot chdir t/public/js: $!" unless chdir 't/public/js';
 
-is int(@{$p->_node_module_path}), 1, 'found a node_modules directory';
+is int(@{$p->_node_module_paths}), 1, 'found a node_modules directory';
 is_deeply([$p->_find_node_modules(\'', 'foo')], [], 'no modules found');
 
 my $text = Mojo::Util::slurp('react-simple.js');

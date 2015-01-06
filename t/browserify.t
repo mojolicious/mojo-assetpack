@@ -1,6 +1,9 @@
 use t::Helper;
+use Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
-plan skip_all => 'npm install browserify' unless -d 'node_modules/browserify';
+my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
+
+plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
 
 my $t = t::Helper->t({});
 
