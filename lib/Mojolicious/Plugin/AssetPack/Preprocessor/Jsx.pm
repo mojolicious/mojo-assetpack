@@ -6,6 +6,8 @@ Mojolicious::Plugin::AssetPack::Preprocessor::Jsx - Preprocessor for JavaScript 
 
 =head1 DESCRIPTION
 
+You probably want L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify> instead!
+
 L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx> is a preprocessor for
 C<.jsx> files.
 
