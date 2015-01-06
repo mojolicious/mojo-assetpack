@@ -1,33 +1,66 @@
-package Mojolicious::Plugin::Browserify::Processor;
+package Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 =head1 NAME
 
-Mojolicious::Plugin::Browserify::Processor - An AssetPack processor for browserify
+Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using browserify
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Browserify::Processor> is a
-L<Mojolicious::Plugin::AssetPack> preprocessor.
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify> is a JavaScript
+preprocessor which use L<browserify|http://browserify.org/>.
+
+Features:
+
+=over 4
+
+=item * Require
+
+The main feature is that you can C<require()> JavaScript modules:
+
+  var adder = require("adder");
+  console.log(adder(1, 2));
+
+See L<commonjs|http://nodejs.org/docs/latest/api/modules.html#modules_modules>
+for more details.
+
+=item * NPM modules
+
+You can depend on L<npm|https://www.npmjs.org/> modules, which
+allows reuse of code in your JavaScript code.
+
+=item * Watch required modules
+
+This module will watch the code you are working on and only recompile
+the parts that change. This is the same feature that
+L<watchify|https://www.npmjs.org/package/watchify> provides.
+
+=item * Pre-processing
+
+L<AssetPack|Mojolicious::Plugin::AssetPack> is already a preprocessor,
+but you can also include node based preprocessors which allow you to
+use modules such as L<React|http://facebook.github.io/react/>:
+
+  var React = require("react");
+  React.render(
+    <h1>Hello, world!</h1>,
+    document.getElementById('example')
+  );
+
+=back
 
 =head1 SYNOPSIS
 
   use Mojolicious::Lite;
 
   plugin "AssetPack";
-  app->asset->preprocessors->remove($_) for qw( js jsx );
 
-  my $browserify = Mojolicious::Plugin::Browserify::Processor->new;
-  app->asset->preprocessors->add($browserify);
-  app->asset("app.js" => "/js/main.js");
-
-  get "/app" => "app_js_inlined";
-  app->start;
-
-  __DATA__
-  @@ app_js_inlined.js.ep
-  %= asset "app.js" => {inline => 1}
-
-See also L<Mojolicious::Plugin::Browserify> for a simpler API.
+  app->asset->preprocessor(
+    Browserify => {
+      browserify_args => [-g => "reactify"],
+      environment => app->mode, # default
+      extensions => [qw( js jsx )], # default is "js"
+    },
+  ),
 
 =cut
 
