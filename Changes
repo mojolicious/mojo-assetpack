@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.33
+       * Can fallback to existing assets in production mode
+
 0.32     Thu Dec 18 12:23:58 2014
        * Add logging of JavaScript code to console on error
        * Able to pass on attrs to script/link tag generator #33

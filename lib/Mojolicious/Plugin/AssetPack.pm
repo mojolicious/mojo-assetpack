@@ -176,6 +176,18 @@ it defaults to "/packed". See also L</Custom domain>.
 
 NOTE! You need to have a trailing "/" at the end of the string.
 
+=head2 fallback
+
+  $self = $self->fallback($bool);
+
+Setting this attribute to true will enable the L<asset()|/add> helper to use
+bundled assets if the L</process> step fail. L<asset()|/add> will still throw
+an error if there are no bundled assets available.
+
+The default value is "1" in L<production mode|Mojolicious/mode>.
+
+This feauture is EXPERIMENTAL. Feedback wanted.
+
 =head2 minify
 
 Set this to true if the assets should be minified.
@@ -193,6 +205,7 @@ unless a L<static directory|Mojolicious::Static/paths> is writeable.
 =cut
 
 has base_url      => '/packed/';
+has fallback      => 0;
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => sub { shift->_build_out_dir };
@@ -259,7 +272,7 @@ sub fetch {
   $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
 
   if (my $e = $res->error) {
-    die "AssetPack could not download asset from '$url': $e->{message}\n";
+    die "AssetPack could not download asset from '$url': $e->{message}";
   }
 
   $path = File::Spec->catfile($self->out_dir, "$lookup.$ext");
@@ -302,35 +315,15 @@ The result file will be stored in L</Packed directory>.
 
 sub process {
   my ($self, $moniker, @files) = @_;
-  my ($md5_sum, $files) = $self->_read_files(@files);
-  my ($name,    $ext)   = $moniker =~ /^(.*)\.(\w+)$/;
-  my $processed = '';
-  my $path;
 
-  $ext or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
-  $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
+  eval {
+    $self->_process($moniker, @files);
+    1;
+  } or do {
+    die $@ unless $self->fallback;
+    $self->_fallback($moniker);
+  };
 
-  # Need to scan all directories and not just out_dir()
-  if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext") and CACHE_ASSETS) {
-    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}");
-    return $self;
-  }
-
-  for my $file (@files) {
-    my $data = $files->{$file};
-    my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
-
-    $processed .= $data->{body};
-
-    if ($err) {
-      $self->{log}->error($err);
-      $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
-    }
-  }
-
-  $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);
-  spurt $processed => $path;
-  $self->{log}->info("Built asset for $moniker: $path");
   $self;
 }
 
@@ -349,10 +342,10 @@ Will register the C<compress> helper. All arguments are optional.
 
 sub register {
   my ($self, $app, $config) = @_;
-  my $minify = $config->{minify} // $app->mode eq 'production';
   my $helper = $config->{helper} || 'asset';
 
-  $self->minify($minify);
+  $self->fallback($config->{fallback} // $app->mode eq 'production');
+  $self->minify($config->{minify}     // $app->mode eq 'production');
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
@@ -360,7 +353,7 @@ sub register {
   $self->{log}       = $app->log;
   $self->{static}    = $app->static;
 
-  $self->{log}->info('AssetPack Will rebuild assets on each request') unless CACHE_ASSETS;
+  $app->log->info('AssetPack Will rebuild assets on each request') unless CACHE_ASSETS;
 
   if ($config->{out_dir}) {
     $self->out_dir($config->{out_dir});
@@ -391,6 +384,22 @@ sub register {
 
 sub _build_out_dir {
   File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack-public', 'packed');
+}
+
+sub _fallback {
+  my ($self, $moniker) = @_;
+  my ($name, $ext)     = $self->_name_ext($moniker);
+  my $file = $self->_fluffy_find(qr/^$name-\w{32}.$ext$/);
+
+  if ($file) {
+    $self->{processed}{$moniker} = [$file];
+    $self->{log}->debug("Using fallback asset for $moniker: $file");
+  }
+  else {
+    die "AssetPack could not find already packed asset file '$name-*.$ext' in fallback mode.";
+  }
+
+  return unless $file;
 }
 
 sub _fluffy_find {
@@ -428,13 +437,48 @@ sub _inject {
   }
 }
 
+sub _name_ext {
+  $_[1] =~ /^(.*)\.(\w+)$/;
+  return ($1, $2) if $2;
+  die "Moniker ($_[1]) need to have an extension, like .css, .js, ...";
+}
+
+sub _process {
+  my ($self, $moniker, @files) = @_;
+  my ($md5_sum, $files) = $self->_read_files(@files);
+  my ($name,    $ext)   = $self->_name_ext($moniker);
+  my $processed = '';
+  my $path;
+
+  $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
+
+  # Need to scan all directories and not just out_dir()
+  if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext") and CACHE_ASSETS) {
+    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}");
+    return $self;
+  }
+
+  for my $file (@files) {
+    my $data = $files->{$file};
+    my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
+
+    $processed .= $data->{body};
+
+    if ($err) {
+      $self->{log}->error($err);
+      $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
+    }
+  }
+
+  $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);
+  spurt $processed => $path;
+  $self->{log}->info("Built asset for $moniker: $path");
+}
+
 sub _process_many {
   my ($self, $moniker) = @_;
   my @files = @{$self->{assets}{$moniker} || []};
-  my $ext;
-
-  $moniker =~ /\.(\w+)$/ or die "Moniker ($moniker) need to have an extension, like .css, .js, ...";
-  $ext = $1;
+  my ($name, $ext) = $self->_name_ext($moniker);
 
   for my $file (@files) {
     my $moniker = basename $file;
@@ -471,7 +515,7 @@ FILE:
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     else {
-      die "AssetPack cannot find input file '$file'\n";
+      die "AssetPack cannot find input file '$file'.";
     }
 
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
