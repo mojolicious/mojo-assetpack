@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.32
+    0.33
 
 SYNOPSIS
     In your application:
@@ -143,6 +143,17 @@ ATTRIBUTES
     it defaults to "/packed". See also "Custom domain".
 
     NOTE! You need to have a trailing "/" at the end of the string.
+
+  fallback
+      $self = $self->fallback($bool);
+
+    Setting this attribute to true will enable the asset() helper to use
+    bundled assets if the "process" step fail. asset() will still throw an
+    error if there are no bundled assets available.
+
+    The default value is "1" in production mode.
+
+    This feauture is EXPERIMENTAL. Feedback wanted.
 
   minify
     Set this to true if the assets should be minified.

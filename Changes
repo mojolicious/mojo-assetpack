@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.33
+0.33     Tue Jan  6 20:00:42 2015
        * Can fallback to existing assets in production mode
 
 0.32     Thu Dec 18 12:23:58 2014
