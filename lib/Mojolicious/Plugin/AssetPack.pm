@@ -161,6 +161,7 @@ use File::Basename qw( basename );
 use File::Path ();
 use File::Spec ();
 use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.33';
 
@@ -300,6 +301,34 @@ sub get {
   else {
     return map { $self->base_url . $_ } @$files;
   }
+}
+
+=head2 preprocessor
+
+  $self = $self->preprocessor($name => \%args);
+
+Use this method to manually register a preprocessor.
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
+for example usage.
+
+=cut
+
+sub preprocessor {
+  my ($self, $name, $args) = @_;
+  my $class = $name =~ /::/ ? $name : "Mojolicious::Plugin::AssetPack::Preprocessor::$name";
+  my $preprocessor;
+
+  $args->{extensions} or die "Usage: \$self->preprocessor(\$name => {extensions => [...]})";
+  eval "require $class;1" or die "Could not load $class: $@\n";
+  $preprocessor = $class->new($args);
+
+  for my $ext (@{$args->{extensions}}) {
+    warn "[ASSETPACK] Adding $class preprocessor.\n" if DEBUG;
+    $self->preprocessors->on($ext => $preprocessor);
+  }
+
+  return $self;
 }
 
 =head2 process
