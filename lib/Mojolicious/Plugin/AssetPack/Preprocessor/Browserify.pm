@@ -66,6 +66,14 @@ installed, unless already available.
   require("react");    // system module
   require("./custom"); // not a system module
 
+Note: Modules given as L</browserify_args> need to be installed manually.
+(Patches to make this automatically are more than welcome)
+
+Example:
+
+  # Run this in the root of your project directory
+  $ npm install reactify
+
 =head2 Minifying
 
 Minifying is done using L<uglifyjs|https://www.npmjs.com/package/uglify-js>.
