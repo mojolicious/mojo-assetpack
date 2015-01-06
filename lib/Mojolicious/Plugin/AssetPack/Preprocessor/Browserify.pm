@@ -4,50 +4,6 @@ package Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using browserify
 
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify> is a JavaScript
-preprocessor which use L<browserify|http://browserify.org/>.
-
-Features:
-
-=over 4
-
-=item * Require
-
-The main feature is that you can C<require()> JavaScript modules:
-
-  var adder = require("adder");
-  console.log(adder(1, 2));
-
-See L<commonjs|http://nodejs.org/docs/latest/api/modules.html#modules_modules>
-for more details.
-
-=item * NPM modules
-
-You can depend on L<npm|https://www.npmjs.org/> modules, which
-allows reuse of code in your JavaScript code.
-
-=item * Watch required modules
-
-This module will watch the code you are working on and only recompile
-the parts that change. This is the same feature that
-L<watchify|https://www.npmjs.org/package/watchify> provides.
-
-=item * Pre-processing
-
-L<AssetPack|Mojolicious::Plugin::AssetPack> is already a preprocessor,
-but you can also include node based preprocessors which allow you to
-use modules such as L<React|http://facebook.github.io/react/>:
-
-  var React = require("react");
-  React.render(
-    <h1>Hello, world!</h1>,
-    document.getElementById('example')
-  );
-
-=back
-
 =head1 SYNOPSIS
 
   use Mojolicious::Lite;
@@ -59,8 +15,86 @@ use modules such as L<React|http://facebook.github.io/react/>:
       browserify_args => [-g => "reactify"],
       environment => app->mode, # default
       extensions => [qw( js jsx )], # default is "js"
+    }
+  );
+
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify> is a JavaScript
+preprocessor which use L<browserify|http://browserify.org/> to do the heavy
+lifting. Browserify allow you to C<require> JavaScript modules the same way
+as you require Perl modules. This is very convenient, since it will isolate
+your code and make it modular.
+
+Example JavaScript module, in the shape of a React component:
+
+  // load the node module "react"
+  var React = require('react');
+
+  // load a module from the same directory as the current file
+  var Storage = require('./storage');
+
+  // module.exports is the return value from require()
+  module.exports = React.createClass({
+    getInitialState: function() {
+      return { name: Storage.get("name") };
     },
-  ),
+    render: function() {
+      return <div>{this.state.name}</div>;
+    }
+  });
+
+The above code is not valid JavaScript, but will be converted using a custom
+preprocessor. Preprocessors are specified as part fo the L</browserify_args>:
+
+  app->asset->preprocessor(
+    Browserify => {
+      browserify_args => [-g => "reactify"],
+    }
+  );
+
+In addition to L<reactify|https://www.npmjs.com/package/reactify>, there
+are L<coffeeify|https://www.npmjs.com/package/coffeeify> and
+L<a bunch|https://github.com/substack/node-browserify/wiki/list-of-transforms>
+of others.
+
+=head2 Auto install
+
+C<require()> statements that point to "system modules" will be automatically
+installed, unless already available.
+
+  require("react");    // system module
+  require("./custom"); // not a system module
+
+=head2 Minifying
+
+Minifying is done using L<uglifyjs|https://www.npmjs.com/package/uglify-js>.
+This application is an excellent tool, which does a whole lot more than
+just making private variable names shorter.
+
+=head2 Watch for changes
+
+This module will watch the code you are working on and only recompile
+the parts that change. This is the same feature that
+L<watchify|https://www.npmjs.org/package/watchify> provides.
+
+=head1 SEE ALSO
+
+=over4
+
+=item * L<http://browserify.org/>
+
+Main homepage for browserify.
+
+=item * L<https://www.npmjs.org/>
+
+"CPAN" for JavaScript.
+
+=item * L<commonjs|http://nodejs.org/docs/latest/api/modules.html#modules_modules>
+
+How C<require()> works in JavaScript.
+
+=back
 
 =cut
 
@@ -90,13 +124,6 @@ Command line arguments that will be passed on to C<browserify>.
 Should be either "production" or "development" (default). This variable will
 be passed on as C<NODE_ENV> to C<browserify>.
 
-=head2 extensions
-
-  $array_ref = $self->extensions;
-  $self = $self->extensions([qw( js jsx )]);
-
-Specifies the extensions browserify should look for.
-
 =head2 executable
 
   $path = $self->executable;
@@ -104,6 +131,13 @@ Specifies the extensions browserify should look for.
 Holds the path to the "browserify" executable. Defaults to just "browserify".
 C<browserify> can also be found in C<./node_modules/.bin/browserify>, in the
 current project directory.
+
+=head2 extensions
+
+  $array_ref = $self->extensions;
+  $self = $self->extensions([qw( js jsx )]);
+
+Specifies the extensions browserify should look for when parsing C<require()>.
 
 =head2 npm_executable
 
