@@ -13,11 +13,17 @@ L<Mojolicious::Plugin::AssetPack::Preprocessor> is a base class for preprocessor
 use Mojo::Base -base;
 use Mojo::JSON 'encode_json';
 use Mojo::Util ();
+use Cwd        ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
-use overload (q(&{}) => sub { shift->can('process') }, fallback => 1,);
+use overload q(&{}) => sub { shift->can('process') }, fallback => 1;
 
 =head1 ATTRIBUTES
+
+=head2 cwd
+
+Path to the current directory, before L<Mojolicious::Plugin::AssetPack::Preprocessor>
+did any C<chdir>.
 
 =head2 errmsg
 
@@ -25,6 +31,7 @@ Holds the error from last L</process>.
 
 =cut
 
+has cwd => sub {Cwd::getcwd};
 has errmsg => '';
 
 =head1 METHODS

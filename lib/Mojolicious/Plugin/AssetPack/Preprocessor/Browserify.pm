@@ -151,10 +151,10 @@ to C<node_modules> directory.
 =cut
 
 has browserify_args => sub { [] };
-has environment => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
-has executable => sub { shift->_executable('browserify') || 'browserify' };
-has extensions => sub { ['js'] };
-has npm_executable => sub { File::Which::which('npm') };
+has environment     => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
+has executable      => sub { shift->_executable('browserify', 'browserify') || 'browserify' };
+has extensions      => sub { ['js'] };
+has npm_executable  => sub { File::Which::which('npm') };
 
 has _node_module_paths => sub {
   my $self = shift;
@@ -167,6 +167,7 @@ has _node_module_paths => sub {
     push @path, $p if -d $p;
   } while @cwd;
 
+  @path = (File::Spec->catdir($self->cwd, 'node_modules')) unless @path;
   warn "[Browserify] node_module_path=[@path]\n" if DEBUG;
   return \@path;
 };
@@ -254,12 +255,9 @@ sub _executable {
   my ($self, $name, $module) = @_;
   my $path = File::Which::which($name) || $self->_node_module_path('.bin', $name);
 
-  if (!$path and $module) {
-    $self->_install_node_module($module);
-    return $self->_node_module_path('.bin', $name);
-  }
+  $self->_install_node_module($module) unless $path;
 
-  return $path;
+  return $path || $self->_node_module_path('.bin', $name);
 }
 
 sub _find_node_modules {
@@ -316,9 +314,11 @@ sub _install_node_module {
   my ($self, $module) = @_;
 
   local ($?, $!);
-  return unless $self->npm_executable;
+  return undef unless $self->npm_executable;
   return $self if $self->_node_module_path($module);
+  return undef unless -w $self->cwd;
   warn "[Browserify] npm install $module\n" if DEBUG;
+  my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new($self->cwd);
   system $self->npm_executable, install => $module;
   die "Failed to run 'npm install $module': $?" if $?;
   return $self;
