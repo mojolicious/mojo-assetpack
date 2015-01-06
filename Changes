@@ -2,6 +2,7 @@ Revision history for Mojolicious-Plugin-AssetPack
 
 0.33
        * Merged Mojolicious::Plugin::Browserify
+       * Add preprocessor() method to AssetPack
 
 0.32     Thu Dec 18 12:23:58 2014
        * Add logging of JavaScript code to console on error
