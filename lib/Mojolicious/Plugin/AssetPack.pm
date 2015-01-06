@@ -318,10 +318,14 @@ sub process {
 
   eval {
     $self->_process($moniker, @files);
+    $self->_fallback($moniker) if grep {/-with-error/} @{$self->{processed}{$moniker}} and $self->fallback;
     1;
   } or do {
-    die $@ unless $self->fallback;
-    $self->_fallback($moniker);
+    my $e = $@;
+    die $e unless $self->fallback;
+    $e =~ s/ at \S+.*//s;
+    $self->{log}->debug("AssetPack failed, but will try fallback mode. ($e)\n");
+    $self->_fallback($moniker) or die "AssetPack could not find already packed asset '$moniker' in fallback mode.";
   };
 
   $self;
@@ -389,17 +393,10 @@ sub _build_out_dir {
 sub _fallback {
   my ($self, $moniker) = @_;
   my ($name, $ext)     = $self->_name_ext($moniker);
-  my $file = $self->_fluffy_find(qr/^$name-\w{32}.$ext$/);
+  my $file = $self->_fluffy_find(qr/^$name-\w{32}.$ext$/) or return;
 
-  if ($file) {
-    $self->{processed}{$moniker} = [$file];
-    $self->{log}->debug("Using fallback asset for $moniker: $file");
-  }
-  else {
-    die "AssetPack could not find already packed asset file '$name-*.$ext' in fallback mode.";
-  }
-
-  return unless $file;
+  $self->{log}->debug("Using fallback asset for $moniker: $file");
+  $self->{processed}{$moniker} = [$file];
 }
 
 sub _fluffy_find {
