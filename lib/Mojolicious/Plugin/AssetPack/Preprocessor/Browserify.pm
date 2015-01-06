@@ -117,9 +117,9 @@ to C<node_modules> directory.
 =cut
 
 has browserify_args => sub { [] };
-has environment     => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
-has extensions      => sub { ['js'] };
+has environment => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
 has executable => sub { shift->_executable('browserify') || 'browserify' };
+has extensions => sub { ['js'] };
 has npm_executable => sub { File::Which::which('npm') };
 
 has _node_module_paths => sub {
@@ -163,7 +163,7 @@ sub checksum {
   my ($self, $text, $path) = @_;
   my $map = {};
 
-  delete $self->{_node_module_paths};
+  $self->_set_node_module_paths;    # need to be done before any chdir
   $self->_find_node_modules($text, $path, $map);
   Mojo::Util::md5_sum($$text, join '', map { Mojo::Util::slurp($map->{$_}) } sort keys %$map);
 }
@@ -184,7 +184,7 @@ sub process {
 
   local $ENV{NODE_ENV} = $environment;
   mkdir $cache_dir or die "mkdir $cache_dir: $!" unless -d $cache_dir;
-  delete $self->{_node_module_paths};
+  $self->_set_node_module_paths;    # need to be done before any chdir
   $self->_find_node_modules($text, $path, $map);
   $self->{node_modules} = $map;
 
@@ -217,13 +217,15 @@ sub process {
 }
 
 sub _executable {
-  my ($self, $name) = @_;
-  my $exe;
+  my ($self, $name, $module) = @_;
+  my $path = File::Which::which($name) || $self->_node_module_path('.bin', $name);
 
-  $exe = $self->_node_module_path('.bin', $name);
-  eval { $self->_install_node_module($name) } unless $exe;
-  $exe = $self->_node_module_path('.bin', $name);
-  return $exe || File::Which::which($name);
+  if (!$path and $module) {
+    $self->_install_node_module($module);
+    return $self->_node_module_path('.bin', $name);
+  }
+
+  return $path;
 }
 
 sub _find_node_modules {
@@ -278,11 +280,11 @@ sub _follow_system_node_module {
 
 sub _install_node_module {
   my ($self, $module) = @_;
-  my $cwd = Cwd::getcwd;
 
   local ($?, $!);
   return unless $self->npm_executable;
-  return $self if -d File::Spec->catdir($cwd, 'node_modules', $module);
+  return $self if -d $self->_node_module_path($module);
+  warn "[Browserify] npm install $module\n" if DEBUG;
   system $self->npm_executable, install => $module;
   die "Failed to run 'npm install $module': $?" if $?;
   return $self;
@@ -290,14 +292,10 @@ sub _install_node_module {
 
 sub _minify {
   my ($self, $text, $path) = @_;
-  my $uglifyjs = $self->_executable('uglifyjs');
-  my $err      = '';
+  my $err = '';
 
-  $self->_run([$uglifyjs, qw( -m -c  )], $text, $text, \$err);
-
-  if (length $err) {
-    $self->_make_js_error($err, $text);
-  }
+  $self->_run([$self->_executable('uglifyjs', 'uglify-js'), qw( -m -c  )], $text, $text, \$err);
+  $self->_make_js_error($err, $text) if length $err;
 }
 
 sub _node_module_path {
@@ -317,6 +315,11 @@ sub _outfile {
 
   return $path if $path and -e $path;
   return File::Spec->catfile($assetpack->out_dir, $name);
+}
+
+sub _set_node_module_paths {
+  delete $_[0]->{_node_module_paths};
+  $_[0]->_node_module_paths;
 }
 
 =head1 COPYRIGHT AND LICENSE

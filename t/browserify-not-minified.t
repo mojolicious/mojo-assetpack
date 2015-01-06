@@ -6,14 +6,8 @@ my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
 plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
 
 my $t = t::Helper->t({});
-
-$t->app->asset->preprocessor(
-  Browserify => {
-    environment => 'development',
-    extensions  => [qw( js jsx )],    # default is "js"
-  },
-);
-
+ok !$t->app->asset->minify, 'not minify';
+$t->app->asset->preprocessor(Browserify => {environment => 'development', extensions => ['js']});
 $t->app->asset('app.js'    => '/js/boop.js');
 $t->app->asset('parent.js' => '/js/ctrl.js');
 
