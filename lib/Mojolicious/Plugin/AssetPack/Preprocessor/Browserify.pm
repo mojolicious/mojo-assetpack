@@ -80,7 +80,7 @@ L<watchify|https://www.npmjs.org/package/watchify> provides.
 
 =head1 SEE ALSO
 
-=over4
+=over 4
 
 =item * L<http://browserify.org/>
 
@@ -317,7 +317,7 @@ sub _install_node_module {
 
   local ($?, $!);
   return unless $self->npm_executable;
-  return $self if -d $self->_node_module_path($module);
+  return $self if $self->_node_module_path($module);
   warn "[Browserify] npm install $module\n" if DEBUG;
   system $self->npm_executable, install => $module;
   die "Failed to run 'npm install $module': $?" if $?;
