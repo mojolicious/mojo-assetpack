@@ -69,9 +69,11 @@ installed, unless already available.
 Note: Modules given as L</browserify_args> need to be installed manually.
 (Patches to make this automatically are more than welcome)
 
+This feauture is EXPERIMENTAL. L<Feedback wanted|https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues>.
+
 Example:
 
-  # Run this in the root of your project directory
+  # Run this in the root directory of your project
   $ npm install reactify
 
 =head2 Minifying
@@ -114,6 +116,8 @@ use File::Path 'make_path';
 use File::Spec;
 use File::Which ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
+
+my $SYSTEM_MODULE = qr{^\w};
 
 =head1 ATTRIBUTES
 
@@ -206,9 +210,11 @@ sub checksum {
   my ($self, $text, $path) = @_;
   my $map = {};
 
-  $self->_set_node_module_paths;    # need to be done before any chdir
+  local $self->{skip_system_node_module_scan} = 1;
+  $self->_set_node_module_paths;    # make sure we have a clean path list on each run
   $self->_find_node_modules($text, $path, $map);
-  Mojo::Util::md5_sum($$text, join '', map { Mojo::Util::slurp($map->{$_}) } sort keys %$map);
+  Mojo::Util::md5_sum($$text, join '',
+    map { Mojo::Util::slurp($map->{$_}) } sort grep { !/$SYSTEM_MODULE/ } keys %$map);
 }
 
 =head2 process
@@ -227,23 +233,24 @@ sub process {
 
   local $ENV{NODE_ENV} = $environment;
   mkdir $cache_dir or die "mkdir $cache_dir: $!" unless -d $cache_dir;
-  $self->_set_node_module_paths;    # need to be done before any chdir
+  $self->_set_node_module_paths;    # make sure we have a clean path list on each run
   $self->_find_node_modules($text, $path, $map);
   $self->{node_modules} = $map;
 
   # make external bundles from node_modules
-  for my $module (grep {/^\w/} sort keys %$map) {
-    my @external = map { -x => $_ } grep { $_ ne $module } keys %$map;
+  for my $module (grep {/$SYSTEM_MODULE/} sort keys %$map) {
+    my @external = map { -x => $_ } grep { !/$SYSTEM_MODULE/ } grep { $_ ne $module } keys %$map;
     push @modules, $self->_outfile($assetpack, "$module-$environment.js");
-    next if -e $modules[-1] and (stat _)[9] >= (stat $map->{$module})[9];
+    next if -e $modules[-1] and (stat $map->{$module})[9] < (stat $modules[-1])[9];
     make_path(dirname $modules[-1]);
     $self->_run([$self->executable, @extra, @external, -r => $module, -o => $modules[-1]], undef, undef, \$err);
+    unlink $modules[-1] unless -s $modules[-1];
   }
 
   if (!length $err) {
 
     # make application bundle which reference external bundles
-    push @extra, map { -x => $_ } grep {/^\w/} sort keys %$map;
+    push @extra, map { -x => $_ } grep {/$SYSTEM_MODULE/} sort keys %$map;
     $self->_run([$self->executable, @extra, -e => $path], undef, $text, \$err);
   }
   if (length $err) {
@@ -263,9 +270,9 @@ sub _executable {
   my ($self, $name, $module) = @_;
   my $path = File::Which::which($name) || $self->_node_module_path('.bin', $name);
 
-  $self->_install_node_module($module) unless $path;
-
-  return $path || $self->_node_module_path('.bin', $name);
+  return $path if $path;
+  $self->_install_node_module($module);
+  $self->_node_module_path('.bin', $name);
 }
 
 sub _find_node_modules {
@@ -275,7 +282,7 @@ sub _find_node_modules {
     my $module = $2;
     warn "[Browserify] require($module) from $path\n" if DEBUG;
     next if $uniq->{$module};
-    $module =~ /^\w/
+    $module =~ /$SYSTEM_MODULE/
       ? $self->_follow_system_node_module($module, $path, $uniq)
       : $self->_follow_relative_node_module($module, $path, $uniq);
   }
@@ -307,6 +314,7 @@ sub _follow_system_node_module {
   my ($self, $module, $path, $uniq) = @_;
   my $p;
 
+  return $uniq->{$module} = 1 if $self->{skip_system_node_module_scan};
   $self->_install_node_module($module);
 
   for my $prefix (@{$self->_node_module_paths}) {
@@ -326,6 +334,7 @@ sub _install_node_module {
   return $self if $self->_node_module_path($module);
   return undef unless -w $self->cwd;
   warn "[Browserify] npm install $module\n" if DEBUG;
+  require Mojolicious::Plugin::AssetPack::Preprocessors;
   my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new($self->cwd);
   system $self->npm_executable, install => $module;
   die "Failed to run 'npm install $module': $?" if $?;

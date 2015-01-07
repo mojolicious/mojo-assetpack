@@ -12,6 +12,7 @@ is_deeply([$p->_find_node_modules(\'', 'foo')], [], 'no modules found');
 
 my $text = Mojo::Util::slurp('react-simple.js');
 my $data = {};
+local $p->{skip_system_node_module_scan} = 1;
 is_deeply([$p->_find_node_modules(\$text, 'react-simple.js')], ['react'], 'depends on react');
 
 $text = Mojo::Util::slurp('react-complex.js');

@@ -187,7 +187,7 @@ an error if there are no bundled assets available.
 
 The default value is "1" in L<production mode|Mojolicious/mode>.
 
-This feauture is EXPERIMENTAL. Feedback wanted.
+This feauture is EXPERIMENTAL. L<Feedback wanted|https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues>.
 
 =head2 minify
 
