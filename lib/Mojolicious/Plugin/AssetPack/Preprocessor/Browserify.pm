@@ -45,7 +45,7 @@ Example JavaScript module, in the shape of a React component:
   });
 
 The above code is not valid JavaScript, but will be converted using a custom
-preprocessor. Preprocessors are specified as part fo the L</browserify_args>:
+transformer. Transformers are specified as part fo the L</browserify_args>:
 
   app->asset->preprocessor(
     Browserify => {
@@ -87,6 +87,56 @@ just making private variable names shorter.
 This module will watch the code you are working on and only recompile
 the parts that change. This is the same feature that
 L<watchify|https://www.npmjs.org/package/watchify> provides.
+
+=head2 React with addons
+
+Mixing libraries where some require "react" and other require "react/adddons"
+will probably create an invalid bundle. The problem is that "react/adddons"
+contain react+addons, which will 1) result in a huge bundle 2) fail in the
+browser since you can't load the react library twice.
+
+You can fix it with these steps:
+
+=over 4
+
+=item * Step 1
+
+Make sure your main application file require C<react/adddons>:
+
+  var React = require("react/adddons");
+
+=item * Step 2
+
+Install L<through2|https://www.npmjs.com/package/through2> and define your own
+transformer in a file C<react-aliasify.js>:
+
+  var through = require('through2');
+  module.exports = function(file) {
+    return through(function(buf, enc, next) {
+      this.push(buf.toString('utf8').replace(/\brequire\s*\(.react.\)/g, "require('react/addons')"));
+      next();
+    });
+  };
+
+=item * Step 3
+
+Add your custom transformer to AssetPack config:
+
+  app->asset->preprocessor(
+    Browserify => {
+      browserify_args => [
+        -g => app->home->rel_file("react-aliasify.js"),
+        -g => "reactify"
+      ]
+    }
+  );
+
+=item * Step 4
+
+You're done! Now all your JavaScript libraries will require "react/addons"
+instead of "react".
+
+=back
 
 =head1 SEE ALSO
 
@@ -240,7 +290,7 @@ sub process {
 
   # make external bundles from node_modules
   for my $module (grep {/$SYSTEM_MODULE/} sort keys %$map) {
-    my @external = map { -x => $_ } grep { !/$SYSTEM_MODULE/ } grep { $_ ne $module } keys %$map;
+    my @external = map { -x => $_ } grep { $_ ne $module } grep {/$SYSTEM_MODULE/} keys %$map;
     push @modules, $self->_outfile($assetpack, "$module-$environment.js");
     next if -e $modules[-1] and (stat $map->{$module})[9] < (stat $modules[-1])[9];
     make_path(dirname $modules[-1]);
@@ -329,6 +379,9 @@ sub _follow_system_node_module {
 
 sub _install_node_module {
   my ($self, $module) = @_;
+
+  # react/addons should be installed as react
+  $module =~ s!/.*!!;
 
   local ($?, $!);
   return undef unless $self->npm_executable;
