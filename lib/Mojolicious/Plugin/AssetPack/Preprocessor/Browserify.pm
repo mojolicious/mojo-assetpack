@@ -180,6 +180,7 @@ has _node_module_paths => sub {
   } while @cwd;
 
   @path = (File::Spec->catdir($self->cwd, 'node_modules')) unless @path;
+  push @path, split /:/, ($ENV{NODE_PATH} || '');
   warn "[Browserify] node_module_path=[@path]\n" if DEBUG;
   return \@path;
 };
