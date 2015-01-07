@@ -173,10 +173,22 @@ my $SYSTEM_MODULE = qr{^\w};
 
 =head2 browserify_args
 
-  $array_ref = $self->browserify_args;
+  $array = $self->browserify_args;
   $self= $self->browserify_args([ -g => "reactify" ]);
 
 Command line arguments that will be passed on to C<browserify>.
+
+=head2 bundle_modules
+
+  $hash = $self->bundle_modules;
+  $self = $self->bundle_modules({ "react/addons" => ["react-tap-event-plugin"] });
+
+Forces some modules to be bundled together. In the example above,
+"react-tap-event-plugin" will be bundled together with "react/addons".
+
+This result in a command that looks something like this:
+
+  $ browserify -r react-tap-event-plugin -r react/addons -o packed/temp-file.js
 
 =head2 environment
 
@@ -196,10 +208,22 @@ current project directory.
 
 =head2 extensions
 
-  $array_ref = $self->extensions;
+  $array = $self->extensions;
   $self = $self->extensions([qw( js jsx )]);
 
 Specifies the extensions browserify should look for when parsing C<require()>.
+
+=head2 ignore_modules
+
+  $array = $self->ignore_modules;
+  $self = $self->ignore_modules(["react"]);
+
+Used to avoid bundling some modules. One reason this is useful is if you have
+a transformer that does aliasing.
+
+This result in a command that looks something like this:
+
+  $ browserify -x react public/js/entrypoint.js
 
 =head2 npm_executable
 
@@ -213,9 +237,11 @@ to C<node_modules> directory.
 =cut
 
 has browserify_args => sub { [] };
+has bundle_modules  => sub { {} };
 has environment     => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
 has executable      => sub { shift->_executable('browserify', 'browserify') || 'browserify' };
 has extensions      => sub { ['js'] };
+has ignore_modules  => sub { [] };
 has npm_executable  => sub { File::Which::which('npm') };
 
 has _node_module_paths => sub {
@@ -280,6 +306,7 @@ sub process {
   my $cache_dir   = $assetpack->out_dir;
   my $map         = {};
   my @extra       = @{$self->browserify_args};
+  my %ignore      = map { ($_, 1) } @{$self->ignore_modules}, map {@$_} values %{$self->bundle_modules};
   my ($err, @modules);
 
   local $ENV{NODE_ENV} = $environment;
@@ -290,9 +317,12 @@ sub process {
 
   # make external bundles from node_modules
   for my $module (grep {/$SYSTEM_MODULE/} sort keys %$map) {
-    my @external = map { -x => $_ } grep { $_ ne $module } grep {/$SYSTEM_MODULE/} keys %$map;
+    next if $ignore{$module};
+    my %bundled = map { $_ => '-r' } @{$self->bundle_modules->{$module} || []};
+    my @external = map { -x => $_ } grep { $_ ne $module and !$bundled{$_} } grep {/$SYSTEM_MODULE/} keys %$map;
     push @modules, $self->_outfile($assetpack, "$module-$environment.js");
     next if -e $modules[-1] and (stat $map->{$module})[9] < (stat $modules[-1])[9];
+    push @external, reverse %bundled;
     make_path(dirname $modules[-1]);
     $self->_run([$self->executable, @extra, @external, -r => $module, -o => $modules[-1]], undef, undef, \$err);
     unlink $modules[-1] unless -s $modules[-1];
@@ -304,6 +334,7 @@ sub process {
     push @extra, map { -x => $_ } grep {/$SYSTEM_MODULE/} sort keys %$map;
     $self->_run([$self->executable, @extra, -e => $path], undef, $text, \$err);
   }
+
   if (length $err) {
     $self->_make_js_error($err, $text);
   }
