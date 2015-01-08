@@ -124,10 +124,11 @@ Add your custom transformer to AssetPack config:
 
   app->asset->preprocessor(
     Browserify => {
+      ignore_modules => ["react"]
       browserify_args => [
         -g => app->home->rel_file("react-aliasify.js"),
         -g => "reactify"
-      ]
+      ],
     }
   );
 
@@ -190,6 +191,8 @@ This result in a command that looks something like this:
 
   $ browserify -r react-tap-event-plugin -r react/addons -o packed/temp-file.js
 
+This attribute is EXPERIMENTAL.
+
 =head2 environment
 
   $str = $self->environment;
@@ -224,6 +227,8 @@ a transformer that does aliasing.
 This result in a command that looks something like this:
 
   $ browserify -x react public/js/entrypoint.js
+
+This attribute is EXPERIMENTAL.
 
 =head2 npm_executable
 
