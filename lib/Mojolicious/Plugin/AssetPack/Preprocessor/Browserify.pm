@@ -13,7 +13,6 @@ Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using br
   app->asset->preprocessor(
     Browserify => {
       browserify_args => [-g => "reactify"],
-      environment => app->mode, # default
       extensions => [qw( js jsx )], # default is "js"
     }
   );
@@ -193,14 +192,6 @@ This result in a command that looks something like this:
 
 This attribute is EXPERIMENTAL.
 
-=head2 environment
-
-  $str = $self->environment;
-  $self = $self->environment($str);
-
-Should be either "production" or "development" (default). This variable will
-be passed on as C<NODE_ENV> to C<browserify>.
-
 =head2 executable
 
   $path = $self->executable;
@@ -243,7 +234,6 @@ to C<node_modules> directory.
 
 has browserify_args => sub { [] };
 has bundle_modules  => sub { {} };
-has environment     => sub { $ENV{MOJO_MODE} || $ENV{NODE_ENV} || 'development' };
 has executable      => sub { shift->_executable('browserify', 'browserify') || 'browserify' };
 has extensions      => sub { ['js'] };
 has ignore_modules  => sub { [] };
@@ -307,8 +297,8 @@ Used to process the JavaScript using C<browserify>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my $environment = $self->environment;
   my $cache_dir   = $assetpack->out_dir;
+  my $environment = $ENV{NODE_ENV} || $assetpack->{mode};
   my $map         = {};
   my @extra       = @{$self->browserify_args};
   my %ignore      = map { ($_, 1) } @{$self->ignore_modules}, map {@$_} values %{$self->bundle_modules};

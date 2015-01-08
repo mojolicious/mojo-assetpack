@@ -377,6 +377,7 @@ sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
 
+  $self->{mode} = $app->mode;
   $self->fallback($config->{fallback} // $app->mode eq 'production');
   $self->minify($config->{minify}     // $app->mode eq 'production');
   $self->base_url($config->{base_url}) if $config->{base_url};
