@@ -3,11 +3,11 @@ use Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
 
-plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
-plan skip_all => 'npm install reactify'   unless eval { $p->_install_node_module('reactify') };
+plan skip_all => 'npm install module-deps' unless eval { $p->_install_node_module('module-deps') };
+plan skip_all => 'npm install reactify'    unless eval { $p->_install_node_module('reactify') };
 
 my $t = t::Helper->t({});
-$t->app->asset->preprocessor(Browserify => {browserify_args => ['-g', 'reactify'], extensions => ['js']});
+$t->app->asset->preprocessor(Browserify => {transformers => {reactify => {}}, extensions => ['js']});
 $t->app->asset('app.js' => '/js/react-complex.js');
 
 $t->get_ok('/test1')->status_is(200)->content_like(qr{require\('\./react-progressbar})

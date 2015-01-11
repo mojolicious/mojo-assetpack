@@ -21,7 +21,8 @@ sub import {
 
   plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
 
-  unlink glob 't/public/packed/*' unless $ENV{KEEP_TEST_FILES};
+  unlink glob 't/public/packed/*';
+  unlink glob 't/public/js/.*.cache';
 
   strict->import;
   warnings->import;

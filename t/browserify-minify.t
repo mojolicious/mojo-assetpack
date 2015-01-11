@@ -4,7 +4,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
 
-plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
+plan skip_all => 'npm install module-deps' unless eval { $p->_install_node_module('module-deps') };
 
 my $t = t::Helper->t({});
 ok $t->app->asset->minify, 'minify';

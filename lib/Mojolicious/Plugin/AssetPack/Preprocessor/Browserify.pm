@@ -2,7 +2,7 @@ package Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using browserify
+Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using browserify components
 
 =head1 SYNOPSIS
 
@@ -12,8 +12,8 @@ Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using br
 
   app->asset->preprocessor(
     Browserify => {
-      browserify_args => [-g => "reactify"],
       extensions => [qw( js jsx )], # default is "js"
+      transformers => {reactify => {}}
     }
   );
 
@@ -44,11 +44,11 @@ Example JavaScript module, in the shape of a React component:
   });
 
 The above code is not valid JavaScript, but will be converted using a custom
-transformer. Transformers are specified as part fo the L</browserify_args>:
+L<transformer|/transformers>:
 
   app->asset->preprocessor(
     Browserify => {
-      browserify_args => [-g => "reactify"],
+      transformers => {reactify => {}}
     }
   );
 
@@ -64,9 +64,6 @@ installed, unless already available.
 
   require("react");    // system module
   require("./custom"); // not a system module
-
-Note: Modules given as L</browserify_args> need to be installed manually.
-(Patches to make this automatically are more than welcome)
 
 This feauture is EXPERIMENTAL. L<Feedback wanted|https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues>.
 
@@ -123,11 +120,10 @@ Add your custom transformer to AssetPack config:
 
   app->asset->preprocessor(
     Browserify => {
-      ignore_modules => ["react"]
-      browserify_args => [
-        -g => app->home->rel_file("react-aliasify.js"),
-        -g => "reactify"
-      ],
+      transformers => {
+        app->home->rel_file("react-aliasify.js") => {},
+        reactify => {}
+      ]
     }
   );
 
@@ -159,67 +155,26 @@ How C<require()> works in JavaScript.
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+use Mojo::JSON ();
 use Mojo::Util;
 use Cwd ();
-use File::Basename 'dirname';
+use File::Basename qw( basename dirname );
 use File::Path 'make_path';
-use File::Spec;
+use File::Spec::Functions 'catfile';
 use File::Which ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
-my $SYSTEM_MODULE = qr{^\w};
+BEGIN {
+  (eval 'require JSON::XS;1' ? 'JSON::XS' : 'Mojo::JSON')->import(qw( decode_json encode_json ));
+}
 
 =head1 ATTRIBUTES
-
-=head2 browserify_args
-
-  $array = $self->browserify_args;
-  $self= $self->browserify_args([ -g => "reactify" ]);
-
-Command line arguments that will be passed on to C<browserify>.
-
-=head2 bundle_modules
-
-  $hash = $self->bundle_modules;
-  $self = $self->bundle_modules({ "react/addons" => ["react-tap-event-plugin"] });
-
-Forces some modules to be bundled together. In the example above,
-"react-tap-event-plugin" will be bundled together with "react/addons".
-
-This result in a command that looks something like this:
-
-  $ browserify -r react-tap-event-plugin -r react/addons -o packed/temp-file.js
-
-This attribute is EXPERIMENTAL.
 
 =head2 executable
 
   $path = $self->executable;
 
-Holds the path to the "browserify" executable. Defaults to just "browserify".
-C<browserify> can also be found in C<./node_modules/.bin/browserify>, in the
-current project directory.
-
-=head2 extensions
-
-  $array = $self->extensions;
-  $self = $self->extensions([qw( js jsx )]);
-
-Specifies the extensions browserify should look for when parsing C<require()>.
-
-=head2 ignore_modules
-
-  $array = $self->ignore_modules;
-  $self = $self->ignore_modules(["react"]);
-
-Used to avoid bundling some modules. One reason this is useful is if you have
-a transformer that does aliasing.
-
-This result in a command that looks something like this:
-
-  $ browserify -x react public/js/entrypoint.js
-
-This attribute is EXPERIMENTAL.
+Holds the path to "node" which is required to run the node based code.
 
 =head2 npm_executable
 
@@ -230,14 +185,22 @@ to install node modules which is found when scanning for C<require()>
 statements. Set this attribute to C<undef> to disable automatic installation
 to C<node_modules> directory.
 
+=head2 transformers
+
+  $hash = $self->transformers;
+  $self = $self->transformers({reactify => {}});
+
+A hash of L<transformers|https://github.com/substack/node-browserify/wiki/list-of-transforms>
+passed on to C<module-deps>. The keys are either a npm package name or a path
+to the transformer.
+
+TODO: The values should be options for the transformer.
+
 =cut
 
-has browserify_args => sub { [] };
-has bundle_modules  => sub { {} };
-has executable      => sub { shift->_executable('browserify', 'browserify') || 'browserify' };
-has extensions      => sub { ['js'] };
-has ignore_modules  => sub { [] };
-has npm_executable  => sub { File::Which::which('npm') };
+has executable => sub { File::Which::which('nodejs') || File::Which::which('node') };
+has npm_executable => sub { File::Which::which('npm') };
+has transformers   => sub { {} };
 
 has _node_module_paths => sub {
   my $self = shift;
@@ -262,7 +225,7 @@ has _node_module_paths => sub {
 
   $bool = $self->can_process;
 
-Returns true if browserify can be executed.
+Returns true if L</executable> exists.
 
 =cut
 
@@ -285,71 +248,70 @@ sub checksum {
   local $self->{skip_system_node_module_scan} = 1;
   $self->_set_node_module_paths;    # make sure we have a clean path list on each run
   $self->_find_node_modules($text, $path, $map);
-  Mojo::Util::md5_sum($$text, join '',
-    map { Mojo::Util::slurp($map->{$_}) } sort grep { !/$SYSTEM_MODULE/ } keys %$map);
+  Mojo::Util::md5_sum($$text, join '', map { Mojo::Util::slurp($map->{$_}) } sort grep { !/^\w/ } keys %$map);
 }
 
 =head2 process
 
-Used to process the JavaScript using C<browserify>.
+Used to process the JavaScript using C<module-deps> and C<browser-pack>.
 
 =cut
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my $cache_dir   = $assetpack->out_dir;
-  my $environment = $ENV{NODE_ENV} || $assetpack->{mode};
-  my $map         = {};
-  my @extra       = @{$self->browserify_args};
-  my %ignore      = map { ($_, 1) } @{$self->ignore_modules}, map {@$_} values %{$self->bundle_modules};
-  my ($err, @modules);
+  my %transformers = %{$self->transformers};
+  my $cache_path   = catfile(dirname($path), sprintf '.%s.cache', basename $path);
+  my $cache        = -r $cache_path ? decode_json(Mojo::Util::slurp $cache_path) : {};
+  my ($err, @cached);
 
-  local $ENV{NODE_ENV} = $environment;
-  mkdir $cache_dir or die "mkdir $cache_dir: $!" unless -d $cache_dir;
-  $self->_set_node_module_paths;    # make sure we have a clean path list on each run
-  $self->_find_node_modules($text, $path, $map);
-  $self->{node_modules} = $map;
+  local $ENV{NODE_ENV} = $ENV{NODE_ENV} || $assetpack->{mode};
 
-  # make external bundles from node_modules
-  for my $module (grep {/$SYSTEM_MODULE/} sort keys %$map) {
-    next if $ignore{$module};
-    my %bundled = map { $_ => '-r' } @{$self->bundle_modules->{$module} || []};
-    my @external = map { -x => $_ } grep { $_ ne $module and !$bundled{$_} } grep {/$SYSTEM_MODULE/} keys %$map;
-    push @modules, $self->_outfile($assetpack, "$module-$environment.js");
-    next if -e $modules[-1] and (stat $map->{$module})[9] < (stat $modules[-1])[9];
-    push @external, reverse %bundled;
-    make_path(dirname $modules[-1]);
-    $self->_run([$self->executable, @extra, @external, -r => $module, -o => $modules[-1]], undef, undef, \$err);
-    unlink $modules[-1] unless -s $modules[-1];
+  for my $file (keys %$cache) {
+    my @stat = stat $file;
+    delete $cache->{$file} unless @stat;
+    push @cached, $file if @stat and $cache->{$file}{mtime} == $stat[9];
   }
 
-  if (!length $err) {
-
-    # make application bundle which reference external bundles
-    push @extra, map { -x => $_ } grep {/$SYSTEM_MODULE/} sort keys %$map;
-    $self->_run([$self->executable, @extra, -e => $path], undef, $text, \$err);
+  if ($assetpack->minify) {
+    $transformers{uglifyify} ||= {};
   }
 
-  if (length $err) {
-    $self->_make_js_error($err, $text);
-  }
-  elsif (length $$text) {
+  local $ENV{ASSETPACK_CACHED} = join ':', @cached;
+  local $ENV{ASSETPACK_TRANSFORMERS} = encode_json(\%transformers);
+  warn "[Browserify] ASSETPACK_TRANSFORMERS=$ENV{ASSETPACK_TRANSFORMERS}\n" if DEBUG;
+  warn "[Browserify] NODE_ENV=$ENV{NODE_ENV}\n"                             if DEBUG;
 
-    # bundle application and external bundles
-    $$text = join "\n", (map { Mojo::Util::slurp($_) } @modules), $$text;
-    $self->_minify($text, $path) if $assetpack->minify;
-  }
-
-  return $self;
+  $self->_install_node_module($_) for qw( browser-pack module-deps JSONStream );
+  $self->_install_node_module($_) for keys %transformers;
+  $self->_find_node_modules($text, $path, {});    # install node deps
+  $self->_run([$self->executable, catfile(dirname(__FILE__), 'module-deps.js'), $path], undef, $text, \$err);
+  $self->_apply_cache($cache, $text, $cache_path) unless $err;
+  $self->_run([$self->executable, $self->_node_module_path(qw( .bin browser-pack))], $text, $text, \$err) unless $err;
+  $self->_make_js_error($err, $text) if $err;
 }
 
-sub _executable {
-  my ($self, $name, $module) = @_;
-  my $path = File::Which::which($name) || $self->_node_module_path('.bin', $name);
+sub _apply_cache {
+  my ($self, $cache, $text, $cache_path) = @_;
+  my $module_deps = decode_json $$text;
 
-  return $path if $path;
-  $self->_install_node_module($module);
-  $self->_node_module_path('.bin', $name);
+  for my $item (@$module_deps) {
+    next unless $item->{source};
+    $item->{mtime} = (stat $item->{file})[9];
+    delete $item->{id} if $item->{file} eq $item->{id};
+    $cache->{delete($item->{file})} = $item;
+  }
+
+  $$text = encode_json(
+    [
+      map {
+        my $item = $cache->{$_};
+        +{%$item, file => $_, id => $item->{id} || $_};
+      } sort keys %$cache
+    ]
+  );
+
+  Mojo::Util::spurt(encode_json($cache), $cache_path);
+  warn "[Browserify] Wrote cache $cache_path\n" if DEBUG;
 }
 
 sub _find_node_modules {
@@ -359,7 +321,7 @@ sub _find_node_modules {
     my $module = $2;
     warn "[Browserify] require($module) from $path\n" if DEBUG;
     next if $uniq->{$module};
-    $module =~ /$SYSTEM_MODULE/
+    $module =~ /^\w/
       ? $self->_follow_system_node_module($module, $path, $uniq)
       : $self->_follow_relative_node_module($module, $path, $uniq);
   }
@@ -372,11 +334,11 @@ sub _follow_relative_node_module {
   my $base = $module;
 
   unless (File::Spec->file_name_is_absolute($base)) {
-    $base = File::Spec->catfile(dirname($path), $module);
+    $base = catfile(dirname($path), $module);
   }
 
-  for my $ext ("", map {".$_"} @{$self->extensions}) {
-    my $file = File::Spec->catfile(split '/', "$base$ext");
+  for my $ext ('', '.js', '.jsx', '.coffee') {
+    my $file = catfile(split '/', "$base$ext");
     return if $uniq->{"$module$ext"};
     next unless -f $file;
     $uniq->{"$module$ext"} = $file;
@@ -421,31 +383,15 @@ sub _install_node_module {
   return $self;
 }
 
-sub _minify {
-  my ($self, $text, $path) = @_;
-  my $err = '';
-
-  $self->_run([$self->_executable('uglifyjs', 'uglify-js'), qw( -m -c  )], $text, $text, \$err);
-  $self->_make_js_error($err, $text) if length $err;
-}
-
 sub _node_module_path {
   my $self = shift;
 
   for my $path (@{$self->_node_module_paths}) {
-    my $local = Cwd::abs_path(File::Spec->catfile($path, @_));
+    my $local = Cwd::abs_path(catfile($path, @_));
     return $local if $local and -e $local;
   }
 
   return;
-}
-
-sub _outfile {
-  my ($self, $assetpack, $name) = @_;
-  my $path = $assetpack->{static}->file($name);
-
-  return $path if $path and -e $path;
-  return File::Spec->catfile($assetpack->out_dir, $name);
 }
 
 sub _set_node_module_paths {

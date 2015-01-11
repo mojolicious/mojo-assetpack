@@ -63,4 +63,5 @@
 ^README\.pod
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
+.cache$
 ^node_modules

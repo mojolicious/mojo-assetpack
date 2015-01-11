@@ -3,11 +3,12 @@ use Mojolicious::Plugin::AssetPack::Preprocessor::Browserify;
 
 my $p = Mojolicious::Plugin::AssetPack::Preprocessor::Browserify->new;
 
-plan skip_all => 'npm install browserify' unless eval { $p->_install_node_module('browserify') };
+plan skip_all => 'npm install module-deps' unless eval { $p->_install_node_module('module-deps') };
 
 my $t = t::Helper->t({});
 ok !$t->app->asset->minify, 'not minify';
 $t->app->asset->preprocessor(Browserify => {environment => 'development', extensions => ['js']});
+
 $t->app->asset('app.js'    => '/js/boop.js');
 $t->app->asset('parent.js' => '/js/ctrl.js');
 
