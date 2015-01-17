@@ -260,12 +260,13 @@ Used to process the JavaScript using C<module-deps> and C<browser-pack>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @transformers = @{$self->transformers};
-  my $cache_path   = catfile(dirname($path), sprintf '.%s.cache', basename $path);
-  my $cache        = -r $cache_path ? decode_json(Mojo::Util::slurp $cache_path) : {};
-  my ($err, @cached);
+  my ($cache, $cache_path, $err, @cached);
 
   local $ENV{NODE_ENV} = $ENV{NODE_ENV} || $assetpack->{mode};
   local $ENV{NODE_PATH} = join ':', @{$self->_node_module_paths};
+
+  $cache_path = catfile(dirname($path), sprintf '.%s.%s.cache', basename($path), $ENV{NODE_ENV});
+  $cache = -r $cache_path ? decode_json(Mojo::Util::slurp $cache_path) : {};
 
   for my $file (keys %$cache) {
     my @stat = stat $file;
