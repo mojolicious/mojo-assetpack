@@ -265,6 +265,7 @@ sub process {
   my ($err, @cached);
 
   local $ENV{NODE_ENV} = $ENV{NODE_ENV} || $assetpack->{mode};
+  local $ENV{NODE_PATH} = join ':', @{$self->_node_module_paths};
 
   for my $file (keys %$cache) {
     my @stat = stat $file;
@@ -280,6 +281,7 @@ sub process {
   local $ENV{ASSETPACK_TRANSFORMERS} = encode_json(\%transformers);
   warn "[Browserify] ASSETPACK_TRANSFORMERS=$ENV{ASSETPACK_TRANSFORMERS}\n" if DEBUG;
   warn "[Browserify] NODE_ENV=$ENV{NODE_ENV}\n"                             if DEBUG;
+  warn "[Browserify] NODE_PATH=$ENV{NODE_PATH}\n"                           if DEBUG;
 
   $self->_install_node_module($_) for qw( browser-pack module-deps JSONStream );
   $self->_install_node_module($_) for keys %transformers;
@@ -319,7 +321,8 @@ sub _find_node_modules {
 
   while ($$text =~ m!\brequire\s*\(\s*(["'])(.+?)\1\s*\)\s*!g) {
     my $module = $2;
-    warn "[Browserify] require($module) from $path\n" if DEBUG;
+
+    #warn "[Browserify] require($module) from $path\n" if DEBUG;
     next if $uniq->{$module};
     $module =~ /^\w/
       ? $self->_follow_system_node_module($module, $path, $uniq)
