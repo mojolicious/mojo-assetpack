@@ -12,8 +12,10 @@ Mojolicious::Plugin::AssetPack::Preprocessor::Browserify - Preprocessor using br
 
   app->asset->preprocessor(
     Browserify => {
-      extensions => [qw( js jsx )], # default is "js"
-      transformers => {reactify => {}}
+      extensions   => [qw( js jsx )], # default is "js"
+      transformers => [
+        [reactify => {es6 => 1}]
+      ]
     }
   );
 
@@ -48,7 +50,7 @@ L<transformer|/transformers>:
 
   app->asset->preprocessor(
     Browserify => {
-      transformers => {reactify => {}}
+      transformers => [[reactify => {es6 => 1}]],
     }
   );
 
@@ -120,9 +122,9 @@ Add your custom transformer to AssetPack config:
 
   app->asset->preprocessor(
     Browserify => {
-      transformers => {
-        app->home->rel_file("react-aliasify.js") => {},
-        reactify => {}
+      transformers => [
+        app->home->rel_file("react-aliasify.js"),
+        [reactify => {es6 => 1}],
       ]
     }
   );
@@ -187,20 +189,18 @@ to C<node_modules> directory.
 
 =head2 transformers
 
-  $hash = $self->transformers;
-  $self = $self->transformers({reactify => {}});
+  $array = $self->transformers;
+  $self = $self->transformers([[reactify => {es6 => 1}], "envify"]);
 
-A hash of L<transformers|https://github.com/substack/node-browserify/wiki/list-of-transforms>
+An array of L<transformers|https://github.com/substack/node-browserify/wiki/list-of-transforms>
 passed on to C<module-deps>. The keys are either a npm package name or a path
-to the transformer.
-
-TODO: The values should be options for the transformer.
+to the transformer, and the values are transformer argumemts.
 
 =cut
 
 has executable => sub { File::Which::which('nodejs') || File::Which::which('node') };
 has npm_executable => sub { File::Which::which('npm') };
-has transformers   => sub { {} };
+has transformers   => sub { [] };
 
 has _node_module_paths => sub {
   my $self = shift;
@@ -259,7 +259,7 @@ Used to process the JavaScript using C<module-deps> and C<browser-pack>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my %transformers = %{$self->transformers};
+  my @transformers = @{$self->transformers};
   my $cache_path   = catfile(dirname($path), sprintf '.%s.cache', basename $path);
   my $cache        = -r $cache_path ? decode_json(Mojo::Util::slurp $cache_path) : {};
   my ($err, @cached);
@@ -274,17 +274,17 @@ sub process {
   }
 
   if ($assetpack->minify) {
-    $transformers{uglifyify} ||= {};
+    push @transformers, 'uglifyify';
   }
 
   local $ENV{ASSETPACK_CACHED} = join ':', @cached;
-  local $ENV{ASSETPACK_TRANSFORMERS} = encode_json(\%transformers);
+  local $ENV{ASSETPACK_TRANSFORMERS} = encode_json(\@transformers);
   warn "[Browserify] ASSETPACK_TRANSFORMERS=$ENV{ASSETPACK_TRANSFORMERS}\n" if DEBUG;
   warn "[Browserify] NODE_ENV=$ENV{NODE_ENV}\n"                             if DEBUG;
   warn "[Browserify] NODE_PATH=$ENV{NODE_PATH}\n"                           if DEBUG;
 
   $self->_install_node_module($_) for qw( browser-pack module-deps JSONStream );
-  $self->_install_node_module($_) for keys %transformers;
+  $self->_install_node_module($_) for map { ref $_ ? $_->[0] : $_ } @transformers;
   $self->_find_node_modules($text, $path, {});    # install node deps
   $self->_run([$self->executable, catfile(dirname(__FILE__), 'module-deps.js'), $path], undef, $text, \$err);
   $self->_apply_cache($cache, $text, $cache_path) unless $err;
