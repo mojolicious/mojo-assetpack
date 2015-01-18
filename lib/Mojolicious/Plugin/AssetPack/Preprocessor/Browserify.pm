@@ -215,7 +215,6 @@ has _node_module_paths => sub {
 
   @path = (File::Spec->catdir($self->cwd, 'node_modules')) unless @path;
   push @path, split /:/, ($ENV{NODE_PATH} || '');
-  warn "[Browserify] node_module_path=[@path]\n" if DEBUG;
   return \@path;
 };
 
@@ -260,10 +259,14 @@ Used to process the JavaScript using C<module-deps> and C<browser-pack>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @transformers = @{$self->transformers};
-  my ($cache, $cache_path, $err, @cached);
+  my %changed = ($path => 1);
+  my ($cache, $cache_path, $err);
 
   local $ENV{NODE_ENV} = $ENV{NODE_ENV} || $assetpack->{mode};
+  warn "[Browserify] NODE_ENV=$ENV{NODE_ENV}\n" if DEBUG;
+
   local $ENV{NODE_PATH} = join ':', @{$self->_node_module_paths};
+  warn "[Browserify] NODE_PATH=$ENV{NODE_PATH}\n" if DEBUG;
 
   $cache_path = catfile(dirname($path), sprintf '.%s.%s.cache', basename($path), $ENV{NODE_ENV});
   $cache = -r $cache_path ? decode_json(Mojo::Util::slurp $cache_path) : {};
@@ -271,25 +274,19 @@ sub process {
   for my $file (keys %$cache) {
     my @stat = stat $file;
     delete $cache->{$file} unless @stat;
-    push @cached, $file if @stat and $cache->{$file}{mtime} == $stat[9];
+    $changed{$file} = 1 if @stat and $cache->{$file}{mtime} != $stat[9];
   }
 
-  if ($assetpack->minify) {
-    push @transformers, 'uglifyify';
-  }
-
-  local $ENV{ASSETPACK_CACHED} = join ':', @cached;
-  local $ENV{ASSETPACK_TRANSFORMERS} = encode_json(\@transformers);
-  warn "[Browserify] ASSETPACK_TRANSFORMERS=$ENV{ASSETPACK_TRANSFORMERS}\n" if DEBUG;
-  warn "[Browserify] NODE_ENV=$ENV{NODE_ENV}\n"                             if DEBUG;
-  warn "[Browserify] NODE_PATH=$ENV{NODE_PATH}\n"                           if DEBUG;
+  push @transformers, 'uglifyify' if $assetpack->minify;
+  local $ENV{MODULE_DEPS_TRANSFORMERS} = encode_json(\@transformers);
+  warn "[Browserify] MODULE_DEPS_TRANSFORMERS=$ENV{MODULE_DEPS_TRANSFORMERS}\n" if DEBUG;
 
   $self->_install_node_module($_) for qw( browser-pack module-deps JSONStream );
   $self->_install_node_module($_) for map { ref $_ ? $_->[0] : $_ } @transformers;
   $self->_find_node_modules($text, $path, {});    # install node deps
-  $self->_run([$self->executable, catfile(dirname(__FILE__), 'module-deps.js'), $path], undef, $text, \$err);
+  $self->_run([$self->executable, catfile(dirname(__FILE__), 'module-deps.js'), keys %changed], undef, $text, \$err);
   $self->_apply_cache($cache, $text, $cache_path) unless $err;
-  $self->_run([$self->executable, $self->_node_module_path(qw( .bin browser-pack))], $text, $text, \$err) unless $err;
+  $self->_run([$self->executable, $self->_node_module_path(qw( .bin browser-pack ))], $text, $text, \$err) unless $err;
   $self->_make_js_error($err, $text) if $err;
 }
 
