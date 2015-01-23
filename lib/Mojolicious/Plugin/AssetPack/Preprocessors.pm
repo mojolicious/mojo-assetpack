@@ -168,6 +168,7 @@ sub checksum {
   my @checksum;
 
   for my $p ($self->_preprocessors($extension)) {
+    $p->cwd($cwd->[0]);
     push @checksum, $p->checksum($text, $filename);
   }
 
@@ -199,6 +200,7 @@ sub process {
   my @err;
 
   for my $p ($self->_preprocessors($extension)) {
+    $p->cwd($cwd->[0]);
     $p->($p, $assetpack, $text, $filename);
     push @err, $p->errmsg if $p->errmsg;
   }
