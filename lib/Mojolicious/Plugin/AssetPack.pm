@@ -536,8 +536,8 @@ FILE:
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     elsif (my $asset = $self->{static}->file($file)) {
-      $data->{path} = $asset->path;
-      $data->{body} = slurp $asset->path;
+      $data->{path} = $asset->can('path') ? $asset->path : $file;
+      $data->{body} = $asset->slurp;
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
     else {

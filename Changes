@@ -2,6 +2,7 @@ Revision history for Mojolicious-Plugin-AssetPack
 
 0.34
        * Add preprocessor() method to AssetPack
+       * Add support for assets from __DATA__
 
 0.33     Tue Jan  6 20:00:42 2015
        * Can fallback to existing assets in production mode
