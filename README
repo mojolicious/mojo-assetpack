@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.33
+    0.34
 
 SYNOPSIS
     In your application:
@@ -185,6 +185,15 @@ METHODS
 
     Returns a list of files which the moniker point to. The list will only
     contain one file if the $moniker is minified.
+
+  preprocessor
+      $self = $self->preprocessor($name => \%args);
+
+    Use this method to manually register a preprocessor.
+
+    See "SYNOPSIS" in
+    Mojolicious::Plugin::AssetPack::Preprocessor::Browserify for example
+    usage.
 
   process
       $self->process($moniker => @files);
