@@ -18,6 +18,7 @@ NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use JavaScript::Minifier::XS;
+use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH} || 300;    # might change
 
 =head1 METHODS
 
@@ -32,9 +33,17 @@ code.
 
 sub minify {
   my ($self, $text) = @_;
+  my $minified = 0;
 
-  if (length $$text) {
-    $$text = JavaScript::Minifier::XS::minify($$text) // die "JavaScript::Minifier::XS failed with undefined error.";
+  while ($$text =~ /^(.+)$/mg) {
+    my $line = $1;
+    next if $line =~ m!^(\s*/\*|\s*\*|\s*//)!;    # comments /*, */ and //
+    $minified = length $line > MINIFIED_LINE_LENGTH ? 1 : 0;
+    last unless $minified;
+  }
+
+  if (!$minified and length $$text) {
+    $$text = JavaScript::Minifier::XS::minify($$text) . "\n";
   }
 
   $self;

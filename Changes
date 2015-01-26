@@ -3,6 +3,7 @@ Revision history for Mojolicious-Plugin-AssetPack
 0.35
        * Include original error message when failing to fallback
        * Will die() instead of return $err on process()
+       * Improved detection of minified JavaScript code #34
 
 0.34     Fri Jan 23 12:51:25 2015
        * Add preprocessor() method to AssetPack
