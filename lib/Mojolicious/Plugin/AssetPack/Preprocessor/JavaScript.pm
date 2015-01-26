@@ -9,7 +9,7 @@ Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript - Preprocessor for Java
 L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript> is a preprocessor for
 C<.js> files.
 
-Javascript is minified using L<JavaScript::Minifier::XS>. This module is
+JavaScript is minified using L<JavaScript::Minifier::XS>. This module is
 optional and must be installed manually.
 
 NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
@@ -20,6 +20,25 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use JavaScript::Minifier::XS;
 
 =head1 METHODS
+
+=head2 minify
+
+  $self = $self->minify($text);
+
+Used to minify C<$text>, which is a scalar reference to a chunk of JavaScript
+code.
+
+=cut
+
+sub minify {
+  my ($self, $text) = @_;
+
+  if (length $$text) {
+    $$text = JavaScript::Minifier::XS::minify($$text) // die "JavaScript::Minifier::XS failed with undefined error.";
+  }
+
+  $self;
+}
 
 =head2 process
 
@@ -32,11 +51,7 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
-  if ($assetpack->minify and $path !~ /\bmin\b/ and length $$text) {
-    $$text = JavaScript::Minifier::XS::minify($$text);
-    $$text = "alert('Failed to minify $path')\n" unless defined $$text;
-  }
-
+  return $self->minify($text) if $assetpack->minify;
   return $self;
 }
 

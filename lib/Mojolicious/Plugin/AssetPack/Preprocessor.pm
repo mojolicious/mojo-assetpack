@@ -27,12 +27,13 @@ did any C<chdir>.
 
 =head2 errmsg
 
-Holds the error from last L</process>.
+DEPRECATED
 
 =cut
 
 has cwd => sub {Cwd::getcwd};
-has errmsg => '';
+
+sub errmsg { die $_[1] }
 
 =head1 METHODS
 
@@ -78,49 +79,18 @@ sub process {
   $self;
 }
 
-sub _make_css_error {
-  my ($self, $err, $text) = @_;
-  $err =~ s!"!'!g;
-  $err =~ s!\n!\\A!g;
-  $err =~ s!\s! !g;
-  $$text
-    = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
-  $self->errmsg($err);
-  $self;
-}
-
-sub _make_js_error {
-  my ($self, $err, $text) = @_;
-  my $code = encode_json([split /\n/, $$text]);
-
-  $err =~ s!'!"!g;
-  $err =~ s!\n!\\n!g;
-  $err =~ s!\s! !g;
-  $$text = "alert('$err');console.log(@{[encode_json({code => [split /\n/, $$text], err => $err})]});";
-  $self->errmsg($err);
-  $self;
-}
-
 sub _run {
-  my ($self, $cmd, $in, $out, $err) = @_;
+  my ($self, $cmd, $in, $out) = @_;
+  my $err = '';
 
-  $self->errmsg('');
   local ($!, $?) = (0, -1, '');
-  IPC::Run3::run3($cmd, $in, $out, $err, {return_if_system_error => 1});
+  IPC::Run3::run3($cmd, $in, $out, \$err, {return_if_system_error => 1});
 
   warn "[ASSETPACK] @$cmd \$?=$? \$!=$! $$err\n" if DEBUG;
 
-  if (!$?) {
-    $$err = '';
-  }
-  elsif ($! == 2) {
-    $$err = sprintf "Cannot execute '%s'. See %s", $cmd->[0], $self->_url;
-  }
-  else {
-    $$err = sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8, int($!), $$err;
-  }
-
-  return $self;
+  return $self unless $?;
+  die sprintf "Cannot execute '%s'. See %s", $cmd->[0], $self->_url if $! == 2;
+  die sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8, int($!), $$err;
 }
 
 sub _url {'https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors'}

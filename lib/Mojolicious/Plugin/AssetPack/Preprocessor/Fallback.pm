@@ -25,14 +25,13 @@ sub can_process {0}
 
 =head2 process
 
-Will simply turn the input text into a CSS error.
+Will simply die.
 
 =cut
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  $self->errmsg("No preprocessor defined for $path");
-  $self->_make_css_error($self->errmsg, $text);
+  die "No preprocessor defined for $path";
 }
 
 =head1 COPYRIGHT AND LICENSE

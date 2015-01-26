@@ -33,7 +33,7 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
   if ($assetpack->minify and length $$text) {
-    $$text = CSS::Minifier::XS::minify($$text);
+    $$text = CSS::Minifier::XS::minify($$text) // die "CSS::Minifier::XS::minify could not minify $path";
   }
 
   return $self;

@@ -88,13 +88,11 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @cmd = ($self->executable, '--stdin');
-  my $err;
 
   push @cmd, '-I' => dirname $path;
   push @cmd, qw( -t compressed) if $assetpack->minify;
 
-  $self->_run(\@cmd, $text, $text, \$err);
-  $self->_make_css_error($err, $text) if length $err;
+  $self->_run(\@cmd, $text, $text);
 }
 
 sub _extension {'sass'}

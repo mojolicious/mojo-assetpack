@@ -19,7 +19,7 @@ Installation on Ubuntu or Debian:
 
 =cut
 
-use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
 use File::Which              ();
 use JavaScript::Minifier::XS ();
 
@@ -56,18 +56,10 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @cmd = ($self->executable, '--compile', '--stdio');
-  my $err;
 
-  $self->_run(\@cmd, $text, $text, \$err);
+  $self->_run(\@cmd, $text, $text);
 
-  if (length $err) {
-    $self->_make_js_error($err, $text);
-  }
-  elsif ($assetpack->minify and length $$text) {
-    $$text = JavaScript::Minifier::XS::minify($$text);
-    $$text = "alert('Failed to minify $path');\n" unless defined $$text;
-  }
-
+  return $self->minify($text) if $assetpack->minify;
   return $self;
 }
 

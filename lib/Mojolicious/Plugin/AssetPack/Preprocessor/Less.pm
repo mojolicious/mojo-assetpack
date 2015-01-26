@@ -55,13 +55,11 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   my @cmd = ($self->executable);
-  my $err;
 
   push @cmd, '-';                          # read from stdin
   push @cmd, '-x' if $assetpack->minify;
 
-  $self->_run(\@cmd, $text, $text, \$err);
-  $self->_make_css_error($err, $text) if length $err;
+  return $self->_run(\@cmd, $text, $text);
 }
 
 sub _url {'http://lesscss.org/#usage'}

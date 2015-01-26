@@ -469,6 +469,23 @@ sub _name_ext {
   die "Moniker ($_[1]) need to have an extension, like .css, .js, ...";
 }
 
+sub _make_css_error {
+  my ($self, $err) = @_;
+  $err =~ s!"!'!g;
+  $err =~ s!\n!\\A!g;
+  $err =~ s!\s! !g;
+  return
+    qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+}
+
+sub _make_js_error {
+  my ($self, $err) = @_;
+  $err =~ s!'!"!g;
+  $err =~ s!\n!\\n!g;
+  $err =~ s!\s! !g;
+  return "alert('$err');console.log('$err');";
+}
+
 sub _process {
   my ($self, $moniker, @files) = @_;
   my ($md5_sum, $files) = $self->_read_files(@files);
@@ -486,14 +503,16 @@ sub _process {
 
   for my $file (@files) {
     my $data = $files->{$file};
-    my $err = $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
 
-    $processed .= $data->{body};
-
-    if ($err) {
-      $self->{log}->error($err);
+    eval {
+      $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
+      $processed .= $data->{body};
+      1;
+    } or do {
+      $self->{log}->error($@);
+      $processed .= "$data->{path}: $@";
       $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
-    }
+    };
   }
 
   $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);

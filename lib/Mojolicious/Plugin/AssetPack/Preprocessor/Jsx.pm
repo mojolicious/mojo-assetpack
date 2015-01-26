@@ -20,7 +20,7 @@ Installation on Ubuntu and Debian:
 
 =cut
 
-use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
 use File::Which              ();
 use JavaScript::Minifier::XS ();
 
@@ -56,22 +56,15 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  my ($err, $out);
+  my $out;
 
-  # TODO: Add --follow-requires ?
-  $self->_run([$self->executable], $text, \$out, \$err);
-
-  if (length $err) {
-    $err =~ s!\s*at throwError.*!!s unless $ENV{MOJO_ASSETPACK_DEBUG};
-    $err =~ s!\x1B\[\d{1,2}m!!g;    # remove color codes
-    $err .= " (src=$path)";
-    $self->_make_js_error($err, $text);
-  }
-  else {
-    $$text = ($assetpack->minify and length $out) ? JavaScript::Minifier::XS::minify($out) : $out;
-    $$text = "alert('Failed to minify $path')" unless defined $$text;
+  unless (eval { $self->_run([$self->executable], $text, $text) }) {
+    $@ =~ s!\s*at throwError.*!!s unless $ENV{MOJO_ASSETPACK_DEBUG};
+    $@ =~ s!\x1B\[\d{1,2}m!!g;    # remove color codes
+    die $@;
   }
 
+  return $self->minify($text) if $assetpack->minify;
   return $self;
 }
 
