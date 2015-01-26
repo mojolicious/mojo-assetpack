@@ -354,7 +354,7 @@ sub process {
     die $e unless $self->fallback;
     $e =~ s/ at \S+.*//s;
     $self->{log}->debug("AssetPack failed, but will try fallback mode. ($e)\n");
-    $self->_fallback($moniker) or die "AssetPack could not find already packed asset '$moniker' in fallback mode.";
+    $self->_fallback($moniker) or die "AssetPack could not find already packed asset '$moniker' in fallback mode. ($e)";
   };
 
   $self;
