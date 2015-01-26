@@ -31,7 +31,7 @@ Will simply die.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
-  die "No preprocessor defined for $path";
+  die "No preprocessor defined for $path\n";
 }
 
 =head1 COPYRIGHT AND LICENSE

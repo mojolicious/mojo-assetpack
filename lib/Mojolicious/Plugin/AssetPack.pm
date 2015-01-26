@@ -377,6 +377,7 @@ sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
 
+  $self->{mode} = $app->mode;
   $self->fallback($config->{fallback} // $app->mode eq 'production');
   $self->minify($config->{minify}     // $app->mode eq 'production');
   $self->base_url($config->{base_url}) if $config->{base_url};
@@ -469,21 +470,27 @@ sub _name_ext {
   die "Moniker ($_[1]) need to have an extension, like .css, .js, ...";
 }
 
-sub _make_css_error {
-  my ($self, $err) = @_;
-  $err =~ s!"!'!g;
-  $err =~ s!\n!\\A!g;
-  $err =~ s!\s! !g;
-  return
-    qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
-}
+sub _make_error_asset {
+  my ($self, $data, $err) = @_;
+  my $file = $self->{mode} eq 'production' ? $data->{moniker} : $data->{path};
 
-sub _make_js_error {
-  my ($self, $err) = @_;
-  $err =~ s!'!"!g;
-  $err =~ s!\n!\\n!g;
-  $err =~ s!\s! !g;
-  return "alert('$err');console.log('$err');";
+  $err =~ s!\r!!g;
+  $err =~ s!\n+$!!;
+  $err = "$file: $err";
+
+  if ($data->{moniker} =~ /\.js$/) {
+    $err =~ s!'!"!g;
+    $err =~ s!\n!\\n!g;
+    $err =~ s!\s! !g;
+    return "alert('$err');console.log('$err');";
+  }
+  else {
+    $err =~ s!"!'!g;
+    $err =~ s!\n!\\A!g;
+    $err =~ s!\s! !g;
+    return
+      qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+  }
 }
 
 sub _process {
@@ -509,8 +516,10 @@ sub _process {
       $processed .= $data->{body};
       1;
     } or do {
-      $self->{log}->error($@);
-      $processed .= "$data->{path}: $@";
+      my $e = $@;
+      $self->{log}->error($e);
+      local $data->{moniker} = $moniker;
+      $processed .= $self->_make_error_asset($data, $e);
       $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
     };
   }

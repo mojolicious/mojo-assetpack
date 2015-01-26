@@ -89,7 +89,7 @@ sub _run {
   warn "[ASSETPACK] @$cmd \$?=$? \$!=$! $err\n" if DEBUG;
 
   return $self unless $?;
-  die sprintf "Cannot execute '%s'. See %s", $cmd->[0], $self->_url if $! == 2;
+  die sprintf "Cannot execute '%s'. See %s\n", $cmd->[0], $self->_url if $! == 2;
   die sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8, int($!), $err;
 }
 
