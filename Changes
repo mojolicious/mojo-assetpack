@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.35
+0.35     Thu Jan 29 21:20:25 2015
        * Include original error message when failing to fallback
        * Will die() instead of return $err on process()
        * Improved detection of minified JavaScript code #34
