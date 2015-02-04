@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.37
+0.37     Wed Feb  4 16:59:36 2015
        * Will use CSS::Sass if ENABLE_LIBSASS_BINDINGS=1 is set
          This is candiate to become the default in later releases
 
