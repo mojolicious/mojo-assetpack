@@ -261,7 +261,7 @@ sub fetch {
 
   if (my $name = $self->_fluffy_find(qr{^$lookup\.\w+$})) {
     $path = File::Spec->catfile($self->out_dir, $name);
-    $self->{log}->debug("Asset $url is downloaded: $path");
+    $self->{log}->debug("Asset $url is downloaded: $path") if DEBUG;
     return $path;
   }
 
@@ -504,7 +504,7 @@ sub _process {
 
   # Need to scan all directories and not just out_dir()
   if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext") and CACHE_ASSETS) {
-    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}");
+    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}") if DEBUG;
     return $self;
   }
 
