@@ -1,158 +1,5 @@
 package Mojolicious::Plugin::AssetPack;
 
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
-
-=head1 VERSION
-
-0.37
-
-=head1 SYNOPSIS
-
-In your application:
-
-  use Mojolicious::Lite;
-
-  plugin 'AssetPack';
-
-  # define assets: $moniker => @real_assets
-  app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
-  app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
-
-  # you can combine with assets from web
-  app->asset('ie8.js' => (
-    'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js',
-    'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js',
-    'http://code.jquery.com/jquery-1.11.0.js',
-    '/js/myapp.js',
-  ));
-
-  app->start;
-
-In your template:
-
-  %= asset 'app.js'
-  %= asset 'app.css'
-
-Or if you want the asset inlined in the HTML:
-
-  %= asset 'app.css', { inline => 1 }
-
-You can also pass on attributes to the generated HTML tag:
-
-  %= asset 'app.css', {}, media => "print,handheld,embossed"
-
-Or if you need to add the tags manually:
-
-  % for my $asset (asset->get('app.js')) {
-    %= javascript $asset
-  % }
-
-See also L</register>.
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack> is a L<Mojolicious> plugin which can be used
-to cram multiple assets of the same type into one file. This means that if
-you have a lot of CSS files (.css, .less, .sass, ...) as input, the AssetPack
-can make one big CSS file as output. This is good, since it will often speed
-up the rendering of your page. The output file can even be minified, meaning
-you can save bandwidth and browser parsing time.
-
-The core preprocessors that are bundled with this module can handle CSS and
-JavaScript files, written in many languages.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessors> for more details.
-
-=head2 Production mode
-
-This plugin will compress sass, less, css, javascript and coffeescript with the
-help of external applications on startup. The result will be one file with all
-the sources combined. This file is stored in L</Packed directory>.
-
-The files in the packed directory will have a checksum added to the
-filename which will ensure broken browsers request a new version once the
-file is changed. Example:
-
-  <script src="/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
-
-This is done using L</process>.
-
-=head2 Development mode
-
-This plugin will expand the input files to multiple script or link tags which
-makes debugging and development easier.
-
-This is done using L</expand>.
-
-TIP! Make morbo watch your less/sass files as well:
-
-  $ morbo -w lib -w templates -w public/sass
-
-You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
-convert your less/sass/coffee files each time their asset directive is expanded
-(only works when L</minify> is disabled).
-
-=head2 Inlined assets
-
-AssetPack is able to insert your assets directly into your markup. This is
-useful if you want to make a one-page app and want to keep the number of
-requests to the server at a minimum. However, the images, fonts or any other
-external asset which again is referred to require more requests to the
-server. See below on how to include the asset directly in your template:
-
-  %= asset 'app.css', { inline => 1 }
-
-Or for manual inspection:
-
-  % for my $data (asset->get('app.js', { inline => 1 })) {
-    %== $data;
-  }
-
-=head2 Custom domain
-
-You might want to serve the assets from a domain different from where the
-main app is running. The reasons for that might be:
-
-=over 4
-
-=item *
-
-No cookies send on each request. This is especially useful when you use
-L<Mojolicious> sessions as they are stored in cookies and clients send
-whole session with every request.
-
-=item *
-
-More request done in parallel. Browsers have limits for sending parallel
-request to one domain. With separate domain static files can be loaded in
-parallel.
-
-=item *
-
-Serve files directly (by absolute url) from CDN (or Amazon S3).
-
-=back
-
-This plugin support this if you set a custom L</base_url>.
-
-See also L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
-
-=head1 ENVIRONMENT
-
-=head2 MOJO_ASSETPACK_DEBUG
-
-Set this to get extra debug information to STDERR from AssetPack internals.
-
-=head2 MOJO_ASSETPACK_NO_CACHE
-
-If true, convert the assets each time they're expanded, instead of once at
-application start (useful for development). Has no effect when L</minify> is
-enabled.
-
-=cut
-
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
 use Mojo::Util qw( md5_sum slurp spurt );
@@ -165,46 +12,6 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 our $VERSION = '0.37';
 
-=head1 ATTRIBUTES
-
-=head2 base_url
-
-  $self = $self->base_url("http://my-domain.com/static/");
-  $str = $self->base_url;
-
-This attribute can be used to control where to serve static assets from.
-it defaults to "/packed". See also L</Custom domain>.
-
-NOTE! You need to have a trailing "/" at the end of the string.
-
-=head2 fallback
-
-  $self = $self->fallback($bool);
-
-Setting this attribute to true will enable the L<asset()|/add> helper to use
-bundled assets if the L</process> step fail. L<asset()|/add> will still throw
-an error if there are no bundled assets available.
-
-The default value is "1" in L<production mode|Mojolicious/mode>.
-
-This feauture is EXPERIMENTAL. Feedback wanted.
-
-=head2 minify
-
-Set this to true if the assets should be minified.
-
-=head2 preprocessors
-
-Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
-
-=head2 out_dir
-
-Holds the path to the directory where packed files can be written. It
-defaults to "mojo-assetpack-public/packed" directory in L<temp|File::Spec/tmpdir>
-unless a L<static directory|Mojolicious::Static/paths> is writeable.
-
-=cut
-
 has base_url      => '/packed/';
 has fallback      => 0;
 has minify        => 0;
@@ -215,17 +22,6 @@ has _ua => sub {
   require Mojo::UserAgent;
   Mojo::UserAgent->new(max_redirects => 3);
 };
-
-=head1 METHODS
-
-=head2 add
-
-  $self->add($moniker => @rel_files);
-
-Used to define new assets aliases. This method is called when the C<asset()>
-helper is called on the app.
-
-=cut
 
 sub add {
   my ($self, $moniker, @files) = @_;
@@ -241,16 +37,6 @@ sub add {
 
   $self;
 }
-
-=head2 fetch
-
-  $path = $self->fetch($url);
-
-This method can be used to fetch an asset and store the content to a local
-file. The download will be skipped if the file already exists. The return
-value is the absolute path to the downloaded file.
-
-=cut
 
 sub fetch {
   my ($self, $url, $destination) = @_;
@@ -282,15 +68,6 @@ sub fetch {
   return $path;
 }
 
-=head2 get
-
-  @files = $self->get($moniker);
-
-Returns a list of files which the moniker point to. The list will only
-contain one file if the C<$moniker> is minified.
-
-=cut
-
 sub get {
   my ($self, $moniker, $args) = @_;
   my $files = $self->{processed}{$moniker} || [];
@@ -302,17 +79,6 @@ sub get {
     return map { $self->base_url . $_ } @$files;
   }
 }
-
-=head2 preprocessor
-
-  $self = $self->preprocessor($name => \%args);
-
-Use this method to manually register a preprocessor.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
-for example usage.
-
-=cut
 
 sub preprocessor {
   my ($self, $name, $args) = @_;
@@ -331,17 +97,6 @@ sub preprocessor {
   return $self;
 }
 
-=head2 process
-
-  $self->process($moniker => @files);
-
-This method use L<Mojolicious::Plugin::AssetPack::Preprocessors/process> to
-convert and/or minify the sources pointed at by C<$moniker>.
-
-The result file will be stored in L</Packed directory>.
-
-=cut
-
 sub process {
   my ($self, $moniker, @files) = @_;
 
@@ -359,19 +114,6 @@ sub process {
 
   $self;
 }
-
-=head2 register
-
-  plugin AssetPack => {
-    base_url => $str, # default to "/packed"
-    minify => $bool, # compress assets
-  };
-
-Will register the C<compress> helper. All arguments are optional.
-
-"minify" will default to true if L<Mojolicious/mode> is "production".
-
-=cut
 
 sub register {
   my ($self, $app, $config) = @_;
@@ -578,6 +320,210 @@ FILE:
   return (@checksum == 1 ? $checksum[0] : md5_sum(join '', @checksum), \%files,);
 }
 
+1;
+
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
+
+=head1 VERSION
+
+0.37
+
+=head1 SYNOPSIS
+
+=head2 Application
+
+  use Mojolicious::Lite;
+
+  # load plugin
+  plugin "AssetPack";
+
+  # define assets: $moniker => @real_assets
+  app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
+  app->start;
+
+See also L<Mojolicious::Plugin::AssetPack::Manual::Assets> for more
+details on how to define assets.
+
+=head2 Template
+
+  %= asset 'app.js'
+  %= asset 'app.css'
+
+See also L<Mojolicious::Plugin::AssetPack::Manual::Include> for more
+details on how to include assets.
+
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack> is a L<Mojolicious> plugin which can be used
+to cram multiple assets of the same type into one file. This means that if
+you have a lot of CSS files (.css, .less, .sass, ...) as input, the AssetPack
+can make one big CSS file as output. This is good, since it will often speed
+up the rendering of your page. The output file can even be minified, meaning
+you can save bandwidth and browser parsing time.
+
+The core preprocessors that are bundled with this module can handle CSS and
+JavaScript files, written in many languages.
+
+=head1 MANUALS
+
+The documentation is split up in different manuals, for more in-depth
+information:
+
+=over 4
+
+=item *
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Assets> for how to define
+assets in your application.
+
+=item *
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Include> for how to include
+the assets in the template.
+
+=item *
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Modes> for how AssetPack behaves
+in different modes.
+
+=item *
+
+See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for how to
+serve your assets from a custom host.
+
+=item * 
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessors> for details on the
+different (official) preprocessors.
+
+=back
+
+=head1 ENVIRONMENT
+
+=head2 MOJO_ASSETPACK_DEBUG
+
+Set this to get extra debug information to STDERR from AssetPack internals.
+
+=head2 MOJO_ASSETPACK_NO_CACHE
+
+If true, convert the assets each time they're expanded, instead of once at
+application start (useful for development).
+
+This attribute has no effect if L</minify> is true.
+
+=head1 HELPERS
+
+=head2 asset
+
+This plugin defined the helper C<asset()>. This helper can be called in
+different ways:
+
+=over 4
+
+=item * $self = $c->asset;
+
+This will return the plugin instance, that you can call methods on.
+
+=item * $c->asset($moniker => @real_files);
+
+See L</add>.
+
+=item * $bytestream = $c->asset($moniker, \%args, @attr);
+
+Used to include an asset in a template.
+
+=back
+
+=head1 ATTRIBUTES
+
+=head2 base_url
+
+This attribute can be used to control where to serve static assets from.
+
+Defaults value is "/packed".
+
+See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
+
+NOTE! You need to have a trailing "/" at the end of the string.
+
+=head2 fallback
+
+Used to read "old" assets if unable to generate new.
+
+Default value is true in production mode and false if not.
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Modes/Fallback>.
+
+=head2 minify
+
+Set this to true if the assets should be minified.
+
+Default value is true in production mode and false if not.
+
+=head2 preprocessors
+
+Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
+
+=head2 out_dir
+
+Holds the path to the directory where packed files can be written. It
+defaults to "mojo-assetpack-public/packed" directory in L<temp|File::Spec/tmpdir>
+unless a L<static|Mojolicious::Static/paths> directory is writeable.
+
+=head1 METHODS
+
+=head2 add
+
+  $self->add($moniker => @real_files);
+
+Used to define assets.
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Assets> for mode details.
+
+=head2 fetch
+
+  $path = $self->fetch($url);
+
+This method can be used to fetch an asset and store the content to a local
+file. The download will be skipped if the file already exists. The return
+value is the absolute path to the downloaded file.
+
+=head2 get
+
+  @files = $self->get($moniker);
+
+Returns a list of files which the moniker point to. The list will only
+contain one file if L</minify> is true.
+
+See L<Mojolicious::Plugin::AssetPack::Manual::Include/Full control> for mode
+details.
+
+=head2 preprocessor
+
+  $self = $self->preprocessor($name => \%args);
+
+Use this method to manually register a preprocessor.
+
+See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
+for example usage.
+
+=head2 process
+
+This method will be deprecated. Use L</add> instead.
+
+=head2 register
+
+  plugin AssetPack => {
+    base_url => $str,  # default to "/packed"
+    fallback => $bool, # fallback to old assets
+    minify   => $bool, # compress assets
+    out_dir  => "/path/to/some/directory",
+  };
+
+Will register the C<compress> helper. All L<arguments|/ATTRIBUTES> are optional.
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2014, Jan Henning Thorsen.
@@ -596,5 +542,3 @@ Per Edin - C<info@peredin.com>
 Viktor Turskyi
 
 =cut
-
-1;

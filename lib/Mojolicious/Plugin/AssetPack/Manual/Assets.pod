@@ -1,0 +1,63 @@
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Manual::Assets - How to define assets
+
+=head1 DESCRIPTION
+
+This manual will show you various ways to define assets with
+L<Mojolicious::Plugin::AssetPack>.
+
+=head1 DEFINING ASSETS
+
+First you need to load the plugin. Here is an example lite app, which does
+that:
+
+  plugin "AssetPack";
+
+=head1 Local assets
+
+Here is the basic way of defining an asset:
+
+  app->asset(
+    "some-asset.js" => (
+      "/js/foo.js",
+      "/js/bar.js",
+    )
+  );
+
+The "some-asset.js" string is just so you can refere to the genrated bundle
+in your templates L<later|Mojolicious::Plugin::AssetPack::Manual::Include>,
+while the list of files after (foo.js and bar.js) are files that exists in
+one of the public L<static|Mojolicious/static> directories defined in your
+application.
+
+=head1 Online assets
+
+The assets does not need to be locally. They can also be
+L<fetched|Mojolicious::Plugin::AssetPack/fetch> online:
+
+  app->asset(
+    "bundle.js" => (
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js",
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js",
+      "http://code.jquery.com/jquery-1.11.0.js",
+      "/js/myapp.js",
+    )
+  );
+
+The code aboove will download three assets from web and combine them with
+one asset defined locally.
+
+NOTE! The online assets are cached locally, which means that they will not
+be refreshed, unless you manually delete them.
+
+=head1 NEXT
+
+Now that you know how to define your assets, you can start using them in
+your L<templates|Mojolicious::Plugin::AssetPack::Manual::Include>.
+
+=head1 AUTHOR
+
+Jan Henning Thorsen - C<jhthorsen@cpan.org>
+
+=cut

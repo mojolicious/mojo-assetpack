@@ -1,0 +1,44 @@
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Manual::CustomDomain - How to serve assets from a different host
+
+=head1 DESCRIPTION
+
+You might want to serve the assets from a domain different from where the
+main app is running. The reasons for that might be:
+
+=over 4
+
+=item *
+
+No cookies send on each request. This is especially useful when you use
+L<Mojolicious> sessions as they are stored in cookies and clients send
+whole session with every request.
+
+=item *
+
+More request done in parallel. Browsers have limits for sending parallel
+request to one domain. With separate domain static files can be loaded in
+parallel.
+
+=item *
+
+Serve files directly (by absolute url) from CDN (or Amazon S3).
+
+=back
+
+=head1 SYNOPSIS
+
+This plugin support this if you set a custom L</base_url>:
+
+  plugin "AssetPack" => {
+    base_url => "http://cdn.example.com/my-assets/",
+  };
+
+See also L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
+
+=head1 AUTHOR
+
+Jan Henning Thorsen - C<jhthorsen@cpan.org>
+
+=cut
