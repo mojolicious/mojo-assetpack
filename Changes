@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.3801
+       * Removed reference to "expand" #38
+
 0.38     Mon Mar  2 23:55:36 2015
        * Improved documentation.
        * Less logging

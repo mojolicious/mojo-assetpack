@@ -29,15 +29,12 @@ This is done using L</process>.
 This plugin will expand the input files to multiple script or link tags which
 makes debugging and development easier.
 
-This is done using L</expand>.
-
 TIP! Make morbo watch your less/sass files as well:
 
   $ morbo -w lib -w templates -w public/sass
 
-You can also set the L</MOJO_ASSETPACK_NO_CACHE> environment variable to 1 to
-convert your less/sass/coffee files each time their asset directive is expanded
-(only works when L</minify> is disabled).
+You can also set the L<MOJO_ASSETPACK_NO_CACHE|Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_NO_CACHE>
+environment variable to "1" to pack your assets on each request.
 
 =head2 Fallback
 
