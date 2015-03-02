@@ -3,49 +3,28 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.37
+    0.38
 
 SYNOPSIS
-    In your application:
-
+  Application
       use Mojolicious::Lite;
 
-      plugin 'AssetPack';
+      # load plugin
+      plugin "AssetPack";
 
       # define assets: $moniker => @real_assets
       app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
-      app->asset('app.css' => '/css/foo.less', '/css/bar.scss', '/css/main.css');
-
-      # you can combine with assets from web
-      app->asset('ie8.js' => (
-        'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js',
-        'http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js',
-        'http://code.jquery.com/jquery-1.11.0.js',
-        '/js/myapp.js',
-      ));
-
       app->start;
 
-    In your template:
+    See also Mojolicious::Plugin::AssetPack::Manual::Assets for more details
+    on how to define assets.
 
+  Template
       %= asset 'app.js'
       %= asset 'app.css'
 
-    Or if you want the asset inlined in the HTML:
-
-      %= asset 'app.css', { inline => 1 }
-
-    You can also pass on attributes to the generated HTML tag:
-
-      %= asset 'app.css', {}, media => "print,handheld,embossed"
-
-    Or if you need to add the tags manually:
-
-      % for my $asset (asset->get('app.js')) {
-        %= javascript $asset
-      % }
-
-    See also "register".
+    See also Mojolicious::Plugin::AssetPack::Manual::Include for more
+    details on how to include assets.
 
 DESCRIPTION
     Mojolicious::Plugin::AssetPack is a Mojolicious plugin which can be used
@@ -58,71 +37,24 @@ DESCRIPTION
     The core preprocessors that are bundled with this module can handle CSS
     and JavaScript files, written in many languages.
 
-    See Mojolicious::Plugin::AssetPack::Preprocessors for more details.
+MANUALS
+    The documentation is split up in different manuals, for more in-depth
+    information:
 
-  Production mode
-    This plugin will compress sass, less, css, javascript and coffeescript
-    with the help of external applications on startup. The result will be
-    one file with all the sources combined. This file is stored in "Packed
-    directory".
+    *   See Mojolicious::Plugin::AssetPack::Manual::Assets for how to define
+        assets in your application.
 
-    The files in the packed directory will have a checksum added to the
-    filename which will ensure broken browsers request a new version once
-    the file is changed. Example:
+    *   See Mojolicious::Plugin::AssetPack::Manual::Include for how to
+        include the assets in the template.
 
-      <script src="/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
+    *   See Mojolicious::Plugin::AssetPack::Manual::Modes for how AssetPack
+        behaves in different modes.
 
-    This is done using "process".
+    *   See Mojolicious::Plugin::AssetPack::Manual::CustomDomain for how to
+        serve your assets from a custom host.
 
-  Development mode
-    This plugin will expand the input files to multiple script or link tags
-    which makes debugging and development easier.
-
-    This is done using "expand".
-
-    TIP! Make morbo watch your less/sass files as well:
-
-      $ morbo -w lib -w templates -w public/sass
-
-    You can also set the "MOJO_ASSETPACK_NO_CACHE" environment variable to 1
-    to convert your less/sass/coffee files each time their asset directive
-    is expanded (only works when "minify" is disabled).
-
-  Inlined assets
-    AssetPack is able to insert your assets directly into your markup. This
-    is useful if you want to make a one-page app and want to keep the number
-    of requests to the server at a minimum. However, the images, fonts or
-    any other external asset which again is referred to require more
-    requests to the server. See below on how to include the asset directly
-    in your template:
-
-      %= asset 'app.css', { inline => 1 }
-
-    Or for manual inspection:
-
-      % for my $data (asset->get('app.js', { inline => 1 })) {
-        %== $data;
-      }
-
-  Custom domain
-    You might want to serve the assets from a domain different from where
-    the main app is running. The reasons for that might be:
-
-    *   No cookies send on each request. This is especially useful when you
-        use Mojolicious sessions as they are stored in cookies and clients
-        send whole session with every request.
-
-    *   More request done in parallel. Browsers have limits for sending
-        parallel request to one domain. With separate domain static files
-        can be loaded in parallel.
-
-    *   Serve files directly (by absolute url) from CDN (or Amazon S3).
-
-    This plugin support this if you set a custom "base_url".
-
-    See also
-    <https://developers.google.com/speed/docs/best-practices/request#ServeFr
-    omCookielessDomain>.
+    *   See Mojolicious::Plugin::AssetPack::Preprocessors for details on the
+        different (official) preprocessors.
 
 ENVIRONMENT
   MOJO_ASSETPACK_DEBUG
@@ -131,32 +63,49 @@ ENVIRONMENT
 
   MOJO_ASSETPACK_NO_CACHE
     If true, convert the assets each time they're expanded, instead of once
-    at application start (useful for development). Has no effect when
-    "minify" is enabled.
+    at application start (useful for development).
+
+    This attribute has no effect if "minify" is true.
+
+HELPERS
+  asset
+    This plugin defined the helper "asset()". This helper can be called in
+    different ways:
+
+    *   $self = $c->asset;
+
+        This will return the plugin instance, that you can call methods on.
+
+    *   $c->asset($moniker => @real_files);
+
+        See "add".
+
+    *   $bytestream = $c->asset($moniker, \%args, @attr);
+
+        Used to include an asset in a template.
 
 ATTRIBUTES
   base_url
-      $self = $self->base_url("http://my-domain.com/static/");
-      $str = $self->base_url;
-
     This attribute can be used to control where to serve static assets from.
-    it defaults to "/packed". See also "Custom domain".
+
+    Defaults value is "/packed".
+
+    See Mojolicious::Plugin::AssetPack::Manual::CustomDomain for more
+    details.
 
     NOTE! You need to have a trailing "/" at the end of the string.
 
   fallback
-      $self = $self->fallback($bool);
+    Used to read "old" assets if unable to generate new.
 
-    Setting this attribute to true will enable the asset() helper to use
-    bundled assets if the "process" step fail. asset() will still throw an
-    error if there are no bundled assets available.
+    Default value is true in production mode and false if not.
 
-    The default value is "1" in production mode.
-
-    This feauture is EXPERIMENTAL. Feedback wanted.
+    See "Fallback" in Mojolicious::Plugin::AssetPack::Manual::Modes.
 
   minify
     Set this to true if the assets should be minified.
+
+    Default value is true in production mode and false if not.
 
   preprocessors
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
@@ -168,10 +117,11 @@ ATTRIBUTES
 
 METHODS
   add
-      $self->add($moniker => @rel_files);
+      $self->add($moniker => @real_files);
 
-    Used to define new assets aliases. This method is called when the
-    "asset()" helper is called on the app.
+    Used to define assets.
+
+    See Mojolicious::Plugin::AssetPack::Manual::Assets for mode details.
 
   fetch
       $path = $self->fetch($url);
@@ -184,7 +134,10 @@ METHODS
       @files = $self->get($moniker);
 
     Returns a list of files which the moniker point to. The list will only
-    contain one file if the $moniker is minified.
+    contain one file if "minify" is true.
+
+    See "Full control" in Mojolicious::Plugin::AssetPack::Manual::Include
+    for mode details.
 
   preprocessor
       $self = $self->preprocessor($name => \%args);
@@ -196,23 +149,17 @@ METHODS
     usage.
 
   process
-      $self->process($moniker => @files);
-
-    This method use "process" in
-    Mojolicious::Plugin::AssetPack::Preprocessors to convert and/or minify
-    the sources pointed at by $moniker.
-
-    The result file will be stored in "Packed directory".
+    This method will be deprecated. Use "add" instead.
 
   register
       plugin AssetPack => {
-        base_url => $str, # default to "/packed"
-        minify => $bool, # compress assets
+        base_url => $str,  # default to "/packed"
+        fallback => $bool, # fallback to old assets
+        minify   => $bool, # compress assets
+        out_dir  => "/path/to/some/directory",
       };
 
     Will register the "compress" helper. All arguments are optional.
-
-    "minify" will default to true if "mode" in Mojolicious is "production".
 
 COPYRIGHT AND LICENSE
     Copyright (C) 2014, Jan Henning Thorsen.
