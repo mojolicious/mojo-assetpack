@@ -452,7 +452,7 @@ NOTE! You need to have a trailing "/" at the end of the string.
 
 Used to read "old" assets if unable to generate new.
 
-Default value is true in production mode and false if not.
+Default value is true in production mode and false otherwise.
 
 See L<Mojolicious::Plugin::AssetPack::Manual::Modes/Fallback>.
 
@@ -460,7 +460,7 @@ See L<Mojolicious::Plugin::AssetPack::Manual::Modes/Fallback>.
 
 Set this to true if the assets should be minified.
 
-Default value is true in production mode and false if not.
+Default value is true in production mode and false otherwise.
 
 =head2 preprocessors
 
