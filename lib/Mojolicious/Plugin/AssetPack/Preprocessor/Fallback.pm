@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Fallback;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Fallback - Render missing preprocessor text

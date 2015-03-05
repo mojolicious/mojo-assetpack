@@ -1,3 +1,5 @@
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Manual::Modes - How AssetPack behaves in different modes

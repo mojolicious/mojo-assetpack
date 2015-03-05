@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessors;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessors - Holds preprocessors for the assetpack

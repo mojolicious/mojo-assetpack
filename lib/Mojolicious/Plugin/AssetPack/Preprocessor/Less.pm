@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Less;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Less - Preprocessor for LESS

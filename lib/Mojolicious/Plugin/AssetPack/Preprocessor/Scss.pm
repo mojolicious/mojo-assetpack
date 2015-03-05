@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Scss;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Scss - Preprocessor for .scss files

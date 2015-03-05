@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Sass;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Sass - Preprocessor for sass
