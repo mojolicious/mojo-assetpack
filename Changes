@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.3802   Mon Mar  2 00:21:21 2015
+       * Documentation improvements (Красимир Беров (BEROV))
+
 0.3801   Mon Mar  2 23:58:21 2015
        * Removed reference to "expand" #38
 
