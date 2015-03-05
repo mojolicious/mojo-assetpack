@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor - Base class for preprocessors

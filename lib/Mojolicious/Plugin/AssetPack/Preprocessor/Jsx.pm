@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Jsx;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Preprocessor::Jsx - Preprocessor for JavaScript XML syntax (react.js)

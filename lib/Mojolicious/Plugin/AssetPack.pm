@@ -322,6 +322,8 @@ FILE:
 
 1;
 
+=encoding utf8
+
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
