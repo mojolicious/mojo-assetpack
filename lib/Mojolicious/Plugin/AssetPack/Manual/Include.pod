@@ -11,7 +11,7 @@ by L<Mojolicious::Plugin::AssetPack>.
 
 =head2 Example asset
 
-The description below use the example CSS asset below. The same rules apply to
+The description below uses the following example CSS asset. The same rules apply to
 other formats as well, such as JavaScript assets.
 
   app->asset(
@@ -24,6 +24,8 @@ other formats as well, such as JavaScript assets.
 
 =head1 USAGE
 
+Here are some ways to use L<Mojolicious::Plugin::AssetPack>.
+
 =head2 Simple
 
 The simplest way to include an asset is simply by using the
@@ -31,8 +33,8 @@ L<asset|Mojolicious::Plugin::AssetPack/asset> helper:
 
   %= asset "my-asset.css"
 
-This will result in a single html link tag in production mode, and a list of
-link tags in development mode.
+This will result in a list of link tags in development mode and a single html
+link tag in production mode.
 
 =over 4
 
