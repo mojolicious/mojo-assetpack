@@ -27,7 +27,7 @@ Here is the basic way of defining an asset:
     )
   );
 
-The "some-asset.js" string is just so you can refere to the genrated bundle
+The "some-asset.js" string is just so you can refer to the generated bundle
 in your templates L<later|Mojolicious::Plugin::AssetPack::Manual::Include>,
 while the list of files after (foo.js and bar.js) are files that exists in
 one of the public L<static|Mojolicious/static> directories defined in your
@@ -47,7 +47,7 @@ L<fetched|Mojolicious::Plugin::AssetPack/fetch> online:
     )
   );
 
-The code aboove will download three assets from web and combine them with
+The code above will download three assets from web and combine them with
 one asset defined locally.
 
 NOTE! The online assets are cached locally, which means that they will not
