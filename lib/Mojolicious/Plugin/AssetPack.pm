@@ -120,8 +120,8 @@ sub register {
   my $helper = $config->{helper} || 'asset';
 
   $self->{mode} = $app->mode;
-  $self->fallback($config->{fallback} // $app->mode eq 'production');
-  $self->minify($config->{minify}     // $app->mode eq 'production');
+  $self->fallback($config->{fallback} // $app->mode ne 'development');
+  $self->minify($config->{minify}     // $app->mode ne 'development');
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
@@ -214,7 +214,7 @@ sub _name_ext {
 
 sub _make_error_asset {
   my ($self, $data, $err) = @_;
-  my $file = $self->{mode} eq 'production' ? $data->{moniker} : $data->{path};
+  my $file = $self->{mode} eq 'development' ? $data->{path} : $data->{moniker};
 
   $err =~ s!\r!!g;
   $err =~ s!\n+$!!;
@@ -440,6 +440,8 @@ Used to include an asset in a template.
 
 =head2 base_url
 
+  $str = $self->base_url;
+
 This attribute can be used to control where to serve static assets from.
 
 Defaults value is "/packed".
@@ -450,23 +452,31 @@ NOTE! You need to have a trailing "/" at the end of the string.
 
 =head2 fallback
 
+  $bool = $self->fallback;
+
 Used to read "old" assets if unable to generate new.
 
-Default value is true in production mode and false otherwise.
+Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
 
 See L<Mojolicious::Plugin::AssetPack::Manual::Modes/Fallback>.
 
 =head2 minify
 
+  $bool = $self->minify;
+
 Set this to true if the assets should be minified.
 
-Default value is true in production mode and false otherwise.
+Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
 
 =head2 preprocessors
+
+  $obj = $self->preprocessors;
 
 Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 
 =head2 out_dir
+
+  $str = $self->out_dir;
 
 Holds the path to the directory where packed files can be written. It
 defaults to "mojo-assetpack-public/packed" directory in L<temp|File::Spec/tmpdir>
