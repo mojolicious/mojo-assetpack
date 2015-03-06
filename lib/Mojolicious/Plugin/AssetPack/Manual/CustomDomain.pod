@@ -19,7 +19,7 @@ whole session with every request.
 
 =item *
 
-More request done in parallel. Browsers have limits for sending parallel
+More requests done in parallel. Browsers have limits for sending parallel
 request to one domain. With separate domain static files can be loaded in
 parallel.
 
@@ -31,7 +31,7 @@ Serve files directly (by absolute url) from CDN (or Amazon S3).
 
 =head1 SYNOPSIS
 
-This plugin support this if you set a custom L</base_url>:
+To use the feature, just set a custom L</base_url>:
 
   plugin "AssetPack" => {
     base_url => "http://cdn.example.com/my-assets/",
