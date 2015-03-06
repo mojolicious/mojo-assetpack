@@ -33,8 +33,8 @@ L<asset|Mojolicious::Plugin::AssetPack/asset> helper:
 
   %= asset "my-asset.css"
 
-This will result in a list of link tags in development mode and a single html
-link tag in production mode.
+This will result in a list of C<link> tags in development mode and a single html
+C<link> tag in production mode.
 
 =over 4
 

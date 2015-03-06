@@ -36,7 +36,7 @@ application.
 =head1 Online assets
 
 The assets does not need to be on the same machine. They can also be
-L<fetched|Mojolicious::Plugin::AssetPack/fetch> from anywhere:
+L<fetched|Mojolicious::Plugin::AssetPack/fetch> from the world wide web:
 
   app->asset(
     "bundle.js" => (
