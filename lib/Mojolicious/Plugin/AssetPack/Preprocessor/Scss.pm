@@ -122,7 +122,7 @@ sub process {
 
   if (LIBSASS_BINDINGS) {
     my %args = (include_paths => [dirname $path]);
-    $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED if $assetpack->minify;
+    $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED() if $assetpack->minify;
     $$text = CSS::Sass::sass_compile($$text, %args);
   }
   else {
