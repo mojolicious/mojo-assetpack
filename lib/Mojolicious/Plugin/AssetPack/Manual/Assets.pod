@@ -29,14 +29,14 @@ Here is the basic way of defining an asset:
 
 The "some-asset.js" string is just so you can refer to the generated bundle
 in your templates L<later|Mojolicious::Plugin::AssetPack::Manual::Include>,
-while the list of files after (foo.js and bar.js) are files that exists in
+while the list of files after (foo.js and bar.js) are files that exist in
 one of the public L<static|Mojolicious/static> directories defined in your
 application.
 
 =head1 Online assets
 
-The assets does not need to be locally. They can also be
-L<fetched|Mojolicious::Plugin::AssetPack/fetch> online:
+The assets do not need to be on the same machine. They can also be
+L<fetched|Mojolicious::Plugin::AssetPack/fetch> from the world wide web:
 
   app->asset(
     "bundle.js" => (
