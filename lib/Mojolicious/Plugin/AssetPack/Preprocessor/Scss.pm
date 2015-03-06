@@ -22,6 +22,9 @@ this module work:
 
   $ sudo cpanm CSS::Sass
 
+You can force using the executable by setting the environment variable
+C<ENABLE_LIBSASS_BINDINGS> to a false value.
+
 =head1 COMPASS
 
 Compass is an open-source CSS Authoring Framework built on top of L</sass>.
@@ -37,7 +40,8 @@ C<*.scss> files. This is done with this regexp on the top level sass file:
 
   m!\@import\W+compass\/!;
 
-NOTE! Compass support is experimental.
+NOTE! Compass support is experimental and you probably have to set
+C<ENABLE_LIBSASS_BINDINGS> to a false value to make it work.
 
 You can disable compass detection by setting the environment variable
 C<MOJO_ASSETPACK_NO_COMPASS> to a true value.
@@ -50,7 +54,9 @@ use File::Basename 'dirname';
 use File::Spec::Functions 'catfile';
 use File::Which ();
 use File::Which ();
-use constant LIBSASS_BINDINGS => $ENV{ENABLE_LIBSASS_BINDINGS} && eval 'require CSS::Sass;1';
+use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
+  ? $ENV{ENABLE_LIBSASS_BINDINGS}
+  : eval 'require CSS::Sass;1';
 
 =head1 ATTRIBUTES
 

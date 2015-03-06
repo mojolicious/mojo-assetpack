@@ -1,3 +1,4 @@
+BEGIN { $ENV{ENABLE_LIBSASS_BINDINGS} = 0 }
 use t::Helper;
 use File::Which;
 
