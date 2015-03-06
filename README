@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.3801
+    0.39
 
 SYNOPSIS
   Application
@@ -86,6 +86,8 @@ HELPERS
 
 ATTRIBUTES
   base_url
+      $str = $self->base_url;
+
     This attribute can be used to control where to serve static assets from.
 
     Defaults value is "/packed".
@@ -96,21 +98,29 @@ ATTRIBUTES
     NOTE! You need to have a trailing "/" at the end of the string.
 
   fallback
+      $bool = $self->fallback;
+
     Used to read "old" assets if unable to generate new.
 
-    Default value is true in production mode and false if not.
+    Default is false in "development" mode and true otherwise.
 
     See "Fallback" in Mojolicious::Plugin::AssetPack::Manual::Modes.
 
   minify
+      $bool = $self->minify;
+
     Set this to true if the assets should be minified.
 
-    Default value is true in production mode and false if not.
+    Default is false in "development" mode and true otherwise.
 
   preprocessors
+      $obj = $self->preprocessors;
+
     Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
 
   out_dir
+      $str = $self->out_dir;
+
     Holds the path to the directory where packed files can be written. It
     defaults to "mojo-assetpack-public/packed" directory in temp unless a
     static directory is writeable.
