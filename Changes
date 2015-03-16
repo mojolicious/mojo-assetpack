@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.42
+0.42     Mon Mar 16 19:31:36 2015
        * Fix "Unescaped left brace in regex is deprecated" warnings
 
 0.41     Mon Mar 16 13:47:17 2015
