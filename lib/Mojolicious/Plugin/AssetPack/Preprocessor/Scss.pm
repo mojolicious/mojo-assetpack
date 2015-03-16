@@ -58,6 +58,8 @@ use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
   ? $ENV{ENABLE_LIBSASS_BINDINGS}
   : eval 'require CSS::Sass;1';
 
+$ENV{SASS_PATH} ||= '';
+
 =head1 ATTRIBUTES
 
 =head2 executable
@@ -121,7 +123,7 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
   if (LIBSASS_BINDINGS) {
-    my %args = (include_paths => [dirname $path]);
+    my %args = (include_paths => [dirname($path), split /:/, $ENV{SASS_PATH}]);
     $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED() if $assetpack->minify;
     $$text = CSS::Sass::sass_compile($$text, %args);
   }
