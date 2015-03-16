@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.40
+0.40     Mon Mar 16 11:04:47 2015
        * Fix reading sass files from SASS_PATH, when using CSS::Sass
 
 0.39     Fri Mar  6 17:06:19 2015
