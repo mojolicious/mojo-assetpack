@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.41
+0.41     Mon Mar 16 13:47:17 2015
        * Will die on CSS::Sass errors
 
 0.40     Mon Mar 16 11:04:47 2015
