@@ -121,11 +121,13 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
+  my $err;
 
   if (LIBSASS_BINDINGS) {
     my %args = (include_paths => [dirname($path), split /:/, $ENV{SASS_PATH}]);
     $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED() if $assetpack->minify;
-    $$text = CSS::Sass::sass_compile($$text, %args);
+    ($$text, $err, my $srcmap) = CSS::Sass::sass_compile($$text, %args);
+    die $err if $err;
   }
   else {
     my @cmd = ($self->executable, '--stdin', '--scss', '-I' => dirname $path);
