@@ -40,7 +40,7 @@ for my $x (0, 1) {
 
   $file = $x ? 'invalid\.foo' : '.*?\Wdummy.foo';
   $t->get_ok($src{invalid})->status_is(200)
-    ->content_like(qr/^html:before{.*content:"$file: No preprocessor defined for .*dummy\.foo";}/, "invalid ($x)");
+    ->content_like(qr/^html:before\{.*content:"$file: No preprocessor defined for .*dummy\.foo";\}/, "invalid ($x)");
 
   diag 'with-error files are always generated';
   $ENV{EXITCODE} = 31;

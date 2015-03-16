@@ -28,7 +28,7 @@ ok !-e "$READ_ONLY[0]/packed/my-plugin-existing-b764c538f579f2a774d88ae75f3a27de
 ok !-e $t->app->asset->out_dir . '/my-plugin-new-b764c538f579f2a774d88ae75f3a27de.css', 'not yet generated asset';
 ok -e $t->app->asset->out_dir . '/my-plugin-new-a81a17483efca304199a951e10068095.css',  'generated new asset';
 
-$t->get_ok('/test1')->status_is(200)->text_like('style', qr/body{color:\#aaa}body{color:\#aaa}/);
+$t->get_ok('/test1')->status_is(200)->text_like('style', qr/body\{color:\#aaa\}body\{color:\#aaa\}/);
 
 chmod 0775, $_ for @READ_ONLY;
 done_testing;
