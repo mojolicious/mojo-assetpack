@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.43     Fri Mar 20 11:27:22 2015
+       * Same CSS::Sass detection for Sass as for Scss preprocessor
+
 0.42     Mon Mar 16 19:31:36 2015
        * Fix "Unescaped left brace in regex is deprecated" warnings
 

@@ -29,7 +29,9 @@ this module work:
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss';
 use File::Basename 'dirname';
-use constant LIBSASS_BINDINGS => $ENV{ENABLE_LIBSASS_BINDINGS} && eval 'require CSS::Sass;1';
+use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
+  ? $ENV{ENABLE_LIBSASS_BINDINGS}
+  : eval 'require CSS::Sass;1';
 
 =head2 process
 
