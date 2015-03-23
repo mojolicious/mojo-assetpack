@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.44
+       * Will look for existing assets even with MOJO_ASSETPACK_DEBUG=1
+
 0.43     Fri Mar 20 11:27:22 2015
        * Same CSS::Sass detection for Sass as for Scss preprocessor
 
