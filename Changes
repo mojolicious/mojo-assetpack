@@ -5,6 +5,7 @@ Revision history for Mojolicious-Plugin-AssetPack
        * Change filename for assets with errors from "-with-error.ext" to ".err.ext"
        * Will look for existing assets even with MOJO_ASSETPACK_DEBUG=1
        * Remove errmsg() from Mojolicious::Plugin::AssetPack::Preprocessor
+       * Remove detect() from Mojolicious::Plugin::AssetPack::Preprocessors
 
 0.43     Fri Mar 20 11:27:22 2015
        * Same CSS::Sass detection for Sass as for Scss preprocessor

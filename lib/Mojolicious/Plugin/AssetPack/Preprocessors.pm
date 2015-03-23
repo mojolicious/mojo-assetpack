@@ -177,16 +177,6 @@ sub checksum {
   return @checksum == 1 ? $checksum[0] : Mojo::Util::md5_sum(join '', @checksum);
 }
 
-=head2 detect
-
-DEPRECATED. Default handlers are added on the fly.
-
-=cut
-
-sub detect {
-  warn "DEPRECATED" . $_[0];
-}
-
 =head2 process
 
   $self->process($extension => $assetpack, \$text, $filename);
