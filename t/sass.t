@@ -20,6 +20,8 @@ use t::Helper;
     ->content_like(qr{font:100% Helvetica,sans-serif;color:\#333});
 }
 
+is(Mojolicious::Plugin::AssetPack::Preprocessor::Sass->_url, 'http://sass-lang.com/install', '_url');
+
 done_testing;
 
 __DATA__

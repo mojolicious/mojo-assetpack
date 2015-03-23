@@ -22,6 +22,8 @@ use t::Helper;
   $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{c coffee.*d coffee}s);
 }
 
+is(Mojolicious::Plugin::AssetPack::Preprocessor::CoffeeScript->_url, 'http://coffeescript.org/#installation', '_url()');
+
 done_testing;
 
 __DATA__

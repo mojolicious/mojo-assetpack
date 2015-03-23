@@ -37,6 +37,8 @@ use t::Helper;
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{a1a1a1.*b1b1b1}s);
 }
 
+is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.com/install', '_url');
+
 done_testing;
 
 __DATA__

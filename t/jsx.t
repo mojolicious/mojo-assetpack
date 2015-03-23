@@ -22,6 +22,8 @@ use t::Helper;
   $t->get_ok('/test1')->status_is(200)->content_like(qr{;React});
 }
 
+is(Mojolicious::Plugin::AssetPack::Preprocessor::Jsx->_url, 'http://facebook.github.io/react', '_url');
+
 done_testing;
 
 __DATA__

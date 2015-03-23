@@ -24,6 +24,8 @@ use t::Helper;
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{a1a1a1.*b1b1b1}s);
 }
 
+is(Mojolicious::Plugin::AssetPack::Preprocessor::Less->_url, 'http://lesscss.org/#usage', '_url');
+
 done_testing;
 
 __DATA__
