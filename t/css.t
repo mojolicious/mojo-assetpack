@@ -1,7 +1,6 @@
 use t::Helper;
 
 {
-  diag "minify=0";
   my $t = t::Helper->t({minify => 0});
 
   ok $t->app->asset->preprocessors->can_process('css'), 'found preprocessor for css';
@@ -18,19 +17,17 @@ use t::Helper;
 }
 
 {
-  diag "minify=1";
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('app.css' => '/css/c.css', '/css/d.css');
 
   $t->get_ok('/test1')->status_is(200)
-    ->content_like(qr{<link href="/packed/app-3659f2c6b80de93f8373568a1ddeffaa\.css".*}m);
+    ->content_like(qr{<link href="/packed/app-3659f2c6b80de93f8373568a1ddeffaa\.min\.css"}m);
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{c1c1c1.*d1d1d1});
 }
 
 {
-  diag "skip process";
   my $t = t::Helper->t({minify => 1});
   $t->app->asset('app.css' => '/css/c.css', '/css/d.css');
 }

@@ -6,12 +6,12 @@ plan skip_all => 'Require t/bin/coffee to make failing test' unless -x catfile $
 
 my @res = (
   {
-    coffee  => '/packed/c-accff0dbd3d143a751e4d54eea182cfa-with-error.js',
-    invalid => '/packed/dummy-81e6a22b62fc6e28e355713517fdc3d8-with-error.foo',
+    coffee  => '/packed/c-accff0dbd3d143a751e4d54eea182cfa.err.js',
+    invalid => '/packed/dummy-81e6a22b62fc6e28e355713517fdc3d8.err.foo',
   },
   {
-    coffee  => '/packed/coffee-accff0dbd3d143a751e4d54eea182cfa-with-error.js',
-    invalid => '/packed/invalid-81e6a22b62fc6e28e355713517fdc3d8-with-error.foo',
+    coffee  => '/packed/coffee-accff0dbd3d143a751e4d54eea182cfa.err.js',
+    invalid => '/packed/invalid-81e6a22b62fc6e28e355713517fdc3d8.err.foo',
   }
 );
 
@@ -42,7 +42,7 @@ for my $x (0, 1) {
   $t->get_ok($src{invalid})->status_is(200)
     ->content_like(qr/^html:before\{.*content:"$file: No preprocessor defined for .*dummy\.foo";\}/, "invalid ($x)");
 
-  diag 'with-error files are always generated';
+  # error files are always generated
   $ENV{EXITCODE} = 31;
   $file = $x ? 'coffee\.js' : '.*?\Wc.coffee';
   $t->app->asset('coffee.js' => '/js/c.coffee');

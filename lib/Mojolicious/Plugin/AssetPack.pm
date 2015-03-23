@@ -7,8 +7,8 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 use File::Basename qw( basename );
 use File::Path ();
 use File::Spec ();
-use constant CACHE_ASSETS => $ENV{MOJO_ASSETPACK_NO_CACHE} ? 0 : 1;
-use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
+use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
+use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
 our $VERSION = '0.43';
 
@@ -16,7 +16,7 @@ has base_url      => '/packed/';
 has fallback      => 0;
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir       => sub { shift->_build_out_dir };
+has out_dir       => undef;
 
 has _ua => sub {
   require Mojo::UserAgent;
@@ -31,7 +31,7 @@ sub add {
   if ($self->minify) {
     $self->process($moniker => @files);
   }
-  elsif (CACHE_ASSETS) {
+  elsif (!NO_CACHE) {
     $self->_process_many($moniker);
   }
 
@@ -102,7 +102,7 @@ sub process {
 
   eval {
     $self->_process($moniker, @files);
-    $self->_fallback($moniker) if grep {/-with-error/} @{$self->{processed}{$moniker}} and $self->fallback;
+    $self->_fallback($moniker) if grep {/\.err\./} @{$self->{processed}{$moniker}} and $self->fallback;
     1;
   } or do {
     my $e = $@;
@@ -129,25 +129,8 @@ sub register {
   $self->{log}       = $app->log;
   $self->{static}    = $app->static;
 
-  $app->log->info('AssetPack Will rebuild assets on each request') unless CACHE_ASSETS;
-
-  if ($config->{out_dir}) {
-    $self->out_dir($config->{out_dir});
-  }
-  else {
-    for my $path (@{$app->static->paths}) {
-      next unless -w $path;
-      $self->out_dir(File::Spec->catdir($path, 'packed'));
-      last;
-    }
-  }
-
-  unless ($self->{out_dir}) {
-    push @{$app->static->paths}, File::Spec->catdir($self->out_dir, File::Spec->updir);
-  }
-  unless (-d $self->out_dir) {
-    File::Path::make_path($self->out_dir) or die "AssetPack could not create out_dir '$self->{out_dir}': $!";
-  }
+  $app->log->info('AssetPack Will rebuild assets on each request') if NO_CACHE;
+  $self->out_dir($self->_build_out_dir($config, $app));
 
   $app->helper(
     $helper => sub {
@@ -159,25 +142,45 @@ sub register {
 }
 
 sub _build_out_dir {
-  File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack-public', 'packed');
+  my ($self, $config, $app) = @_;
+  my $out_dir = $config->{out_dir};
+
+  unless ($out_dir) {
+    for my $path (@{$app->static->paths}) {
+      next unless -w $path;
+      $out_dir = File::Spec->catdir($path, 'packed');
+      last;
+    }
+  }
+  unless ($out_dir) {
+    $out_dir = File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack-public', 'packed');
+  }
+  unless (-d $out_dir) {
+    File::Path::make_path($out_dir) or die "AssetPack could not create out_dir '$out_dir': $!";
+  }
+
+  push @{$app->static->paths}, File::Spec->catdir($out_dir, File::Spec->updir);
+  return $out_dir;
 }
 
 sub _fallback {
   my ($self, $moniker) = @_;
   my ($name, $ext)     = $self->_name_ext($moniker);
-  my $file = $self->_fluffy_find(qr/^$name-\w{32}.$ext$/) or return;
+  my $file = $self->_fluffy_find(qr/^$name-\w{32}(\.min)?\.$ext$/) or return;
 
   $self->{log}->debug("Using fallback asset for $moniker: $file");
   $self->{processed}{$moniker} = [$file];
 }
 
 sub _fluffy_find {
-  my ($self, $re) = @_;
+  my ($self, @re) = @_;
 
-  opendir(my $DH, $self->out_dir) or die "opendir @{[$self->out_dir]}: $!";
-  for my $f (readdir $DH) {
-    next unless $f =~ $re;
-    return $f;
+  for my $re (@re) {
+    for (@{$self->{static}->paths}) {
+      my $path = File::Spec->catdir($_, 'packed');
+      opendir my $DH, $path or next;
+      /$re/ and return $_ for readdir $DH;
+    }
   }
 
   return;
@@ -187,7 +190,7 @@ sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
-  $self->_process_many($moniker) unless CACHE_ASSETS;
+  $self->_process_many($moniker) if NO_CACHE;
   my $processed = $self->{processed}{$moniker} || [];
 
   if (!@$processed) {
@@ -240,13 +243,15 @@ sub _process {
   my ($md5_sum, $files) = $self->_read_files(@files);
   my ($name,    $ext)   = $self->_name_ext($moniker);
   my $processed = '';
+  my @re        = (qr{^$name-$md5_sum\.$ext$});
   my $path;
 
-  $self->{processed}{$moniker} = ["$name-$md5_sum.$ext"];
+  unshift @re, qr{^$name-$md5_sum(\.min)?\.$ext$} if $self->minify;
 
   # Need to scan all directories and not just out_dir()
-  if (my $file = $self->{static}->file("packed/$name-$md5_sum.$ext")) {
-    $self->{log}->debug("Using existing asset for $moniker: @{[$file->path]}") if DEBUG;
+  if (my $file = $self->_fluffy_find(@re)) {
+    $self->{processed}{$moniker} = [$file];
+    $self->{log}->debug("Using existing asset for $moniker: $file") if DEBUG;
     return $self;
   }
 
@@ -256,13 +261,14 @@ sub _process {
     eval {
       $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
       $processed .= $data->{body};
+      $self->{processed}{$moniker} = $self->minify ? ["$name-$md5_sum.min.$ext"] : ["$name-$md5_sum.$ext"];
       1;
     } or do {
       my $e = $@;
       $self->{log}->error($e);
       local $data->{moniker} = $moniker;
       $processed .= $self->_make_error_asset($data, $e);
-      $self->{processed}{$moniker} = ["$name-$md5_sum-with-error.$ext"];
+      $self->{processed}{$moniker} = ["$name-$md5_sum.err.$ext"];
     };
   }
 

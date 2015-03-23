@@ -4,12 +4,14 @@ use Mojolicious;
 use Test::Mojo;
 use Test::More;
 use Cwd ();
+use File::Basename 'dirname';
+use File::Spec;
 
 sub t {
   my ($class, $args) = @_;
   my $t = Test::Mojo->new(Mojolicious->new);
 
-  $t->app->static->paths([Cwd::abs_path('t/public')]);
+  $t->app->static->paths([Cwd::abs_path(File::Spec->catdir(dirname($0), 'public'))]);
   $t->app->plugin(AssetPack => $args || {});
   $t->app->routes->get("/test1" => 'test1');
   $t;

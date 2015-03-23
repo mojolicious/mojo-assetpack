@@ -1,7 +1,6 @@
 use t::Helper;
 
 {
-  diag "css minify=0";
   my $t = t::Helper->t({minify => 0});
 
   $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
@@ -14,7 +13,6 @@ use t::Helper;
 }
 
 {
-  diag "css minify=1";
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
@@ -26,7 +24,6 @@ use t::Helper;
 SKIP: {
   my $t = t::Helper->t({minify => 1});
   skip 'sass required', 3 unless $t->app->asset->preprocessors->can_process('scss');
-  diag "sass minify=1";
 
   $t->app->routes->get('/inline-sass')->to(template => 'inline_sass');
   $t->app->asset('app.css' => '/sass/y.scss', '/sass/x.scss');

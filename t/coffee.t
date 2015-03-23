@@ -1,12 +1,9 @@
 use t::Helper;
 
 {
-  diag "minify=0";
   my $t = t::Helper->t({minify => 0});
 
-  plan
-    skip_all => 'Could not find preprocessors for coffee',
-    6
+  plan skip_all => 'Could not find preprocessors for coffee'
     unless $t->app->asset->preprocessors->can_process('coffee');
 
   $t->app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
@@ -18,11 +15,10 @@ use t::Helper;
 }
 
 {
-  diag "minify=1";
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
-  $t->get_ok('/test1')->status_is(200)->content_like(qr{<script src="/packed/coffee-\w+\.js".*}m);
+  $t->get_ok('/test1')->status_is(200)->content_like(qr{<script src="/packed/coffee-\w+\.min\.js"}m);
   $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{c coffee.*d coffee}s);
 }
 

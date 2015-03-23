@@ -1,6 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
 0.44
+       * Add ".min.ext" to minified asset filename
+       * Change filename for assets with errors from "-with-error.ext" to ".err.ext"
        * Will look for existing assets even with MOJO_ASSETPACK_DEBUG=1
 
 0.43     Fri Mar 20 11:27:22 2015
