@@ -16,6 +16,7 @@ use Mojo::Base -base;
 use Mojo::JSON 'encode_json';
 use Mojo::Util ();
 use Cwd        ();
+use POSIX      ();
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 use overload (q(&{}) => sub { shift->can('process') }, fallback => 1,);
@@ -85,9 +86,9 @@ sub _run {
   my ($self, $cmd, $in, $out) = @_;
   my $err = '';
 
-  local ($!, $?) = (0, -1, '');
+  local ($!, $?) = (0, -1);
   IPC::Run3::run3($cmd, $in, $out, \$err, {return_if_system_error => 1});
-
+  $! = 0 if !$? and $! == POSIX::ENOTTY;
   warn "[ASSETPACK] @$cmd \$?=$? \$!=$! $err\n" if DEBUG;
 
   return $self unless $?;
