@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream 'b';
 use Mojo::Util qw( md5_sum slurp spurt );
 use Mojolicious::Plugin::AssetPack::Preprocessors;
+use Cwd ();
 use File::Basename qw( basename );
 use File::Path ();
 use File::Spec ();
@@ -159,7 +160,9 @@ sub _build_out_dir {
     File::Path::make_path($out_dir) or die "AssetPack could not create out_dir '$out_dir': $!";
   }
 
-  push @{$app->static->paths}, File::Spec->catdir($out_dir, File::Spec->updir);
+  my $static_dir = Cwd::abs_path(File::Spec->catdir($out_dir, File::Spec->updir));
+  push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
+
   return $out_dir;
 }
 
