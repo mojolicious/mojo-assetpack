@@ -28,15 +28,9 @@ use overload (q(&{}) => sub { shift->can('process') }, fallback => 1,);
 Path to the current directory, before L<Mojolicious::Plugin::AssetPack::Preprocessor>
 did any C<chdir>.
 
-=head2 errmsg
-
-DEPRECATED
-
 =cut
 
 has cwd => sub {Cwd::getcwd};
-
-sub errmsg { die $_[1] }
 
 =head1 METHODS
 
