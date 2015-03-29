@@ -122,6 +122,7 @@ sub register {
   my $helper = $config->{helper} || 'asset';
 
   $self->_app($app);
+  $self->_ua->server->app($app);
   $self->fallback($config->{fallback} // $app->mode ne 'development');
   $self->minify($config->{minify}     // $app->mode ne 'development');
   $self->base_url($config->{base_url}) if $config->{base_url};
@@ -308,18 +309,25 @@ FILE:
   for my $file (@files) {
     my $data = $files{$file} = {ext => 'unknown_extension'};
 
-    if ($file =~ /^https?:/) {
-      $data->{path} = $self->fetch($file);
-      $data->{body} = slurp $data->{path};
-      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
-    }
-    elsif (my $asset = $self->_app->static->file($file)) {
+    if (my $asset = $self->_app->static->file($file)) {
       $data->{path} = $asset->can('path') ? $asset->path : $file;
       $data->{body} = $asset->slurp;
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
+    elsif ($file =~ /^https?:/) {
+      $data->{path} = $self->fetch($file);
+      $data->{body} = slurp $data->{path};
+      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
+    }
     else {
-      die "AssetPack cannot find input file '$file'.";
+      my $res = $self->_ua->get("$file")->res;
+      my $ct = $res->headers->content_type // 'text/plain';
+
+      die "AssetPack cannot find input file '$file'." if $res->error;
+
+      $data->{path} = "$file";      # make sure objects are stringified
+      $data->{body} = $res->body;
+      $data->{ext} = $file =~ /\.(\w+)$/ ? $1 : Mojolicious::Types->new->detect($ct) || 'txt';
     }
 
     push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});

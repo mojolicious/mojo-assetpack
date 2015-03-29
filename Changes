@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.45
+       * Can also fetch remote assets from local $app
+
 0.44     Mon Mar 23 13:00:45 2015
        * Add ".min.ext" to minified asset filename
        * Change filename for assets with errors from "-with-error.ext" to ".err.ext"
