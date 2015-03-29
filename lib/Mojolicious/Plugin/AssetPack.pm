@@ -19,7 +19,8 @@ has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => undef;
 
-has _ua => sub {
+has _app => undef;
+has _ua  => sub {
   require Mojo::UserAgent;
   Mojo::UserAgent->new(max_redirects => 3);
 };
@@ -48,7 +49,7 @@ sub fetch {
 
   if (my $name = $self->_fluffy_find(qr{^$lookup\.\w+$})) {
     $path = File::Spec->catfile($self->out_dir, $name);
-    $self->{log}->debug("Asset $url is downloaded: $path") if DEBUG;
+    $self->_app->log->debug("Asset $url is downloaded: $path") if DEBUG;
     return $path;
   }
 
@@ -65,7 +66,7 @@ sub fetch {
 
   $path = File::Spec->catfile($self->out_dir, "$lookup.$ext");
   spurt $res->body, $path;
-  $self->{log}->info("Downloaded asset $url: $path");
+  $self->_app->log->info("Downloaded asset $url: $path");
   return $path;
 }
 
@@ -74,7 +75,7 @@ sub get {
   my $files = $self->{processed}{$moniker} || [];
 
   if ($args->{inline}) {
-    return map { $self->{static}->file("packed/$_")->slurp } @$files;
+    return map { $self->_app->static->file("packed/$_")->slurp } @$files;
   }
   else {
     return map { $self->base_url . $_ } @$files;
@@ -109,7 +110,7 @@ sub process {
     my $e = $@;
     die $e unless $self->fallback;
     $e =~ s/ at \S+.*//s;
-    $self->{log}->debug("AssetPack failed, but will try fallback mode. ($e)\n");
+    $self->_app->log->debug("AssetPack failed, but will try fallback mode. ($e)\n");
     $self->_fallback($moniker) or die "AssetPack could not find already packed asset '$moniker' in fallback mode. ($e)";
   };
 
@@ -120,15 +121,13 @@ sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
 
-  $self->{mode} = $app->mode;
+  $self->_app($app);
   $self->fallback($config->{fallback} // $app->mode ne 'development');
   $self->minify($config->{minify}     // $app->mode ne 'development');
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
   $self->{processed} = {};
-  $self->{log}       = $app->log;
-  $self->{static}    = $app->static;
 
   $app->log->info('AssetPack Will rebuild assets on each request') if NO_CACHE;
   $self->out_dir($self->_build_out_dir($config, $app));
@@ -171,7 +170,7 @@ sub _fallback {
   my ($name, $ext)     = $self->_name_ext($moniker);
   my $file = $self->_fluffy_find(qr/^$name-\w{32}(\.min)?\.$ext$/) or return;
 
-  $self->{log}->debug("Using fallback asset for $moniker: $file");
+  $self->_app->log->debug("Using fallback asset for $moniker: $file");
   $self->{processed}{$moniker} = [$file];
 }
 
@@ -179,7 +178,7 @@ sub _fluffy_find {
   my ($self, @re) = @_;
 
   for my $re (@re) {
-    for (@{$self->{static}->paths}) {
+    for (@{$self->_app->static->paths}) {
       my $path = File::Spec->catdir($_, 'packed');
       opendir my $DH, $path or next;
       /$re/ and return $_ for readdir $DH;
@@ -203,7 +202,7 @@ sub _inject {
     return $c->$tag_helper(
       @attrs,
       sub {
-        join "\n", map { $self->{static}->file("packed/$_")->slurp } @$processed;
+        join "\n", map { $self->_app->static->file("packed/$_")->slurp } @$processed;
       }
     );
   }
@@ -220,7 +219,7 @@ sub _name_ext {
 
 sub _make_error_asset {
   my ($self, $data, $err) = @_;
-  my $file = $self->{mode} eq 'development' ? $data->{path} : $data->{moniker};
+  my $file = $self->_app->mode eq 'development' ? $data->{path} : $data->{moniker};
 
   $err =~ s!\r!!g;
   $err =~ s!\n+$!!;
@@ -254,7 +253,7 @@ sub _process {
   # Need to scan all directories and not just out_dir()
   if (my $file = $self->_fluffy_find(@re)) {
     $self->{processed}{$moniker} = [$file];
-    $self->{log}->debug("Using existing asset for $moniker: $file") if DEBUG;
+    $self->_app->log->debug("Using existing asset for $moniker: $file") if DEBUG;
     return $self;
   }
 
@@ -268,7 +267,7 @@ sub _process {
       1;
     } or do {
       my $e = $@;
-      $self->{log}->error($e);
+      $self->_app->log->error($e);
       local $data->{moniker} = $moniker;
       $processed .= $self->_make_error_asset($data, $e);
       $self->{processed}{$moniker} = ["$name-$md5_sum.err.$ext"];
@@ -277,7 +276,7 @@ sub _process {
 
   $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);
   spurt $processed => $path;
-  $self->{log}->info("Built asset for $moniker: $path");
+  $self->_app->log->info("Built asset for $moniker: $path");
 }
 
 sub _process_many {
@@ -314,7 +313,7 @@ FILE:
       $data->{body} = slurp $data->{path};
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
     }
-    elsif (my $asset = $self->{static}->file($file)) {
+    elsif (my $asset = $self->_app->static->file($file)) {
       $data->{path} = $asset->can('path') ? $asset->path : $file;
       $data->{body} = $asset->slurp;
       $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
