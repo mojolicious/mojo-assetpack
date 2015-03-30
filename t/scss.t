@@ -22,7 +22,7 @@ use t::Helper;
 
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{background: \#abcdef});
 
-  $t->get_ok('/include-dir')->content_like(qr{<link href="/packed/y-47cfc3af7162086fe15b5b8d1623f8c9\.css"}m)
+  $t->get_ok('/include-dir')->content_like(qr{<link href="/packed/y-05a6bb2d52a836b9f06a0e9211084984\.css"}m)
     ->status_is(200);
 }
 

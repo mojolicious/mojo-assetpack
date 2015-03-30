@@ -98,17 +98,23 @@ sub checksum {
   my $re       = qr{ \@import \s+ (["']) (.*?) \1 }x;
   my @checksum = md5_sum $$text;
 
+  local $self->{checked} = $self->{checked} || {};
+
   while ($$text =~ /$re/gs) {
-    my $file = $2;
-    if (-r "$dir/$file.$ext") {
-      push @checksum, md5_sum slurp catfile $dir, "$file.$ext";
-    }
-    elsif (-r "$dir/_$file.$ext") {
-      push @checksum, md5_sum slurp catfile $dir, "_$file.$ext";
-    }
+    my $path = $self->_file($dir, $2, $ext) or next;
+    $self->{checked}{$path}++ and next;
+    push @checksum, $self->checksum(\slurp($path), $path);
   }
 
   return Mojo::Util::md5_sum(join '', @checksum);
+}
+
+sub _file {
+  my ($self, $dir, $name, $ext) = @_;
+  my $path;
+  return $path if -r ($path = catfile $dir, "$name.$ext");
+  return $path if -r ($path = catfile $dir, "_$name.$ext");
+  return;
 }
 
 =head2 process
