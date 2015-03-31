@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.45
+0.45     Tue Mar 31 22:02:06 2015
        * Can also fetch remote assets from local $app
        * Will calculate MD5 sum recursively for sass/scss
        * Add cookbook
