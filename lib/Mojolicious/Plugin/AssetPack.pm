@@ -14,7 +14,6 @@ use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 our $VERSION = '0.45';
 
 has base_url      => '/packed/';
-has fallback      => 0;
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => undef;
@@ -31,7 +30,7 @@ sub add {
   $self->{assets}{$moniker} = \@files;
 
   if ($self->minify) {
-    $self->process($moniker => @files);
+    $self->_process($moniker => @files);
   }
   elsif (!NO_CACHE) {
     $self->_process_many($moniker);
@@ -99,32 +98,13 @@ sub preprocessor {
   return $self;
 }
 
-sub process {
-  my ($self, $moniker, @files) = @_;
-
-  eval {
-    $self->_process($moniker, @files);
-    $self->_fallback($moniker) if grep {/\.err\./} @{$self->{processed}{$moniker}} and $self->fallback;
-    1;
-  } or do {
-    my $e = $@;
-    die $e unless $self->fallback;
-    $e =~ s/ at \S+.*//s;
-    $self->_app->log->debug("AssetPack failed, but will try fallback mode. ($e)\n");
-    $self->_fallback($moniker) or die "AssetPack could not find already packed asset '$moniker' in fallback mode. ($e)";
-  };
-
-  $self;
-}
-
 sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
 
   $self->_app($app);
   $self->_ua->server->app($app);
-  $self->fallback($config->{fallback} // $app->mode ne 'development');
-  $self->minify($config->{minify}     // $app->mode ne 'development');
+  $self->minify($config->{minify} // $app->mode ne 'development');
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
@@ -164,15 +144,6 @@ sub _build_out_dir {
   push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
 
   return $out_dir;
-}
-
-sub _fallback {
-  my ($self, $moniker) = @_;
-  my ($name, $ext)     = $self->_name_ext($moniker);
-  my $file = $self->_fluffy_find(qr/^$name-\w{32}(\.min)?\.$ext$/) or return;
-
-  $self->_app->log->debug("Using fallback asset for $moniker: $file");
-  $self->{processed}{$moniker} = [$file];
 }
 
 sub _fluffy_find {
@@ -294,7 +265,7 @@ sub _process_many {
       $moniker .= ".$ext";
     }
 
-    $self->process($moniker => $file);
+    $self->_process($moniker => $file);
     $file = $self->{processed}{$moniker}[0];
   }
 
@@ -468,16 +439,6 @@ See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
 
 NOTE! You need to have a trailing "/" at the end of the string.
 
-=head2 fallback
-
-  $bool = $self->fallback;
-
-Used to read "old" assets if unable to generate new.
-
-Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
-
-See L<Mojolicious::Plugin::AssetPack::Manual::Modes/Fallback>.
-
 =head2 minify
 
   $bool = $self->minify;
@@ -537,15 +498,10 @@ Use this method to manually register a preprocessor.
 See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
 for example usage.
 
-=head2 process
-
-This method will be deprecated. Use L</add> instead.
-
 =head2 register
 
   plugin AssetPack => {
     base_url => $str,  # default to "/packed"
-    fallback => $bool, # fallback to old assets
     minify   => $bool, # compress assets
     out_dir  => "/path/to/some/directory",
   };

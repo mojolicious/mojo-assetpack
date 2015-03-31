@@ -38,19 +38,6 @@ TIP! Make morbo watch your less/sass files as well:
 You can also set the L<MOJO_ASSETPACK_NO_CACHE|Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_NO_CACHE>
 environment variable to "1" to pack your assets on each request.
 
-=head2 Fallback
-
-It is possible to instruct your application to load an old asset, if it fail
-to generate a new asset. This is done by setting the
-L<Mojolicious::Plugin::AssetPack/fallback> attribute to a true value.
-
-L<Mojolicious::Plugin::AssetPack/add> will log the error if an old asset was
-found or throw the error if unable to.
-
-The default value is "1" in L<production mode|Mojolicious/mode>.
-
-This feauture is EXPERIMENTAL. Feedback wanted.
-
 =head1 AUTHOR
 
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
