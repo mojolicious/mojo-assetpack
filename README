@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.45
+    0.46
 
 SYNOPSIS
   Application
@@ -65,8 +65,6 @@ ENVIRONMENT
     If true, convert the assets each time they're expanded, instead of once
     at application start (useful for development).
 
-    This attribute has no effect if "minify" is true.
-
 HELPERS
   asset
     This plugin defined the helper "asset()". This helper can be called in
@@ -86,32 +84,27 @@ HELPERS
 
 ATTRIBUTES
   base_url
+      $app->plugin("AssetPack" => {base_url => "/packed/"});
       $str = $self->base_url;
 
     This attribute can be used to control where to serve static assets from.
 
-    Defaults value is "/packed".
+    Defaults value is "/packed/".
 
     See Mojolicious::Plugin::AssetPack::Manual::CustomDomain for more
     details.
 
     NOTE! You need to have a trailing "/" at the end of the string.
 
-  fallback
-      $bool = $self->fallback;
-
-    Used to read "old" assets if unable to generate new.
-
-    Default is false in "development" mode and true otherwise.
-
-    See "Fallback" in Mojolicious::Plugin::AssetPack::Manual::Modes.
-
   minify
       $bool = $self->minify;
+      $app->plugin("AssetPack" => {minify => $bool});
 
     Set this to true if the assets should be minified.
 
     Default is false in "development" mode and true otherwise.
+
+    See also Mojolicious::Plugin::AssetPack::Manual::Modes.
 
   preprocessors
       $obj = $self->preprocessors;
@@ -120,10 +113,12 @@ ATTRIBUTES
 
   out_dir
       $str = $self->out_dir;
+      $app->plugin("AssetPack" => {out_dir => $str});
 
-    Holds the path to the directory where packed files can be written. It
-    defaults to "mojo-assetpack-public/packed" directory in temp unless a
-    static directory is writeable.
+    Holds the path to the directory where packed files can be written.
+
+    Defaults to empty string if no directory can be found, which again
+    results in keeping all packed files in memory.
 
 METHODS
   add
@@ -158,13 +153,9 @@ METHODS
     Mojolicious::Plugin::AssetPack::Preprocessor::Browserify for example
     usage.
 
-  process
-    This method will be deprecated. Use "add" instead.
-
   register
       plugin AssetPack => {
         base_url => $str,  # default to "/packed"
-        fallback => $bool, # fallback to old assets
         minify   => $bool, # compress assets
         out_dir  => "/path/to/some/directory",
       };

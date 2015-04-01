@@ -1,9 +1,12 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.46
-       * Remove "fallback" attribute #44
+0.46     Wed Apr  1 15:09:35 2015
+       * Remove "fallback" attribute #44 (experimental)
        * Remove "process" method
        * Will prevent AssetPack from registering twice
+       * Will not write assets to "mojo-assetpack-public" in TMPDIR #46 (experimental)
+       * Allow in-memory assets with out_dir(""), MOJO_ASSETPACK_DEBUG=1 or
+         read-only static dirs. #46 (experimental)
 
 0.45     Tue Mar 31 22:02:06 2015
        * Can also fetch remote assets from local $app #30
