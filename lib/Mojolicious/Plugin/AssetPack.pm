@@ -1,13 +1,14 @@
 package Mojolicious::Plugin::AssetPack;
 
 use Mojo::Base 'Mojolicious::Plugin';
-use Mojo::ByteStream 'b';
-use Mojo::Util qw( md5_sum slurp spurt );
+use Mojo::ByteStream;
+use Mojo::Util ();
+use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Preprocessors;
-use Cwd ();
-use File::Basename qw( basename );
-use File::Path ();
-use File::Spec ();
+use Cwd            ();
+use File::Basename ();
+use File::Path     ();
+use File::Spec     ();
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
@@ -27,58 +28,24 @@ has _ua  => sub {
 sub add {
   my ($self, $moniker, @files) = @_;
 
-  $self->{assets}{$moniker} = \@files;
-
-  if ($self->minify) {
-    $self->_process($moniker => @files);
-  }
-  elsif (!NO_CACHE) {
-    $self->_process_many($moniker);
-  }
-
-  $self;
+  return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
+  return $self->tap(_assets => $moniker => $self->_process($moniker, @files)) if $self->minify;
+  return $self->tap(_assets => $moniker => $self->_process_many($moniker, @files));
 }
 
 sub fetch {
-  my ($self, $url, $destination) = @_;
-  my $lookup = $url;
-  my $path;
-
-  $lookup =~ s![^\w-]!_!g;
-
-  if (my $name = $self->_fluffy_find(qr{^$lookup\.\w+$})) {
-    $path = File::Spec->catfile($self->out_dir, $name);
-    $self->_app->log->debug("Asset $url is downloaded: $path") if DEBUG;
-    return $path;
-  }
-
-  my $res = $self->_ua->get($url)->res;
-  my $ct  = $res->headers->content_type // 'text/plain';
-  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
-
-  $ext = $ext->[0] if ref $ext;
-  $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
-
-  if (my $e = $res->error) {
-    die "AssetPack could not download asset from '$url': $e->{message}";
-  }
-
-  $path = File::Spec->catfile($self->out_dir, "$lookup.$ext");
-  spurt $res->body, $path;
-  $self->_app->log->info("Downloaded asset $url: $path");
-  return $path;
+  my $self = shift;
+  $self->_fetch(@_, $self->out_dir)->url;
 }
 
 sub get {
   my ($self, $moniker, $args) = @_;
-  my $files = $self->{processed}{$moniker} || [];
+  my $assets = $self->_assets($moniker);
 
-  if ($args->{inline}) {
-    return map { $self->_app->static->file("packed/$_")->slurp } @$files;
-  }
-  else {
-    return map { $self->base_url . $_ } @$files;
-  }
+  die "Asset '$moniker' is not defined." unless @$assets;
+  return @$assets if $args->{assets};
+  return map { $_->slurp } @$assets if $args->{inline};
+  return map { $self->base_url . $_->basename } @$assets;
 }
 
 sub preprocessor {
@@ -109,13 +76,21 @@ sub register {
   $self->_app($app);
   $self->_ua->server->app($app);
   $self->minify($config->{minify} // $app->mode ne 'development');
+  $self->out_dir($self->_build_out_dir($config, $app));
   $self->base_url($config->{base_url}) if $config->{base_url};
 
   $self->{assets}    = {};
   $self->{processed} = {};
 
-  $app->log->info('AssetPack Will rebuild assets on each request') if NO_CACHE;
-  $self->out_dir($self->_build_out_dir($config, $app));
+  if (NO_CACHE) {
+    $app->log->info('AssetPack Will rebuild assets on each request in memory');
+    $self->out_dir('');
+    $self->_assets_from_memory($app);
+  }
+  elsif (!$self->out_dir) {
+    $app->log->warn('AssetPack will store assets in memory');
+    $self->_assets_from_memory($app);
+  }
 
   $app->helper(
     $helper => sub {
@@ -126,82 +101,124 @@ sub register {
   );
 }
 
+sub _asset {
+  my ($self, $name) = @_;
+  $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new(url => $name);
+}
+
+sub _assets {
+  my ($self, $moniker, @assets) = @_;
+  $self->{assets}{$moniker} = \@assets if @assets;
+  $self->{assets}{$moniker} || [];
+}
+
+sub _assets_from_memory {
+  my ($self, $app) = @_;
+
+  $app->hook(
+    before_routes => sub {
+      my $c    = shift;
+      my $path = $c->req->url->path;
+
+      return if $c->res->code;
+      return unless $path->[1] and 0 == index "$path", $self->base_url;
+      return unless my $asset = $c->asset->_asset($path->[1]);
+      return $c->reply->asset($asset);
+    }
+  );
+}
+
 sub _build_out_dir {
   my ($self, $config, $app) = @_;
-  my $out_dir = $config->{out_dir};
+  my $out_dir = $config->{out_dir} || '';
 
-  unless ($out_dir) {
+  if ($out_dir) {
+    my $static_dir = Cwd::abs_path(File::Spec->catdir($out_dir, File::Spec->updir));
+    push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
+  }
+  else {
     for my $path (@{$app->static->paths}) {
       next unless -w $path;
       $out_dir = File::Spec->catdir($path, 'packed');
       last;
     }
   }
-  unless ($out_dir) {
-    $out_dir = File::Spec->catdir(File::Spec->tmpdir, 'mojo-assetpack-public', 'packed');
-  }
-  unless (-d $out_dir) {
-    File::Path::make_path($out_dir) or die "AssetPack could not create out_dir '$out_dir': $!";
-  }
 
-  my $static_dir = Cwd::abs_path(File::Spec->catdir($out_dir, File::Spec->updir));
-  push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
-
+  File::Path::make_path($out_dir) if $out_dir and !-d $out_dir;
   return $out_dir;
 }
 
-sub _fluffy_find {
-  my ($self, @re) = @_;
+sub _fetch {
+  my ($self, $url, $save) = @_;
+  my $lookup = _name($url);
+  my $asset;
 
-  for my $re (@re) {
-    for (@{$self->_app->static->paths}) {
-      my $path = File::Spec->catdir($_, 'packed');
-      opendir my $DH, $path or next;
-      /$re/ and return $_ for readdir $DH;
+  if ($asset = $self->_find('packed', qr{^$lookup\.\w+$})) {
+    $self->_app->log->debug("Asset $url is already downloaded") if DEBUG;
+    return $asset;
+  }
+
+  my $res = $self->_ua->get($url)->res;
+  my $ct  = $res->headers->content_type // 'text/plain';
+  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
+
+  if (my $e = $res->error) {
+    die "Asset $url could not be fetched: $e->{message}";
+  }
+
+  $ext = $ext->[0] if ref $ext;
+  $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
+  $self->_app->log->info("Asset $url was fetched");
+  $asset = $self->_asset("$lookup.$ext")->url($url)->add_chunk($res->body);
+  $asset->in_memory(0)->url(File::Spec->catfile($self->out_dir, "$lookup.$ext"))->save if $save;
+  $asset;
+}
+
+sub _find {
+  my $needle = pop;
+  my $self   = shift;
+  my @path   = @_;
+
+  for my $path (map { File::Spec->catdir($_, @path) } @{$self->_app->static->paths}) {
+    opendir my $DH, $path or next;
+    for (readdir $DH) {
+      /$needle/ and return $self->_asset($_)->url(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
     }
   }
 
-  return;
+  return undef;
 }
 
 sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
-  $self->_process_many($moniker) if NO_CACHE;
-  my $processed = $self->{processed}{$moniker} || [];
+  if (NO_CACHE) {
+    $self->tap(_assets => $moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
+  }
 
-  if (!@$processed) {
-    return b "<!-- Asset '$moniker' is not defined. -->";
-  }
-  elsif ($args->{inline}) {
-    return $c->$tag_helper(
-      @attrs,
-      sub {
-        join "\n", map { $self->_app->static->file("packed/$_")->slurp } @$processed;
-      }
-    );
-  }
-  else {
-    return b join "\n", map { $c->$tag_helper($self->base_url . $_, @attrs) } @$processed;
-  }
-}
-
-sub _name_ext {
-  $_[1] =~ /^(.*)\.(\w+)$/;
-  return ($1, $2) if $2;
-  die "Moniker ($_[1]) need to have an extension, like .css, .js, ...";
+  eval {
+    if ($args->{inline}) {
+      return $c->$tag_helper(@attrs, sub { join "\n", $self->get($moniker, $args) });
+    }
+    else {
+      return Mojo::ByteStream->new(join "\n", map { $c->$tag_helper($_, @attrs) } $self->get($moniker, $args));
+    }
+    1;
+  } or do {
+    $self->_app->log->error($@);
+    return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->));
+  };
 }
 
 sub _make_error_asset {
-  my ($self, $data, $err) = @_;
-  my $file = $self->_app->mode eq 'development' ? $data->{path} : $data->{moniker};
+  my ($self, $moniker, $file, $err) = @_;
 
   $err =~ s!\r!!g;
   $err =~ s!\n+$!!;
   $err = "$file: $err";
 
-  if ($data->{moniker} =~ /\.js$/) {
+  if ($moniker =~ /\.js$/) {
     $err =~ s!'!"!g;
     $err =~ s!\n!\\n!g;
     $err =~ s!\s! !g;
@@ -217,98 +234,59 @@ sub _make_error_asset {
 }
 
 sub _process {
-  my ($self, $moniker, @files) = @_;
-  my ($md5_sum, $files) = $self->_read_files(@files);
-  my ($name,    $ext)   = $self->_name_ext($moniker);
-  my $processed = '';
-  my @re        = (qr{^$name-$md5_sum\.$ext$});
-  my $path;
+  my ($self, $moniker, @sources) = @_;
+  my ($name, $ext) = (_name($moniker), _ext($moniker));
+  my ($asset, $file, $re, @checksum);
 
-  unshift @re, qr{^$name-$md5_sum(\.min)?\.$ext$} if $self->minify;
+  @sources = map {
+    my $asset = $self->_find(split '/', $_) || (/^https?:/ ? $self->_fetch($_, $self->out_dir) : $self->_fetch($_, ''));
+    push @checksum, $self->preprocessors->checksum(_ext($_), \$asset->slurp, $asset->url);
+    $asset;
+  } @sources;
 
-  # Need to scan all directories and not just out_dir()
-  if (my $file = $self->_fluffy_find(@re)) {
-    $self->{processed}{$moniker} = [$file];
-    $self->_app->log->debug("Using existing asset for $moniker: $file") if DEBUG;
-    return $self;
+  @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
+  $file = $self->minify ? "$name-$checksum[0].min.$ext"          : "$name-$checksum[0].$ext";
+  $re   = $self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$};
+
+  if ($asset = $self->_find('packed', $re)) {
+    $self->_app->log->debug("Using existing asset for $moniker") if DEBUG;
+    return $asset;
   }
 
-  for my $file (@files) {
-    my $data = $files->{$file};
+  $asset = $self->_asset($file)->url(File::Spec->catfile($self->out_dir, $file))->in_memory(1);
 
+  for my $source (@sources) {
     eval {
-      $self->preprocessors->process($data->{ext}, $self, \$data->{body}, $data->{path});
-      $processed .= $data->{body};
-      $self->{processed}{$moniker} = $self->minify ? ["$name-$md5_sum.min.$ext"] : ["$name-$md5_sum.$ext"];
+      my $content = $source->slurp;
+      $self->preprocessors->process(_ext($source->url), $self, \$content, $source->url);
+      $asset->add_chunk($content);
       1;
     } or do {
-      my $e = $@;
-      $self->_app->log->error($e);
-      local $data->{moniker} = $moniker;
-      $processed .= $self->_make_error_asset($data, $e);
-      $self->{processed}{$moniker} = ["$name-$md5_sum.err.$ext"];
+      $asset->url(File::Spec->catfile($self->out_dir, "$name-$checksum[0].err.$ext"));
+      $asset->add_chunk($self->_make_error_asset($moniker, $source->basename, $@));
+      last;
     };
   }
 
-  $path = File::Spec->catfile($self->out_dir, $self->{processed}{$moniker}[0]);
-  spurt $processed => $path;
-  $self->_app->log->info("Built asset for $moniker: $path");
+  $asset->in_memory($self->out_dir ? 0 : 1)->save;
+  $self->_app->log->info("Built asset for $moniker");
+  $asset;
 }
 
 sub _process_many {
-  my ($self, $moniker) = @_;
-  my @files = @{$self->{assets}{$moniker} || []};
-  my ($name, $ext) = $self->_name_ext($moniker);
-
-  for my $file (@files) {
-    my $moniker = basename $file;
-
-    unless ($moniker =~ s!\.(\w+)$!.$ext!) {
-      $moniker = $file;
-      $moniker =~ s![^\w-]!_!g;
-      $moniker .= ".$ext";
-    }
-
-    $self->_process($moniker => $file);
-    $file = $self->{processed}{$moniker}[0];
-  }
-
-  $self->{processed}{$moniker} = \@files;
+  my ($self, $moniker, @files) = @_;
+  my $ext = _ext($moniker);
+  map { my $name = _name($_); $self->_process("$name.$ext" => $_) } @files;
 }
 
-sub _read_files {
-  my ($self, @files) = @_;
-  my (@checksum, %files);
+# utils
+sub _ext { local $_ = File::Basename::basename($_[0]); /\.(\w+)$/ ? $1 : 'unknown'; }
 
-FILE:
-  for my $file (@files) {
-    my $data = $files{$file} = {ext => 'unknown_extension'};
-
-    if (my $asset = $self->_app->static->file($file)) {
-      $data->{path} = $asset->can('path') ? $asset->path : $file;
-      $data->{body} = $asset->slurp;
-      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
-    }
-    elsif ($file =~ /^https?:/) {
-      $data->{path} = $self->fetch($file);
-      $data->{body} = slurp $data->{path};
-      $data->{ext}  = $1 if $data->{path} =~ /\.(\w+)$/;
-    }
-    else {
-      my $res = $self->_ua->get("$file")->res;
-      my $ct = $res->headers->content_type // 'text/plain';
-
-      die "AssetPack cannot find input file '$file'." if $res->error;
-
-      $data->{path} = "$file";      # make sure objects are stringified
-      $data->{body} = $res->body;
-      $data->{ext} = $file =~ /\.(\w+)$/ ? $1 : Mojolicious::Types->new->detect($ct) || 'txt';
-    }
-
-    push @checksum, $self->preprocessors->checksum($data->{ext}, \$data->{body}, $data->{path});
-  }
-
-  return (@checksum == 1 ? $checksum[0] : md5_sum(join '', @checksum), \%files,);
+sub _name {
+  local $_ = $_[0];
+  return do { s![^\w-]!_!g; $_ } if /^https?:/;
+  $_ = File::Basename::basename($_);
+  /^(.*)\./ ? $1 : $_;
 }
 
 1;
@@ -404,8 +382,6 @@ Set this to get extra debug information to STDERR from AssetPack internals.
 If true, convert the assets each time they're expanded, instead of once at
 application start (useful for development).
 
-This attribute has no effect if L</minify> is true.
-
 =head1 HELPERS
 
 =head2 asset
@@ -437,7 +413,7 @@ Used to include an asset in a template.
 
 This attribute can be used to control where to serve static assets from.
 
-Defaults value is "/packed".
+Defaults value is "/packed/".
 
 See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
 
@@ -461,9 +437,10 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 
   $str = $self->out_dir;
 
-Holds the path to the directory where packed files can be written. It
-defaults to "mojo-assetpack-public/packed" directory in L<temp|File::Spec/tmpdir>
-unless a L<static|Mojolicious::Static/paths> directory is writeable.
+Holds the path to the directory where packed files can be written.
+
+Defaults to empty string if no directory can be found, which again results in
+keeping all packed files in memory.
 
 =head1 METHODS
 

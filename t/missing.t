@@ -18,7 +18,6 @@ my @res = (
 for my $x (0, 1) {
   $ENV{MOJO_MODE} = $x ? 'production' : 'development';
   my $t = t::Helper->t({minify => $x});
-  my $file;
 
   $ENV{EXITCODE} = 42;
   $t->app->asset('coffee.js'   => '/js/c.coffee');
@@ -33,21 +32,19 @@ for my $x (0, 1) {
 
   is_deeply(\%src, shift(@res), 'found elements');
 
-  $file = $x ? 'coffee\.js' : '.*?\Wc.coffee';
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('$file: Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie'\);console\.log},
     "coffee 42 ($x)");
 
-  $file = $x ? 'invalid\.foo' : '.*?\Wdummy.foo';
   $t->get_ok($src{invalid})->status_is(200)
-    ->content_like(qr/^html:before\{.*content:"$file: No preprocessor defined for .*dummy\.foo";\}/, "invalid ($x)");
+    ->content_like(qr/^html:before\{.*content:"dummy\.foo: No preprocessor defined for .*dummy\.foo";\}/,
+    "invalid ($x)");
 
   # error files are always generated
   $ENV{EXITCODE} = 31;
-  $file = $x ? 'coffee\.js' : '.*?\Wc.coffee';
   $t->app->asset('coffee.js' => '/js/c.coffee');
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('$file: Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie'\);console\.log},
     "coffee 31 ($x)");
 }
 

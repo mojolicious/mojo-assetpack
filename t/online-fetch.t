@@ -27,7 +27,10 @@ my $cdn_base_url = 'http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0';
 }
 
 {
-  $t->get_ok('/test1')->status_is(200)->content_like(qr{href="/packed/font-awesome-\w+\.css".*}m);
+  $t->get_ok('/test1')->status_is(200)
+    ->content_like(
+    qr{href="/packed/http___cdnjs_cloudflare_com_ajax_libs_font-awesome_4_1_0_css_font-awesome_css-\w+\.css".*}m);
+
   $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
     ->content_like(
     qr{url\('http___cdnjs_cloudflare_com_ajax_libs_font-awesome_4_1_0__fonts_fontawesome-webfont_eot_v_4_1_0\.eot'\)},
