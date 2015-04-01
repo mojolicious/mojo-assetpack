@@ -102,6 +102,10 @@ sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
 
+  if (eval { $app->$helper }) {
+    return $app->log->debug("AssetPack: Helper $helper() is already registered.");
+  }
+
   $self->_app($app);
   $self->_ua->server->app($app);
   $self->minify($config->{minify} // $app->mode ne 'development');
