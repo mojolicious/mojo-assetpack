@@ -17,7 +17,7 @@ our $VERSION = '0.45';
 has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir       => undef;
+has out_dir       => '';
 
 has _app => undef;
 has _ua  => sub {
@@ -130,13 +130,13 @@ sub _assets_from_memory {
 
 sub _build_out_dir {
   my ($self, $config, $app) = @_;
-  my $out_dir = $config->{out_dir} || '';
+  my $out_dir = $config->{out_dir};
 
   if ($out_dir) {
     my $static_dir = Cwd::abs_path(File::Spec->catdir($out_dir, File::Spec->updir));
     push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
   }
-  else {
+  elsif (!defined $out_dir) {
     for my $path (@{$app->static->paths}) {
       next unless -w $path;
       $out_dir = File::Spec->catdir($path, 'packed');
@@ -145,7 +145,7 @@ sub _build_out_dir {
   }
 
   File::Path::make_path($out_dir) if $out_dir and !-d $out_dir;
-  return $out_dir;
+  return $out_dir // '';
 }
 
 sub _fetch {
@@ -409,6 +409,7 @@ Used to include an asset in a template.
 
 =head2 base_url
 
+  $app->plugin("AssetPack" => {base_url => "/packed/"});
   $str = $self->base_url;
 
 This attribute can be used to control where to serve static assets from.
@@ -422,10 +423,13 @@ NOTE! You need to have a trailing "/" at the end of the string.
 =head2 minify
 
   $bool = $self->minify;
+  $app->plugin("AssetPack" => {minify => $bool});
 
 Set this to true if the assets should be minified.
 
 Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
+
+See also L<Mojolicious::Plugin::AssetPack::Manual::Modes>.
 
 =head2 preprocessors
 
@@ -436,6 +440,7 @@ Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 =head2 out_dir
 
   $str = $self->out_dir;
+  $app->plugin("AssetPack" => {out_dir => $str});
 
 Holds the path to the directory where packed files can be written.
 
