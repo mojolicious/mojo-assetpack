@@ -1,5 +1,4 @@
 use t::Helper;
-use Mojo::Util 'md5_sum';
 use Cwd;
 
 my $working_dir = getcwd;

@@ -21,8 +21,6 @@ sub import {
   my $class  = shift;
   my $caller = caller;
 
-  plan skip_all => 'Not ready for alien host' unless $^O eq 'linux';
-
   unlink glob 't/public/packed/*' unless $ENV{TEST_KEEP_FILES};
 
   strict->import;

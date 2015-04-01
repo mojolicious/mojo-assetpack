@@ -2,7 +2,7 @@ use t::Helper;
 
 plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
 
-if (0) {
+{
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('app.css' => 'http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic');
