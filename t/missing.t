@@ -33,7 +33,7 @@ for my $x (0, 1) {
   is_deeply(\%src, shift(@res), 'found elements');
 
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=42, \$!=25\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=42, \$!=\d+\) Whoopsie'\);console\.log},
     "coffee 42 ($x)");
 
   $t->get_ok($src{invalid})->status_is(200)
@@ -44,7 +44,7 @@ for my $x (0, 1) {
   $ENV{EXITCODE} = 31;
   $t->app->asset('coffee.js' => '/js/c.coffee');
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=31, \$!=25\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=31, \$!=\d+\) Whoopsie'\);console\.log},
     "coffee 31 ($x)");
 }
 
