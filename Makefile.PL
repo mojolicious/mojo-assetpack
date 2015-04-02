@@ -20,7 +20,7 @@ WriteMakefile(
     'File::Which'              => '1.00',
     'IPC::Run3'                => '0.04',
     'JavaScript::Minifier::XS' => '0.11',
-    'Mojolicious'              => '5.00'
+    'Mojolicious'              => '5.41'
   },
   test => {TESTS => 't/*.t'},
 );
