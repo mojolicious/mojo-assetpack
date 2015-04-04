@@ -12,7 +12,7 @@ use File::Spec     ();
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
-our $VERSION = '0.4602';
+our $VERSION = '0.47';
 
 has base_url      => '/packed/';
 has minify        => 0;
@@ -29,8 +29,8 @@ sub add {
   my ($self, $moniker, @files) = @_;
 
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
-  return $self->tap(_assets => $moniker => $self->_process($moniker, @files)) if $self->minify;
-  return $self->tap(_assets => $moniker => $self->_process_many($moniker, @files));
+  return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
+  return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
 }
 
 sub fetch {
@@ -194,7 +194,7 @@ sub _inject {
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
   if (NO_CACHE) {
-    $self->tap(_assets => $moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
+    $self->_assets($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
   }
 
   eval {
@@ -299,7 +299,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.4602
+0.47
 
 =head1 SYNOPSIS
 

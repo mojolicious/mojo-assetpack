@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.47     Sat Apr  4 13:53:32 2015
+       * Fix Mojo::Base::tap() does not support arguments before 5.57
+
 0.4602   Thu Apr  2 18:44:01 2015
        * Improved cpantesters
 
