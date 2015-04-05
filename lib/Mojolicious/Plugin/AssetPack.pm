@@ -183,6 +183,9 @@ sub _find {
   my $self   = shift;
   my @path   = @_;
 
+  # avoid matching .swp files
+  $needle = qr{^$needle$} unless ref $needle;
+
   for my $path (map { File::Spec->catdir($_, @path) } @{$self->_app->static->paths}) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
