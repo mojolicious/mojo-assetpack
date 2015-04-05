@@ -12,7 +12,9 @@ use File::Spec     ();
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
-our $VERSION = '0.47';
+our $VERSION = '0.48';
+
+my $MTIME = time;
 
 has base_url      => '/packed/';
 has minify        => 0;
@@ -123,7 +125,9 @@ sub _assets_from_memory {
       return if $c->res->code;
       return unless $path->[1] and 0 == index "$path", $self->base_url;
       return unless my $asset = $c->asset->_asset($path->[1]);
-      return $c->reply->asset($asset);
+      $c->res->headers->last_modified(Mojo::Date->new($MTIME))
+        ->content_type($c->app->types->type($asset->url =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
+      $c->reply->asset($asset);
     }
   );
 }
@@ -299,7 +303,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.47
+0.48
 
 =head1 SYNOPSIS
 

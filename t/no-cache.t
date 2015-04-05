@@ -20,7 +20,9 @@ my $file;
   spurt('body { color: #606060; }', $file);
   $t->get_ok('/test1');
   push @files, $t->tx->res->dom->at('link')->{href};
-  $t->get_ok($files[-1])->status_is(200)->content_like(qr{\#606060});
+  $t->get_ok($files[-1])->status_is(200)->header_is('Content-Type', 'text/css')->content_like(qr{\#606060});
+  my $mtime = Mojo::Date->new($t->tx->res->headers->last_modified || 0)->epoch;
+  ok + ($mtime >= $^T && $mtime < $^T + 10), 'last_modified when application started';
 }
 
 {

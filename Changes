@@ -1,5 +1,9 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
+0.48     Sun Apr  5 09:19:01 2015
+       * Fix serving in memory assets with Content-Type
+       * Fix serving in memory assets with Last-Modified
+
 0.47     Sat Apr  4 13:53:32 2015
        * Fix Mojo::Base::tap() does not support arguments before 5.57
 
