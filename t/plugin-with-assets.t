@@ -3,6 +3,8 @@ use Mojolicious::Lite;
 use Test::Mojo;
 use Test::More;
 
+plan skip_all => 'Something weird is going on with cygwin filesystem', if $^O eq 'cygwin';
+
 my @READ_ONLY = qw( t/read-only-with-source-assets t/read-only-with-existing-assets );
 my ($assetpack, $t);
 
