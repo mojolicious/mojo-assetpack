@@ -266,8 +266,10 @@ sub _process {
       $asset->add_chunk($content);
       1;
     } or do {
+      my $e = $@;
+      warn "[ASSETPACK] process(@{[$source->url]}) FAIL $e\n" if DEBUG;
       $asset->url(File::Spec->catfile($self->out_dir, "$name-$checksum[0].err.$ext"));
-      $asset->add_chunk($self->_make_error_asset($moniker, $source->basename, $@));
+      $asset->add_chunk($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
       last;
     };
   }
