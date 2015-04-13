@@ -260,7 +260,8 @@ sub _process {
     return $asset;
   }
 
-  $asset = $self->_asset($file)->url(File::Spec->catfile($self->out_dir, $file))->in_memory(1);
+  $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
+  $asset->in_memory(1)->url(File::Spec->catfile($self->out_dir, $file));
 
   for my $source (@sources) {
     eval {

@@ -38,6 +38,10 @@ my $file;
 
   spurt('body { color: #616161; }', $file);
   $t->get_ok('/test1');
+  my $style = $t->tx->res->dom->at('style');
+  ok $style, 'got style tag';
+  unlike $style, qr{color:\#616161.*color:\#616161}, 'make sure we do not add_chunk() to the same asset';
+
   push @files, $t->tx->res->dom->at('link')->{href};
   $t->get_ok($files[-1])->status_is(200)->content_like(qr{\#616161});
 }
@@ -49,3 +53,4 @@ done_testing;
 __DATA__
 @@ test1.html.ep
 %= asset 'no-cache.css'
+%= asset 'no-cache.css', {inline => 1}
