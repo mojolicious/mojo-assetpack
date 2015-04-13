@@ -12,7 +12,7 @@ use File::Spec     ();
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
-our $VERSION = '0.49';
+our $VERSION = '0.50';
 
 my $MTIME = time;
 
@@ -309,7 +309,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.49
+0.50
 
 =head1 SYNOPSIS
 

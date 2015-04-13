@@ -1,6 +1,6 @@
 Revision history for Mojolicious-Plugin-AssetPack
 
-0.50
+0.50 2015-04-13T11:37:08+0200
        * Need to start with a fresh asset to avoid adding duplicate
          processed data to the same asset.
 
