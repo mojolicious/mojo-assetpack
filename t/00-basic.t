@@ -14,22 +14,24 @@ if (!eval 'use Test::Pod::Coverage; 1') {
     SKIP: { skip "pod_coverage_ok(@_) (Test::Pod::Coverage is required)", 1 }
   };
 }
+if (!eval 'use Test::CPAN::Changes; 1') {
+  *Test::CPAN::Changes::changes_file_ok = sub {
+    SKIP: { skip "changes_ok(@_) (Test::CPAN::Changes is required)", 4 }
+  };
+}
 
-find({wanted => sub { /\.(pm|pod)$/ and push @files, $File::Find::name }, no_chdir => 1}, -e 'blib' ? 'blib' : 'lib',);
+find({wanted => sub { /\.pm$/ and push @files, $File::Find::name }, no_chdir => 1}, -e 'blib' ? 'blib' : 'lib',);
 
-my $n = 0;
-$n += /\.pm$/ ? 3 : 1 for @files;
-plan tests => $n;
+plan tests => @files * 3 + 4;
 
 for my $file (@files) {
   my $module = $file;
+  $module =~ s,\.pm$,,;
   $module =~ s,.*/?lib/,,;
   $module =~ s,/,::,g;
-
+  ok eval "use $module; 1", "use $module" or diag $@;
   Test::Pod::pod_file_ok($file);
-
-  if ($module =~ s,\.pm$,,) {
-    ok eval "use $module; 1", "use $module" or diag $@;
-    Test::Pod::Coverage::pod_coverage_ok($module);
-  }
+  Test::Pod::Coverage::pod_coverage_ok($module, {also_private => [qr/^[A-Z_]+$/],});
 }
+
+Test::CPAN::Changes::changes_file_ok();
