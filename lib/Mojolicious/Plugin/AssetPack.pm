@@ -246,7 +246,7 @@ sub _process {
   my ($asset, $file, $re, @checksum);
 
   @sources = map {
-    my $asset = $self->_find(split '/', $_) || (/^https?:/ ? $self->_fetch($_, $self->out_dir) : $self->_fetch($_, ''));
+    my $asset = $self->_source_for_url($_);
     push @checksum, $self->preprocessors->checksum(_ext($_), \$asset->slurp, $asset->url);
     $asset;
   } @sources;
@@ -305,6 +305,22 @@ sub _reloader {
       shift->on(message => sub { shift->send('pong'); });
     }
   )->name('assetpack.ws');
+}
+
+sub _source_for_url {
+  my $self = shift;
+  my $url  = Mojo::URL->new(shift);
+  my $class;
+
+  if (my $scheme = $url->scheme) {
+    return $self->_fetch($_, $self->out_dir) if $scheme =~ /^https?$/;
+    my $class = "Mojolicious::Plugin::AssetPack::Handler::" . ucfirst $scheme;
+    eval "require $class;1" or die "Could not load $class: $@\n";
+    return $class->new->asset_for($url, $self);
+  }
+  else {
+    return $self->_find(split '/', $url) || $self->_fetch($url, '');
+  }
 }
 
 # utils
