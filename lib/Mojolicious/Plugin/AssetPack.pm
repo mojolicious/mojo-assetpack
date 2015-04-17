@@ -14,8 +14,6 @@ use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
 our $VERSION = '0.51';
 
-my $MTIME = time;
-
 has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
@@ -127,7 +125,7 @@ sub _assets_from_memory {
       return unless $path->[1] and 0 == index "$path", $self->base_url;
       return unless my $asset = $c->asset->_asset($path->[1]);
       return if $asset->{internal};
-      $c->res->headers->last_modified(Mojo::Date->new($MTIME))
+      $c->res->headers->last_modified(Mojo::Date->new($^T))
         ->content_type($c->app->types->type($asset->url =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
       $c->reply->asset($asset);
     }
