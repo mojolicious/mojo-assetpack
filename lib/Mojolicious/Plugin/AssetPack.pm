@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream;
 use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Asset;
+use Mojolicious::Plugin::AssetPack::Handler::Https;
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use Cwd            ();
 use File::Basename ();
@@ -35,7 +36,7 @@ sub add {
 
 sub fetch {
   my $self = shift;
-  $self->_fetch(@_, $self->out_dir)->url;
+  Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->url;
 }
 
 sub get {
@@ -152,32 +153,6 @@ sub _build_out_dir {
   return $out_dir // '';
 }
 
-sub _fetch {
-  my ($self, $url, $save) = @_;
-  my $lookup = _name($url);
-  my $asset;
-
-  if ($asset = $self->_find('packed', qr{^$lookup\.\w+$})) {
-    $self->_app->log->debug("Asset $url is already downloaded") if DEBUG;
-    return $asset;
-  }
-
-  my $res = $self->_ua->get($url)->res;
-  my $ct  = $res->headers->content_type // 'text/plain';
-  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
-
-  if (my $e = $res->error) {
-    die "Asset $url could not be fetched: $e->{message}";
-  }
-
-  $ext = $ext->[0] if ref $ext;
-  $ext = Mojo::URL->new($url)->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
-  $self->_app->log->info("Asset $url was fetched");
-  $asset = $self->_asset("$lookup.$ext")->url($url)->add_chunk($res->body);
-  $asset->in_memory(0)->url(File::Spec->catfile($self->out_dir, "$lookup.$ext"))->save if $save;
-  $asset;
-}
-
 sub _find {
   my $needle = pop;
   my $self   = shift;
@@ -278,7 +253,7 @@ sub _process {
     };
   }
 
-  $asset->in_memory($self->out_dir ? 0 : 1)->save;
+  $asset->in_memory(!$self->out_dir)->save;
   $self->_app->log->info("Built asset for $moniker");
   $asset;
 }
@@ -310,17 +285,27 @@ sub _reloader {
 sub _source_for_url {
   my $self = shift;
   my $url  = Mojo::URL->new(shift);
-  my $class;
+  my ($class, $asset);
 
   if (my $scheme = $url->scheme) {
-    return $self->_fetch($_, $self->out_dir) if $scheme =~ /^https?$/;
-    my $class = "Mojolicious::Plugin::AssetPack::Handler::" . ucfirst $scheme;
+    my $class  = "Mojolicious::Plugin::AssetPack::Handler::" . ucfirst $scheme;
+    my $lookup = _name($url);
+
     eval "require $class;1" or die "Could not load $class: $@\n";
-    return $class->new->asset_for($url, $self);
+
+    if ($asset = $self->_find('packed', qr{^$lookup\.\w+$})) {
+      $self->_app->log->debug("Asset $url is fetched") if DEBUG;
+    }
+    else {
+      $asset = $class->new->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
+    }
   }
   else {
-    return $self->_find(split '/', $url) || $self->_fetch($url, '');
+    $asset
+      = $self->_find(split '/', $url) || Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for($url, $self);
   }
+
+  return $asset;
 }
 
 # utils
