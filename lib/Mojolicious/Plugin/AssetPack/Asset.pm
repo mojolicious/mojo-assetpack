@@ -21,6 +21,7 @@ use Mojo::Util     ();
 use Cwd            ();
 use Carp           ();
 use File::Basename ();
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 =head1 ATTRIBUTES
 
@@ -89,9 +90,17 @@ This method does nothing if L</in_memory> is true.
 sub save {
   my $self = shift;
 
-  return $self if $self->in_memory;
-  die "Nothing to save to @{[$self->url]}" unless defined $self->{content};
-  Mojo::Util::spurt(delete $self->{content}, $self->url);
+  if (not defined $self->{content}) {
+    die "Cannot save empty asset to save to @{[$self->url]}";
+  }
+  elsif ($self->in_memory) {
+    warn "[ASSETPACK] Skip save of @{[$self->url]}\n" if DEBUG;
+  }
+  else {
+    warn "[ASSETPACK] Save @{[$self->url]}\n" if DEBUG;
+    Mojo::Util::spurt(delete $self->{content}, $self->url);
+  }
+
   return $self;
 }
 
