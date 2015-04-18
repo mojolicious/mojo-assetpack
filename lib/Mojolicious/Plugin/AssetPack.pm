@@ -4,7 +4,6 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream;
 use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Asset;
-use Mojolicious::Plugin::AssetPack::Handler::Https;
 use Mojolicious::Plugin::AssetPack::Preprocessors;
 use Cwd            ();
 use File::Basename ();
@@ -36,7 +35,7 @@ sub add {
 
 sub fetch {
   my $self = shift;
-  Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->path;
+  $self->_handler('https')->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->path;
 }
 
 sub get {
@@ -173,6 +172,15 @@ sub _find {
   return undef;
 }
 
+sub _handler {
+  my ($self, $moniker) = @_;
+  $self->{handler}{$moniker} ||= do {
+    my $class = "Mojolicious::Plugin::AssetPack::Handler::" . ucfirst $moniker;
+    eval "require $class;1" or die "Could not load $class: $@\n";
+    $class->new;
+  };
+}
+
 sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
@@ -287,24 +295,20 @@ sub _reloader {
 sub _source_for_url {
   my $self = shift;
   my $url  = Mojo::URL->new(shift);
-  my ($class, $asset);
+  my $asset;
 
   if (my $scheme = $url->scheme) {
-    my $class  = "Mojolicious::Plugin::AssetPack::Handler::" . ucfirst $scheme;
     my $lookup = _name($url);
-
-    eval "require $class;1" or die "Could not load $class: $@\n";
 
     if ($asset = $self->_find('packed', qr{^$lookup\.\w+$})) {
       $self->_app->log->debug("Asset $url is fetched") if DEBUG;
     }
     else {
-      $asset = $class->new->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
+      $asset = $self->_handler($scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
     }
   }
   else {
-    $asset
-      = $self->_find(split '/', $url) || Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for($url, $self);
+    $asset = $self->_find(split '/', $url) || $self->_handler('https')->asset_for($url, $self);
   }
 
   return $asset;
