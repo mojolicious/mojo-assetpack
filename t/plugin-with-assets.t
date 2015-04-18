@@ -40,11 +40,11 @@ is_deeply(
 );
 
 is $assetpack->_asset($names[0])->in_memory, 0, 'existing is bundled with t::SomePluginWithAssets';
-like $assetpack->_asset($names[0])->url, qr{t/read-only-with-existing-assets$href[0]$}, 'and stored in memory';
+like $assetpack->_asset($names[0])->path, qr{t/read-only-with-existing-assets$href[0]$}, 'and stored in memory';
 $t->get_ok($href[0])->status_is(200)->content_like(qr{color:\#aaa});
 
 is $assetpack->_asset($names[1])->in_memory, 1, 'new is regerated now and stored in memory';
-is $assetpack->_asset($names[1])->url, File::Spec->catfile('', $names[1]), 'and has a virtual url';
+is $assetpack->_asset($names[1])->path, File::Spec->catfile('', $names[1]), 'and has a virtual url';
 $t->get_ok($href[1])->status_is(200)->content_like(qr{color:\#bbb});
 
 chmod 0775, $_ for @READ_ONLY;

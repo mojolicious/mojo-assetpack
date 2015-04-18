@@ -74,11 +74,9 @@ sub asset_for {
 
   $tiled->crop(right => $size[0], bottom => $size[1])->write(data => \my $sprite, type => 'png') or die $tiled->errstr;
   $checksum = Mojo::Util::md5_sum($sprite);
-  $assetpack->_asset("sprite-$name.png")->url(File::Spec->catfile($assetpack->out_dir, "$name-$checksum.png"))
-    ->add_chunk($sprite)->in_memory($assetpack->out_dir ? 0 : 1)->save;
-  $assetpack->_asset("sprite-$name.css")
-    ->add_chunk(".$name { background: url($name-$checksum.png) no-repeat; display: inline-block; }\n$css")
-    ->url(File::Spec->catfile($assetpack->out_dir, "$name.css"));
+  $css .= ".$name { background: url($name-$checksum.png) no-repeat; display: inline-block; }\n";
+  $assetpack->_asset("$name-$checksum.png")->content($sprite)->in_memory($assetpack->out_dir ? 0 : 1)->save;
+  $assetpack->_asset("$name.css")->content($css);
 }
 
 sub _imager {

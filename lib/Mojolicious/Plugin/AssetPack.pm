@@ -36,7 +36,7 @@ sub add {
 
 sub fetch {
   my $self = shift;
-  Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->url;
+  Mojolicious::Plugin::AssetPack::Handler::Https->new->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->path;
 }
 
 sub get {
@@ -105,7 +105,9 @@ sub register {
 
 sub _asset {
   my ($self, $name) = @_;
-  $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new(url => $name);
+  my $asset = $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new;
+  $asset->path(File::Spec->catfile($self->out_dir, $name)) unless $asset->path;
+  $asset;
 }
 
 sub _assets {
@@ -127,7 +129,7 @@ sub _assets_from_memory {
       return unless my $asset = $c->asset->_asset($path->[1]);
       return if $asset->{internal};
       $c->res->headers->last_modified(Mojo::Date->new($^T))
-        ->content_type($c->app->types->type($asset->url =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
+        ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
       $c->reply->asset($asset);
     }
   );
@@ -164,7 +166,7 @@ sub _find {
   for my $path (map { File::Spec->catdir($_, @path) } @{$self->_app->static->paths}) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
-      /$needle/ and return $self->_asset($_)->url(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
+      /$needle/ and return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
     }
   }
 
@@ -222,7 +224,7 @@ sub _process {
 
   @sources = map {
     my $asset = $self->_source_for_url($_);
-    push @checksum, $self->preprocessors->checksum(_ext($_), \$asset->slurp, $asset->url);
+    push @checksum, $self->preprocessors->checksum(_ext($_), \$asset->slurp, $asset->path);
     $asset;
   } @sources;
 
@@ -236,19 +238,19 @@ sub _process {
   }
 
   $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
-  $asset->in_memory(1)->url(File::Spec->catfile($self->out_dir, $file));
+  $asset->in_memory(1)->path(File::Spec->catfile($self->out_dir, $file));
 
   for my $source (@sources) {
     eval {
       my $content = $source->slurp;
-      $self->preprocessors->process(_ext($source->url), $self, \$content, $source->url);
-      $asset->add_chunk($content);
+      $self->preprocessors->process(_ext($source->path), $self, \$content, $source->path);
+      $asset->content($asset->content . $content);
       1;
     } or do {
       my $e = $@;
-      warn "[ASSETPACK] process(@{[$source->url]}) FAIL $e\n" if DEBUG;
-      $asset->url(File::Spec->catfile($self->out_dir, "$name-$checksum[0].err.$ext"));
-      $asset->add_chunk($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
+      warn "[ASSETPACK] process(@{[$source->path]}) FAIL $e\n" if DEBUG;
+      $asset->path(File::Spec->catfile($self->out_dir, "$name-$checksum[0].err.$ext"));
+      $asset->content($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
       last;
     };
   }
@@ -271,7 +273,7 @@ sub _reloader {
   return if !$config->{enabled} and $app->mode ne 'development';
 
   warn "[ASSETPACK] Adding reloader asset and route\n" if DEBUG;
-  $reloader->url('reloader.js')->{internal} = 1;
+  $reloader->path('reloader.js')->{internal} = 1;
   $self->{assets}{'reloader.js'} = [$reloader];
   push @{$app->renderer->classes}, __PACKAGE__;
   $app->routes->get('/packed/reloader')->to(template => 'packed/reloader', strategy => 'document', %$config);
