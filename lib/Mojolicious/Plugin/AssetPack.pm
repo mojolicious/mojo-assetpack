@@ -12,7 +12,7 @@ use File::Spec     ();
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 
-our $VERSION = '0.51';
+our $VERSION = '0.52';
 
 has base_url      => '/packed/';
 has minify        => 0;
@@ -334,7 +334,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.51
+0.52
 
 =head1 SYNOPSIS
 

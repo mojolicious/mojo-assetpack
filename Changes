@@ -1,7 +1,14 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.51 2015-04-16T08:15:50+0200
+0.52 2015-04-18T12:54:40+0200
 
+ - Add support for generating image sprites and css
+ - Add EXPERIMENTAL ::Handlers::Sprites, ::Handlers::Http and ::Handlers::Https
+ - Add ::Asset::content()
+ - Rename ::Asset::url() to path().
+ - Remove ::Asset::add_chunk()
+
+0.51 2015-04-16T08:15:50+0200
  - Can reload assets on server reload (EXPERIMENTAL)
 
 0.50 2015-04-13T11:37:08Z +0200
