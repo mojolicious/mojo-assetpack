@@ -15,6 +15,7 @@ This class is EXPERIMENTAL.
 
 use Mojo::Base -base;
 use Mojolicious::Types;
+use Mojolicious::Plugin::AssetPack::Asset;
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 =head1 ATTRIBUTES
@@ -41,8 +42,7 @@ sub asset_for {
   $ext = $ext->[0] if ref $ext;
   $ext = $tx->req->url->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
   $assetpack->_app->log->info("Asset $url was fetched");
-  $assetpack->_asset("$lookup.$ext")->url(File::Spec->catfile($assetpack->out_dir, "$lookup.$ext"))
-    ->add_chunk($tx->res->body);
+  $assetpack->_asset("$lookup.$ext")->content($tx->res->body);
 }
 
 =head1 COPYRIGHT AND LICENSE
