@@ -32,7 +32,7 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 This method finds images in the location specified in the C<$url>, and
 generates a L<sprite|http://en.wikipedia.org/wiki/Sprite_%28computer_graphics%29#Sprites_by_CSS>.
 
-The returning C<$asset> constains CSS with classnames describing how to use
+The returning C<$asset> contains CSS with classnames describing how to use
 each image. Example with C<$url> set to "sprites:///images/xyz".
 
   .xyz { background: url(xyz-5200164c30fb8660952969caf0cefa3d.png) no-repeat; display: inline-block; }
