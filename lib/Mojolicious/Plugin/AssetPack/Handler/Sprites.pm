@@ -58,7 +58,7 @@ sub asset_for {
   die "Could not find directory for $url" unless $directory;
   opendir my $SPRITES, $directory or die "opendir $directory: $!";
 
-  while (my $file = readdir $SPRITES) {
+  for my $file (sort { $a cmp $b } readdir $SPRITES) {
     next unless $file =~ /\.(jpe?g|png)$/i;
     my $tile = Imager->new(file => File::Spec->catfile($directory, $file)) or die Imager->errstr;
     my $cn = $file;
