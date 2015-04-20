@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.5201 Not Released
  - Fix sprites.t
+ - Fix skipping t/plugin-with-assets.t
 
 0.52 2015-04-18T12:54:40+0200
  - Add support for generating image sprites and css

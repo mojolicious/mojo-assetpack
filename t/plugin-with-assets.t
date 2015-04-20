@@ -6,23 +6,19 @@ use Test::More;
 plan skip_all => 'Something weird is going on with cygwin filesystem', if $^O eq 'cygwin';
 
 my @READ_ONLY = qw( t/read-only-with-source-assets t/read-only-with-existing-assets );
-my ($assetpack, $t);
 
-{
-  unlink $_ for glob "$READ_ONLY[0]/packed/my-plugin-*.css";
-  mkdir $_  for @READ_ONLY;
-  chmod 0555, $_ for @READ_ONLY;
-  plan skip_all => 'Need unix filesystem' unless 0555 == (0777 & (stat $READ_ONLY[0])[2]);
-}
+unlink $_ for glob "$READ_ONLY[0]/packed/my-plugin-*.css";
+mkdir $_  for @READ_ONLY;
+chmod 0555, $_ for @READ_ONLY;
 
-$t = Test::Mojo->new;
+my $t = Test::Mojo->new;
 $t->app->mode('production');
 $t->app->routes->get('/test1' => 'test1');
 $t->app->static->paths([@READ_ONLY]);
 $t->app->plugin('AssetPack');
 
-$assetpack = $t->app->asset;
-is $assetpack->out_dir, '', 'in_memory assets';
+my $assetpack = $t->app->asset;
+plan skip_all => "Cannot run tests when @READ_ONLY is writeable" if $assetpack->out_dir;
 
 $t->app->plugin('t::SomePluginWithAssets');
 is $t->app->asset, $assetpack, 'same assetpack';
