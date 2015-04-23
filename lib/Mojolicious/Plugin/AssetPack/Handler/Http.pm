@@ -30,10 +30,16 @@ This method tries to download the asset from web.
 
 sub asset_for {
   my ($self, $url, $assetpack) = @_;
-  my $tx     = $assetpack->_ua->get($url);
-  my $ct     = $tx->res->headers->content_type // 'text/plain';
   my $lookup = Mojolicious::Plugin::AssetPack::_name($url);
-  my $ext    = Mojolicious::Types->new->detect($ct) || 'txt';
+
+  if (my $asset = $assetpack->_find('packed', qr{^$lookup\.\w+$})) {
+    $assetpack->_app->log->debug("Asset $url is fetched") if DEBUG;
+    return $asset;
+  }
+
+  my $tx  = $assetpack->_ua->get($url);
+  my $ct  = $tx->res->headers->content_type // 'text/plain';
+  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
 
   if (my $e = $tx->error) {
     die "Asset $url could not be fetched: $e->{message}";

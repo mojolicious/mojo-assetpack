@@ -298,14 +298,7 @@ sub _source_for_url {
   my $asset;
 
   if (my $scheme = $url->scheme) {
-    my $lookup = _name($url);
-
-    if ($asset = $self->_find('packed', qr{^$lookup\.\w+$})) {
-      $self->_app->log->debug("Asset $url is fetched") if DEBUG;
-    }
-    else {
-      $asset = $self->_handler($scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
-    }
+    $asset = $self->_handler($scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
   }
   else {
     $asset = $self->_find(split '/', $url) || $self->_handler('https')->asset_for($url, $self);
