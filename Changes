@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.54 Not Released
+ - Fix saving unchanged assets on disk
+
 0.53 2015-04-23T17:27:41+0200
  - Fix regenerating sprites:// assets
 

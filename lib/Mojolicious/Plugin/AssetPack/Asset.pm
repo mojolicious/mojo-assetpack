@@ -80,10 +80,7 @@ L</in_memory> is true.
 sub save {
   my $self = shift;
 
-  if (not defined $self->{content}) {
-    die "Cannot save empty asset to save to @{[$self->path]}";
-  }
-  elsif ($self->in_memory) {
+  if ($self->in_memory or not defined $self->{content}) {
     warn "[ASSETPACK] Skip save of @{[$self->path]}\n" if DEBUG;
   }
   else {
