@@ -7,6 +7,7 @@ use t::Helper;
 
   $t->app->asset('app.js' => '/js/a.js', '/js/b.js');
 
+
   is_deeply(
     [$t->app->asset->get('app.js')],
     ['/packed/a-527b09c38362b669ec6e16c00d9fb30d.js', '/packed/b-99eec25eb4441cda45d464c03b92a536.js'],

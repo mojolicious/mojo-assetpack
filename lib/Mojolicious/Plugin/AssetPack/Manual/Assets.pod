@@ -63,6 +63,27 @@ the current L<Mojolicious> application.
 The above "/dynamic-path/foo.css" will be fetched from the current C<app>
 unless a static file has the same name.
 
+=head2 Wildcards
+
+Assests can also be brought in via wildcards:
+
+ app->asset(
+    "bundle.js" => (
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js",
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js",
+      "http://code.jquery.com/jquery-1.11.0.js",
+      "/js/myapp.js",
+      "/js/*.js",
+    )
+  );
+
+The /js/*.js will tell AssetPack to look in all public directories for any .js files 
+that are not in the list already. 
+
+If there is a need to set a load precedence, simply add the files that need to be loaded first 
+into the array before the wildcard
+
+
 =head1 NEXT
 
 Now that you know how to define your assets, you can start using them in

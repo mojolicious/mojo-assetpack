@@ -18,6 +18,7 @@ has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => '';
+has static_paths  => ();
 
 has _app => undef;
 has _ua  => sub {
@@ -27,7 +28,7 @@ has _ua  => sub {
 
 sub add {
   my ($self, $moniker, @files) = @_;
-
+  @files = $self->_check_for_wildcards(@files);
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
   return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
   return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
@@ -100,6 +101,50 @@ sub register {
       return $self->_inject(@_);
     }
   );
+}
+
+sub _check_for_wildcards {
+    my ( $self, @files ) = @_;
+
+    #Make sure we have a *. in here or else we waste time looping
+    return @files if(!grep(/\*\./, @files));
+
+    #Keep track of files that we have seen already
+    my %seen_files;
+    #We will replace the files array with this one
+    my @new_files_array;
+    #Loop through files
+    for my $file ( @files ) {
+
+        #Check for *. files EX: *.js, *.css
+        if ( $file =~ m/\*\./ ) {
+            #Create an array from the path
+            my @path_split = split(/[\\|\/]/,$file);
+            #Grab the extension
+            my $ext = pop @path_split;
+            #Remove * from the file name (*.js = .js)
+            $ext =~ s/\*//;
+            #Rebuild the path
+            my $path = join("/",@path_split);
+            #Look for the files in each static path
+            for my $static (@{$self->_app->static->paths}){
+            #Loop through glob
+            while(glob($static.$path."/*$ext")){
+               #Remove full static path and just use the path that Mojo would use
+               $_ =~ s/$static//;
+               push @new_files_array, $_ if(!$seen_files{$_});
+               $seen_files{$_}++
+            }
+           }
+        }else{
+          #If it is not a wildcard then just push it.
+          push @new_files_array, $file if(!$seen_files{$file});
+          $seen_files{$file}++
+        }
+        
+    }
+   
+   return @new_files_array;
 }
 
 sub _asset {
