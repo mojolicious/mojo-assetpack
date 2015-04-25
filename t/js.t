@@ -5,11 +5,12 @@ use t::Helper;
 
   ok $t->app->asset->preprocessors->can_process('js'), 'found preprocessor for js';
 
-  $t->app->asset('app.js' => '/js/a.js', '/js/b.js');
+  $t->app->asset('app.js' => '/js/a.js', '/js/b.js', '/js/*.js');
+
 
   is_deeply(
     [$t->app->asset->get('app.js')],
-    ['/packed/a-527b09c38362b669ec6e16c00d9fb30d.js', '/packed/b-99eec25eb4441cda45d464c03b92a536.js'],
+    ['/packed/a-527b09c38362b669ec6e16c00d9fb30d.js', '/packed/b-99eec25eb4441cda45d464c03b92a536.js', '/packed/c-9c9e6dc36e82c8359213088d1ca19359.js','/packed/empty-d41d8cd98f00b204e9800998ecf8427e.js', '/packed/https___patform_twitter_com_widgets-b9d18daeb16035c94dcf1c74f3551a6a.js'],
     'get(app.js)'
   );
 
