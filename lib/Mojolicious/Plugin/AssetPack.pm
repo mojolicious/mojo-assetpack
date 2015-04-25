@@ -18,6 +18,7 @@ has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => '';
+has static_paths  => ();
 
 has _app => undef;
 has _ua  => sub {
@@ -27,6 +28,7 @@ has _ua  => sub {
 
 sub add {
   my ($self, $moniker, @files) = @_;
+  @files = $self->_check_for_wildcards(\@files);
 
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
   return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
@@ -82,6 +84,7 @@ sub register {
   $self->out_dir($self->_build_out_dir($config, $app));
   $self->base_url($config->{base_url}) if $config->{base_url};
   $self->_reloader($app, $config->{reloader}) if $config->{reloader};
+  $self->{static_paths} = $app->static->paths;
 
   if (NO_CACHE) {
     $app->log->info('AssetPack Will rebuild assets on each request in memory');
@@ -100,6 +103,49 @@ sub register {
       return $self->_inject(@_);
     }
   );
+}
+
+sub _check_for_wildcards {
+    my ( $self, $files ) = @_;
+
+
+    #Keep track of files that we have seen already
+    my %seenFiles;
+    #We will replace the files array with this one
+    my @new_files_array;
+    #Loop through files
+    foreach my $file ( @{$files} ) {
+
+        #Check for *. files EX: *.js, *.css
+        if ( $file =~ m/\*\./ ) {
+            #Create an array from the path
+            my @path_split = split(/[\\|\/]/,$file);
+            #Grab the extension
+            my $ext = pop @path_split;
+            #Remove * from the file name (*.js = .js)
+            $ext =~ s/\*//;
+            #Rebuild the path
+            my $path = join("/",@path_split);
+            #Look for the files in each static path
+            foreach my $static (@{$self->{static_paths}}){
+            #Find files wiht the ext and push to new array
+            opendir( my $dh, $static."/".$path ) || die;
+
+             while ( readdir $dh ) {
+                 push(@new_files_array,$path."/".$_) if(!$seenFiles{$path."/".$_} && $_ =~ m/\Q$ext\E$/);
+                 $seenFiles{$path."/".$_}++; 
+             }
+             closedir $dh;
+           }
+        }else{
+          #If it is not a wildcard then just push it.
+          push @new_files_array, $file if(!$seenFiles{$file});
+          $seenFiles{$file}++
+        }
+        
+    }
+   
+   return @new_files_array;
 }
 
 sub _asset {
