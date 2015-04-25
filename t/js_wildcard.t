@@ -14,7 +14,7 @@ use t::Helper;
     foreach my $file (@files) {
         ok( grep( /^$file$/, $t->app->asset->get('app.js') ), "Found $file" );
     }
-
+    
     $t->get_ok('/test1')->status_is(200)
         ->content_like(
         qr{<script src="/packed/a-527b09c38362b669ec6e16c00d9fb30d\.js".*<script src="/packed/b-99eec25eb4441cda45d464c03b92a536\.js"}s
