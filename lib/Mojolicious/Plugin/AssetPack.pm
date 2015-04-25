@@ -128,15 +128,13 @@ sub _check_for_wildcards {
             my $path = join("/",@path_split);
             #Look for the files in each static path
             for my $static (@{$self->_app->static->paths}){
-            use Data::Dumper;
-            print Dumper(glob($static."*$ext"));
-            #Find files with the ext and push to new array
-            opendir( my $dh, $static."/".$path ) || die;
-             while ( readdir $dh ) {
-                 push(@new_files_array,$path."/".$_) if(!$seen_files{$path."/".$_} && $_ =~ m/\Q$ext\E$/);
-                 $seen_files{$path."/".$_}++; ;
-             }
-             closedir $dh;
+            #Loop through glob
+            while(glob($static.$path."/*$ext")){
+               #Remove full static path and just use the path that Mojo would use
+               $_ =~ s/$static//;
+               push @new_files_array, $_ if(!$seen_files{$_});
+               $seen_files{$_}++
+            }
            }
         }else{
           #If it is not a wildcard then just push it.
