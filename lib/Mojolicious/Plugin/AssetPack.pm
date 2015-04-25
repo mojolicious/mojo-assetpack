@@ -28,8 +28,7 @@ has _ua  => sub {
 
 sub add {
   my ($self, $moniker, @files) = @_;
-  @files = $self->_check_for_wildcards(\@files);
-
+  @files = $self->_check_for_wildcards(\@files) if(grep(/\*\./, @files));
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
   return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
   return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
