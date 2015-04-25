@@ -128,6 +128,8 @@ sub _check_for_wildcards {
             my $path = join("/",@path_split);
             #Look for the files in each static path
             for my $static (@{$self->_app->static->paths}){
+            use Data::Dumper;
+            print Dumper(glob($static."*$ext"));
             #Find files with the ext and push to new array
             opendir( my $dh, $static."/".$path ) || die;
              while ( readdir $dh ) {
