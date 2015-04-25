@@ -28,7 +28,7 @@ has _ua  => sub {
 
 sub add {
   my ($self, $moniker, @files) = @_;
-  @files = $self->_check_for_wildcards(\@files) if(grep(/\*\./, @files));
+  @files = $self->_check_for_wildcards(@files);
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
   return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
   return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
@@ -83,7 +83,6 @@ sub register {
   $self->out_dir($self->_build_out_dir($config, $app));
   $self->base_url($config->{base_url}) if $config->{base_url};
   $self->_reloader($app, $config->{reloader}) if $config->{reloader};
-  $self->{static_paths} = $app->static->paths;
 
   if (NO_CACHE) {
     $app->log->info('AssetPack Will rebuild assets on each request in memory');
@@ -105,15 +104,17 @@ sub register {
 }
 
 sub _check_for_wildcards {
-    my ( $self, $files ) = @_;
+    my ( $self, @files ) = @_;
 
+    #Make sure we have a *. in here or else we waste time looping
+    return @files if(!grep(/\*\./, @files));
 
     #Keep track of files that we have seen already
-    my %seenFiles;
+    my %seen_files;
     #We will replace the files array with this one
     my @new_files_array;
     #Loop through files
-    foreach my $file ( @{$files} ) {
+    for my $file ( @files ) {
 
         #Check for *. files EX: *.js, *.css
         if ( $file =~ m/\*\./ ) {
@@ -126,20 +127,19 @@ sub _check_for_wildcards {
             #Rebuild the path
             my $path = join("/",@path_split);
             #Look for the files in each static path
-            foreach my $static (@{$self->{static_paths}}){
-            #Find files wiht the ext and push to new array
+            for my $static (@{$self->_app->static->paths}){
+            #Find files with the ext and push to new array
             opendir( my $dh, $static."/".$path ) || die;
-
              while ( readdir $dh ) {
-                 push(@new_files_array,$path."/".$_) if(!$seenFiles{$path."/".$_} && $_ =~ m/\Q$ext\E$/);
-                 $seenFiles{$path."/".$_}++; 
+                 push(@new_files_array,$path."/".$_) if(!$seen_files{$path."/".$_} && $_ =~ m/\Q$ext\E$/);
+                 $seen_files{$path."/".$_}++; ;
              }
              closedir $dh;
            }
         }else{
           #If it is not a wildcard then just push it.
-          push @new_files_array, $file if(!$seenFiles{$file});
-          $seenFiles{$file}++
+          push @new_files_array, $file if(!$seen_files{$file});
+          $seen_files{$file}++
         }
         
     }
