@@ -221,7 +221,7 @@ sub _make_error_asset {
     $err =~ s!\n!\\A!g;
     $err =~ s!\s! !g;
     return
-      qq(html:before{background:#f00;color:#fff;font-size:14pt;position:absolute;padding:20px;z-index:9999;content:"$err";});
+      qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
   }
 }
 
