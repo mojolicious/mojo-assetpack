@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.55 Not Released
+ - Will not add memory asset route if not needed #56
  - Make error visible regardless of page scroll position #57
    Contributor: Zoffix Znet
 

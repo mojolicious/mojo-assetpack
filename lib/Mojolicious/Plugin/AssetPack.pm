@@ -86,11 +86,7 @@ sub register {
   if (NO_CACHE) {
     $app->log->info('AssetPack Will rebuild assets on each request in memory');
     $self->out_dir('');
-    $self->_assets_from_memory($app);
-  }
-  elsif (!$self->out_dir) {
-    $app->log->warn('AssetPack will store assets in memory');
-    $self->_assets_from_memory($app);
+    $self->_assets_from_memory;
   }
 
   $app->helper(
@@ -116,9 +112,10 @@ sub _assets {
 }
 
 sub _assets_from_memory {
-  my ($self, $app) = @_;
+  my $self = shift;
 
-  $app->hook(
+  $self->{assets_from_memory_added} = 1;
+  $self->_app->hook(
     before_routes => sub {
       my $c    = shift;
       my $path = $c->req->url->path;
@@ -261,6 +258,11 @@ sub _process {
       $asset->content($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
       last;
     };
+  }
+
+  if (!$self->{assets_from_memory_added} and !$self->out_dir) {
+    $self->_app->log->warn('AssetPack will store assets in memory');
+    $self->_assets_from_memory;
   }
 
   $asset->in_memory(!$self->out_dir)->save;

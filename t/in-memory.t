@@ -1,6 +1,7 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 0, out_dir => ''});
+my $args      = {minify => 0, out_dir => ''};
+my $t         = t::Helper->t($args);
 my $assetpack = $t->app->asset;
 
 $t->app->asset('in-memory.css' => '/from-data.css');
@@ -12,6 +13,8 @@ $t->get_ok('/packed/from-data-f580ad0fd8d617446dda2a00e75cf8c2.css')->content_li
 
 ok !-e File::Spec->catfile(qw( t public packed from-data-f580ad0fd8d617446dda2a00e75cf8c2.css )),
   'no file was created on disk';
+
+ok + (grep {/store assets in memory/} @{$args->{log}}), 'AssetPack will store assets in memory';
 
 done_testing;
 
