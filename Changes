@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.55 Not Released
+ - Make error visible regardless of page scroll position #57
+   Contributor: Zoffix Znet
+
 0.54 2015-04-23T17:37:01+0200
  - Fix saving unchanged assets on disk
 
