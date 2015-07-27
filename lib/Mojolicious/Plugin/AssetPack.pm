@@ -18,6 +18,7 @@ has base_url      => '/packed/';
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => '';
+has source_paths  => sub { shift->_app->static->paths };
 
 has _app => undef;
 has _ua  => sub {
@@ -81,6 +82,7 @@ sub register {
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($config, $app));
   $self->base_url($config->{base_url}) if $config->{base_url};
+  $self->source_paths($config->{source_paths}) if $config->{source_paths};
   $self->_reloader($app, $config->{reloader}) if $config->{reloader};
 
   if (NO_CACHE) {
@@ -159,7 +161,7 @@ sub _find {
   # avoid matching .swp files
   $needle = qr{^$needle$} unless ref $needle;
 
-  for my $path (map { File::Spec->catdir($_, @path) } @{$self->_app->static->paths}) {
+  for my $path (map { File::Spec->catdir($_, @path) } @{$self->source_paths}) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
       /$needle/ and return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
@@ -449,6 +451,12 @@ Defaults value is "/packed/".
 See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
 
 NOTE! You need to have a trailing "/" at the end of the string.
+
+=head2 source_paths
+
+  $app->plugin("AssetPack" => { source_paths => [ '/home/staticdata', $app->home->rel_dir('public') ] })
+
+This attribute can be used to control where we can find the source files. When not given, defaults to $app->static->paths. Useful if you want to keep your source files outside of the web root.
 
 =head2 minify
 
