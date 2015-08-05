@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.56 Not Released
  - Add purge() method (EXPERIMENTAL)
+ - Add support for wildcards in filenames (EXPERIMENTAL) #52
 
 0.55 2015-05-25T12:58:04+0200
  - Will not add memory asset route if not needed #56

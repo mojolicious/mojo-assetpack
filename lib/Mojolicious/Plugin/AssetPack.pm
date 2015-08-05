@@ -28,6 +28,7 @@ has _ua  => sub {
 sub add {
   my ($self, $moniker, @files) = @_;
 
+  @files = $self->_expand_wildcards(@files);
   return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
   return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
   return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
@@ -171,6 +172,29 @@ sub _build_out_dir {
 
   File::Path::make_path($out_dir) if $out_dir and !-d $out_dir;
   return $out_dir // '';
+}
+
+sub _expand_wildcards {
+  my $self = shift;
+  my (@files, %seen);
+
+  for my $file (@_) {
+    if (!-e $file and $file =~ /\*/) {
+      my @rel = split '/', $file;
+      my $glob = pop @rel;
+
+      for my $path (map { File::Spec->catdir($_, @rel) } @{$self->_app->static->paths}) {
+        my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new($path);
+        push @files, grep { !$seen{$_} } map { join '/', @rel, $_ } sort glob $glob;
+      }
+    }
+    else {
+      push @files, $file;
+      $seen{$file} = 1;
+    }
+  }
+
+  return @files;
 }
 
 sub _find {
