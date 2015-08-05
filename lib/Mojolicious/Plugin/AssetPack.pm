@@ -9,8 +9,8 @@ use Cwd            ();
 use File::Basename ();
 use File::Path     ();
 use File::Spec     ();
-use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
+use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
 our $VERSION = '0.55';
 
@@ -60,6 +60,28 @@ sub preprocessor {
   for my $ext (@{$args->{extensions}}) {
     warn "[ASSETPACK] Adding $class preprocessor.\n" if DEBUG;
     $self->preprocessors->on($ext => $preprocessor);
+  }
+
+  return $self;
+}
+
+sub purge {
+  my ($self, $args) = @_;
+  my $file_re = $self->minify ? qr/^(.*?)-(\w{32})\.min\.(\w+)$/ : qr/^(.*?)-(\w{32})\.(\w+)$/;
+  my ($PACKED, %existing);
+
+  # default to not purging, unless in development mode
+  local $args->{always} = $args->{always} // $self->_app->mode eq 'development';
+
+  return $self unless $args->{always};
+  die '$app->asset->purge() must be called AFTER $app->asset(...)' unless keys %{$self->{assets} || {}};
+  return $self unless $self->out_dir and opendir $PACKED, $self->out_dir;
+  $existing{$_} = 1 for grep { $_ =~ $file_re } readdir $PACKED;
+  delete $existing{$_->basename} for map {@$_} values %{$self->{assets} || {}};
+
+  for my $file (keys %existing) {
+    $self->_unlink_packed($file);
+    warn "[ASSETPACK] Purged $file ($!)\n" if DEBUG;
   }
 
   return $self;
@@ -309,6 +331,11 @@ sub _source_for_url {
   return $asset;
 }
 
+sub _unlink_packed {
+  my ($self, $file) = @_;
+  unlink File::Spec->catfile($self->out_dir, $file);
+}
+
 # utils
 sub _ext { local $_ = File::Basename::basename($_[0]); /\.(\w+)$/ ? $1 : 'unknown'; }
 
@@ -342,6 +369,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
   # define assets: $moniker => @real_assets
   app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
+  app->asset->purge; # remove old packed files
   app->start;
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Assets> for more
@@ -513,6 +541,18 @@ Use this method to manually register a preprocessor.
 
 See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
 for example usage.
+
+=head2 purge
+
+  $self = $self->purge({always => $bool});
+
+Used to purge old packed files. This is useful if you want to avoid filling up
+L</out_dir> with many versions of the packed file.
+
+C<always> default to true if in "development" L<mode|Mojolicious/mode> and
+false otherwise.
+
+This method is EXPERIMENTAL and can change, be removed at any time.
 
 =head2 register
 
