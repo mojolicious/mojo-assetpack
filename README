@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.55
+    0.56
 
 SYNOPSIS
   Application
@@ -14,6 +14,7 @@ SYNOPSIS
 
       # define assets: $moniker => @real_assets
       app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
+      app->asset->purge; # remove old packed files
       app->start;
 
     See also Mojolicious::Plugin::AssetPack::Manual::Assets for more details
@@ -106,11 +107,6 @@ ATTRIBUTES
 
     See also Mojolicious::Plugin::AssetPack::Manual::Modes.
 
-  preprocessors
-      $obj = $self->preprocessors;
-
-    Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
-
   out_dir
       $str = $self->out_dir;
       $app->plugin("AssetPack" => {out_dir => $str});
@@ -119,6 +115,11 @@ ATTRIBUTES
 
     Defaults to empty string if no directory can be found, which again
     results in keeping all packed files in memory.
+
+  preprocessors
+      $obj = $self->preprocessors;
+
+    Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
 
 METHODS
   add
@@ -152,6 +153,16 @@ METHODS
     See "SYNOPSIS" in
     Mojolicious::Plugin::AssetPack::Preprocessor::Browserify for example
     usage.
+
+  purge
+      $self = $self->purge({always => $bool});
+
+    Used to purge old packed files. This is useful if you want to avoid
+    filling up "out_dir" with many versions of the packed file.
+
+    "always" default to true if in "development" mode and false otherwise.
+
+    This method is EXPERIMENTAL and can change, be removed at any time.
 
   register
       plugin AssetPack => {

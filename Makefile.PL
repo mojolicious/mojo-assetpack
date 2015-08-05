@@ -22,5 +22,5 @@ WriteMakefile(
     'JavaScript::Minifier::XS' => '0.11',
     'Mojolicious'              => '5.41'
   },
-  test => {TESTS => (-e 'META.yml' ? 't/*.t' : 't/*.t xt/*.t')},
+  test => {TESTS => 't/*.t'},
 );
