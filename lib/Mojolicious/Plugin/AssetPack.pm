@@ -461,12 +461,6 @@ Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Modes>.
 
-=head2 preprocessors
-
-  $obj = $self->preprocessors;
-
-Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
-
 =head2 out_dir
 
   $str = $self->out_dir;
@@ -476,6 +470,12 @@ Holds the path to the directory where packed files can be written.
 
 Defaults to empty string if no directory can be found, which again results in
 keeping all packed files in memory.
+
+=head2 preprocessors
+
+  $obj = $self->preprocessors;
+
+Holds a L<Mojolicious::Plugin::AssetPack::Preprocessors> object.
 
 =head1 METHODS
 
