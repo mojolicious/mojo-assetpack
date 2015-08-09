@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.58 Not Released
+ - Change "source_paths" to return original reference and not a copy
+ - Cannot look for packed files in "source_paths"
+
 0.57 2015-08-09T11:34:21+0200
  - Add support for "source_paths" (EXPERIMENTAL) #58
  - Add support for fetching assets using a proxy

@@ -98,13 +98,13 @@ sub register {
 
   $self->{assets}       = {};
   $self->{processed}    = {};
-  $self->{source_paths} = $config->{source_paths};
+  $self->{source_paths} = $self->_build_source_paths($app, $config);
 
   $self->_app($app);
   $self->_ua->server->app($app);
   $self->_ua->proxy->detect if $config->{proxy};
   $self->minify($config->{minify} // $app->mode ne 'development');
-  $self->out_dir($self->_build_out_dir($config, $app));
+  $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
   $self->_reloader($app, $config->{reloader}) if $config->{reloader};
 
@@ -131,11 +131,8 @@ sub source_paths {
     $self->{source_paths} = shift;
     return $self;
   }
-  elsif (my $paths = $self->{source_paths}) {
-    return [map { -d $_ ? $_ : $app->home->rel_file($_) } @$paths];
-  }
   else {
-    return [@{$app->static->paths}];
+    return $self->{source_paths} || return $app->static->paths;
   }
 }
 
@@ -173,7 +170,7 @@ sub _assets_from_memory {
 }
 
 sub _build_out_dir {
-  my ($self, $config, $app) = @_;
+  my ($self, $app, $config) = @_;
   my $out_dir = $config->{out_dir};
 
   if ($out_dir) {
@@ -190,6 +187,13 @@ sub _build_out_dir {
 
   File::Path::make_path($out_dir) if $out_dir and !-d $out_dir;
   return $out_dir // '';
+}
+
+sub _build_source_paths {
+  my ($self, $app, $config) = @_;
+
+  return undef unless my $paths = $config->{source_paths};
+  return [map { -d $_ ? Cwd::abs_path($_) : $app->home->rel_file($_) } @$paths];
 }
 
 sub _expand_wildcards {
@@ -615,12 +619,12 @@ Will register the C<compress> helper. All L<arguments|/ATTRIBUTES> are optional.
 
 This method returns a list of paths to source files. The default is to return
 L<Mojolicious::Static/paths> from the current application object, but you can
-specify your own paths
+specify your own paths.
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Assets/Custom source directories>
 for more information.
 
-This method is EXPERIMENTAL and can change, but will probably not be removed.
+This method is EXPERIMENTAL and can change, but will most likely not be removed.
 
 =head1 COPYRIGHT AND LICENSE
 
