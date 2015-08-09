@@ -102,6 +102,7 @@ sub register {
 
   $self->_app($app);
   $self->_ua->server->app($app);
+  $self->_ua->proxy->detect if $config->{proxy};
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($config, $app));
   $self->base_url($config->{base_url}) if $config->{base_url};
@@ -598,8 +599,9 @@ This method is EXPERIMENTAL and can change or be removed at any time.
 =head2 register
 
   plugin AssetPack => {
-    base_url     => $str,  # default to "/packed"
-    minify       => $bool, # compress assets
+    base_url     => $str,     # default to "/packed"
+    minify       => $bool,    # compress assets
+    proxy        => "detect", # autodetect proxy settings
     out_dir      => "/path/to/some/directory",
     source_paths => [...],
   };

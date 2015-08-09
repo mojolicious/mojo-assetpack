@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.56 Not Released
  - Add support for "source_paths" (EXPERIMENTAL) #58
+ - Add support for fetching assets using a proxy
 
 0.56 2015-08-05T10:44:15+0200
  - Add purge() method (EXPERIMENTAL)
