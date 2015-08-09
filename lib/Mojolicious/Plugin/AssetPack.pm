@@ -220,14 +220,17 @@ sub _expand_wildcards {
 }
 
 sub _find {
-  my $needle = pop;
-  my $self   = shift;
-  my @path   = @_;
+  my $needle  = pop;
+  my $self    = shift;
+  my @path    = @_;
+  my @look_in = @{$self->source_paths};
+
+  push @look_in, @{$self->_app->static->paths} unless $self->source_paths eq $self->_app->static->paths;
 
   # avoid matching .swp files
   $needle = qr{^$needle$} unless ref $needle;
 
-  for my $path (map { File::Spec->catdir($_, @path) } @{$self->source_paths}) {
+  for my $path (map { File::Spec->catdir($_, @path) } @look_in) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
       /$needle/ and return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
