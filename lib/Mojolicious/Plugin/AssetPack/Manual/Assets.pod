@@ -82,6 +82,35 @@ with a number: C<01-polyfill.js>, C<02-main.js>, ...
 
 This feature is currently EXPERIMENTAL.
 
+=head2 Custom source directories
+
+It's possible to make AssetPack look for source files in a different directory
+than in the public directories. This is useful if you want to keep your source
+files outside of the web root.
+
+  plugin AssetPack => {
+    source_paths => [
+      "assets",
+      "/usr/share/assets",
+      @{$app->static->paths},
+    ]
+  };
+
+The code above tells AssetPack to look for assets in the "assets" directory,
+relative to the L<app home dir|Mojo/home>, then in the absolute path
+"/usr/share/assets" and fallback to the static directories (web root).
+
+This is also very neat when using C<morbo|Mojo::Server::Morbo> to watch your
+files:
+
+  # Before and after specifying "source_paths"
+  $ moboo -w public/css -w public/js -w public/tags -w public/sass -w lib
+  $ morbo -w assets -w lib
+
+  # This will cause an infinite loop, since public/packed change on
+  # application reload:
+  $ morbo -w public -w lib
+
 =head1 NEXT
 
 Now that you know how to define your assets, you can start using them in

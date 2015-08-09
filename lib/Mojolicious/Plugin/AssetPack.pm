@@ -96,8 +96,9 @@ sub register {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
   }
 
-  $self->{assets}    = {};
-  $self->{processed} = {};
+  $self->{assets}       = {};
+  $self->{processed}    = {};
+  $self->{source_paths} = $config->{source_paths};
 
   $self->_app($app);
   $self->_ua->server->app($app);
@@ -119,6 +120,22 @@ sub register {
       return $self->_inject(@_);
     }
   );
+}
+
+sub source_paths {
+  my $self = shift;
+  my $app  = $self->_app;
+
+  if (@_) {
+    $self->{source_paths} = shift;
+    return $self;
+  }
+  elsif (my $paths = $self->{source_paths}) {
+    return [map { -d $_ ? $_ : $app->home->rel_file($_) } @$paths];
+  }
+  else {
+    return [@{$app->static->paths}];
+  }
 }
 
 sub _asset {
@@ -183,7 +200,7 @@ sub _expand_wildcards {
       my @rel = split '/', $file;
       my $glob = pop @rel;
 
-      for my $path (map { File::Spec->catdir($_, @rel) } @{$self->_app->static->paths}) {
+      for my $path (map { File::Spec->catdir($_, @rel) } @{$self->source_paths}) {
         my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new($path);
         push @files, grep { !$seen{$_} } map { join '/', @rel, $_ } sort glob $glob;
       }
@@ -205,7 +222,7 @@ sub _find {
   # avoid matching .swp files
   $needle = qr{^$needle$} unless ref $needle;
 
-  for my $path (map { File::Spec->catdir($_, @path) } @{$self->_app->static->paths}) {
+  for my $path (map { File::Spec->catdir($_, @path) } @{$self->source_paths}) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
       /$needle/ and return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
@@ -576,17 +593,32 @@ L</out_dir> with many versions of the packed file.
 C<always> default to true if in "development" L<mode|Mojolicious/mode> and
 false otherwise.
 
-This method is EXPERIMENTAL and can change, be removed at any time.
+This method is EXPERIMENTAL and can change or be removed at any time.
 
 =head2 register
 
   plugin AssetPack => {
-    base_url => $str,  # default to "/packed"
-    minify   => $bool, # compress assets
-    out_dir  => "/path/to/some/directory",
+    base_url     => $str,  # default to "/packed"
+    minify       => $bool, # compress assets
+    out_dir      => "/path/to/some/directory",
+    source_paths => [...],
   };
 
 Will register the C<compress> helper. All L<arguments|/ATTRIBUTES> are optional.
+
+=head2 source_paths
+
+  $self = $self->source_paths($array_ref);
+  $array_ref = $self->source_paths;
+
+This method returns a list of paths to source files. The default is to return
+L<Mojolicious::Static/paths> from the current application object, but you can
+specify your own paths
+
+See also L<Mojolicious::Plugin::AssetPack::Manual::Assets/Custom source directories>
+for more information.
+
+This method is EXPERIMENTAL and can change, but will probably not be removed.
 
 =head1 COPYRIGHT AND LICENSE
 

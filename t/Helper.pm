@@ -12,6 +12,7 @@ sub t {
   my $t = Test::Mojo->new(Mojolicious->new);
 
   $args->{log} ||= [];
+  $t->app->home->parse(Cwd::abs_path(File::Spec->catdir(dirname $0)));
   $t->app->log->on(message => sub { push @{$args->{log}}, $_[2] });
   $t->app->static->paths([Cwd::abs_path(File::Spec->catdir(dirname($0), 'public'))]);
   $t->app->plugin(AssetPack => $args || {});
