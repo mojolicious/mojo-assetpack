@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.57
+    0.58
 
 SYNOPSIS
   Application
@@ -181,12 +181,12 @@ METHODS
 
     This method returns a list of paths to source files. The default is to
     return "paths" in Mojolicious::Static from the current application
-    object, but you can specify your own paths
+    object, but you can specify your own paths.
 
     See also "Custom source directories" in
     Mojolicious::Plugin::AssetPack::Manual::Assets for more information.
 
-    This method is EXPERIMENTAL and can change, but will probably not be
+    This method is EXPERIMENTAL and can change, but will most likely not be
     removed.
 
 COPYRIGHT AND LICENSE

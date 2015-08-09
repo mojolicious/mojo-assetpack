@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.58 Not Released
+0.58 2015-08-09T14:28:04+0200
  - Change "source_paths" to return original reference and not a copy
  - Need to look for packed files in all directories (source_paths+public)
 
