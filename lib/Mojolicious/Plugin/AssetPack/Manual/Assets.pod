@@ -100,7 +100,7 @@ The code above tells AssetPack to look for assets in the "assets" directory,
 relative to the L<app home dir|Mojo/home>, then in the absolute path
 "/usr/share/assets" and fallback to the static directories (web root).
 
-This is also very neat when using C<morbo|Mojo::Server::Morbo> to watch your
+This is also very neat when using L<morbo|Mojo::Server::Morbo> to watch your
 files:
 
   # Before and after specifying "source_paths"
