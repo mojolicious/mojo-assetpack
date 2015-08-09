@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.56
+    0.57
 
 SYNOPSIS
   Application
@@ -162,16 +162,32 @@ METHODS
 
     "always" default to true if in "development" mode and false otherwise.
 
-    This method is EXPERIMENTAL and can change, be removed at any time.
+    This method is EXPERIMENTAL and can change or be removed at any time.
 
   register
       plugin AssetPack => {
-        base_url => $str,  # default to "/packed"
-        minify   => $bool, # compress assets
-        out_dir  => "/path/to/some/directory",
+        base_url     => $str,     # default to "/packed"
+        minify       => $bool,    # compress assets
+        proxy        => "detect", # autodetect proxy settings
+        out_dir      => "/path/to/some/directory",
+        source_paths => [...],
       };
 
     Will register the "compress" helper. All arguments are optional.
+
+  source_paths
+      $self = $self->source_paths($array_ref);
+      $array_ref = $self->source_paths;
+
+    This method returns a list of paths to source files. The default is to
+    return "paths" in Mojolicious::Static from the current application
+    object, but you can specify your own paths
+
+    See also "Custom source directories" in
+    Mojolicious::Plugin::AssetPack::Manual::Assets for more information.
+
+    This method is EXPERIMENTAL and can change, but will probably not be
+    removed.
 
 COPYRIGHT AND LICENSE
     Copyright (C) 2014, Jan Henning Thorsen.
