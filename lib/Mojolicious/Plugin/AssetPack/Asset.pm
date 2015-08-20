@@ -80,8 +80,11 @@ L</in_memory> is true.
 sub save {
   my $self = shift;
 
-  if ($self->in_memory or not defined $self->{content}) {
-    warn "[ASSETPACK] Skip save of @{[$self->path]}\n" if DEBUG;
+  if ($self->in_memory) {
+    warn "[ASSETPACK] Cannot save in_memory asset @{[$self->path]}\n" if DEBUG == 2;
+  }
+  elsif (not defined $self->{content}) {
+    warn "[ASSETPACK] Cannot save asset without content @{[$self->path]}\n" if DEBUG == 2;
   }
   else {
     warn "[ASSETPACK] Save @{[$self->path]}\n" if DEBUG;

@@ -33,7 +33,7 @@ sub asset_for {
   my $lookup = Mojolicious::Plugin::AssetPack::_name($url);
 
   if (my $asset = $assetpack->_find('packed', qr{^$lookup\.\w+$})) {
-    $assetpack->_app->log->debug("Asset $url is fetched") if DEBUG;
+    $assetpack->_app->log->debug("Asset $url is fetched") if DEBUG == 2;
     return $asset;
   }
 
@@ -47,7 +47,7 @@ sub asset_for {
 
   $ext = $ext->[0] if ref $ext;
   $ext = $tx->req->url->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
-  $assetpack->_app->log->info("Asset $url was fetched");
+  $assetpack->_app->log->info("Asset $url was fetched successfully");
   $assetpack->_asset("$lookup.$ext")->content($tx->res->body);
 }
 

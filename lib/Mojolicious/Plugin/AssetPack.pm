@@ -309,7 +309,7 @@ sub _process {
   $re   = $self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$};
 
   if ($asset = $self->_find('packed', $re)) {
-    $self->_app->log->debug("Using existing asset for $moniker") if DEBUG;
+    $self->_app->log->debug("Using existing asset @{[$asset->basename]}") if DEBUG;
     return $asset;
   }
 
