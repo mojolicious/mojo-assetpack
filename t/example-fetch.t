@@ -30,10 +30,7 @@ $t->get_ok('/test1')->status_is(200)
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(
   qr{url\('http___cdnjs_cloudflare_com_ajax_libs_font-awesome_4_1_0__fonts_fontawesome-webfont_eot_v_4_1_0\.eot'\)},
-  'eot')->content_like(
-  qr{url\('http___cdnjs_cloudflare_com_ajax_libs_font-awesome_4_1_0__fonts_fontawesome-webfont_eot__iefix_v_4_1_0\.eot'\)},
-  'iefix'
-  )
+  'eot')
   ->content_like(
   qr{url\('http___cdnjs_cloudflare_com_ajax_libs_font-awesome_4_1_0__fonts_fontawesome-webfont_woff_v_4_1_0\.woff'\)},
   'woff')

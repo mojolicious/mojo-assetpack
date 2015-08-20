@@ -36,7 +36,11 @@ sub add {
 
 sub fetch {
   my $self = shift;
-  $self->_handler('https')->asset_for(shift, $self)->in_memory(!$self->out_dir)->save->path;
+  my $url  = Mojo::URL->new(shift);
+  my $asset
+    = $self->_packed("$url") || $self->_handler($url->scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
+  return $asset if @_;    # internal
+  return $asset->path;    # documented api
 }
 
 sub get {
@@ -219,27 +223,6 @@ sub _expand_wildcards {
   return @files;
 }
 
-sub _find {
-  my $needle  = pop;
-  my $self    = shift;
-  my @path    = @_;
-  my @look_in = @{$self->source_paths};
-
-  push @look_in, @{$self->_app->static->paths} unless $self->source_paths eq $self->_app->static->paths;
-
-  # avoid matching .swp files
-  $needle = qr{^$needle$} unless ref $needle;
-
-  for my $path (map { File::Spec->catdir($_, @path) } @look_in) {
-    opendir my $DH, $path or next;
-    for (readdir $DH) {
-      /$needle/ and return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
-    }
-  }
-
-  return undef;
-}
-
 sub _handler {
   my ($self, $moniker) = @_;
   $self->{handler}{$moniker} ||= do {
@@ -293,26 +276,39 @@ sub _make_error_asset {
   }
 }
 
+sub _packed {
+  my $self = shift;
+  my $needle = ref $_[0] ? shift : _name(shift);
+
+DIR:
+  for my $path (map { File::Spec->catdir($_, 'packed') } @{$self->_app->static->paths}) {
+    opendir my $DH, $path or next DIR;
+    for (readdir $DH) {
+      next unless /$needle/;
+      $self->_app->log->debug("Using existing asset $path") if DEBUG;
+      return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
+    }
+  }
+
+  return undef;
+}
+
 sub _process {
   my ($self, $moniker, @sources) = @_;
   my ($name, $ext) = (_name($moniker), _ext($moniker));
-  my ($asset, $file, $re, @checksum);
+  my ($asset, $file, @checksum);
 
   @sources = map {
-    my $asset = $self->_source_for_url($_);
-    push @checksum, $self->preprocessors->checksum(_ext($_), \$asset->slurp, $asset->path);
-    $asset;
+    my $source = $self->_source_for_url($_);
+    push @checksum, $self->preprocessors->checksum(_ext($_), \$source->slurp, $source->path);
+    $source;
   } @sources;
 
   @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
-  $file = $self->minify ? "$name-$checksum[0].min.$ext"          : "$name-$checksum[0].$ext";
-  $re   = $self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$};
+  $asset = $self->_packed($self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$});
+  return $asset if $asset;
 
-  if ($asset = $self->_find('packed', $re)) {
-    $self->_app->log->debug("Using existing asset @{[$asset->basename]}") if DEBUG;
-    return $asset;
-  }
-
+  $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
   $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
   $asset->in_memory(1)->path(File::Spec->catfile($self->out_dir, $file));
 
@@ -366,18 +362,20 @@ sub _reloader {
 }
 
 sub _source_for_url {
-  my $self = shift;
-  my $url  = Mojo::URL->new(shift);
-  my $asset;
+  my ($self, $url) = @_;
 
-  if (my $scheme = $url->scheme) {
-    $asset = $self->_handler($scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
-  }
-  else {
-    $asset = $self->_find(split '/', $url) || $self->_handler('https')->asset_for($url, $self);
+  if (my $scheme = Mojo::URL->new($url)->scheme) {
+    return $self->fetch($url, 'internal');
   }
 
-  return $asset;
+  my @look_in = (@{$self->source_paths}, @{$self->_app->static->paths});
+  my @path = split '/', $url;
+
+  for my $path (map { Cwd::abs_path(File::Spec->catfile($_, @path)) } @look_in) {
+    return $self->_asset($_)->path($path)->in_memory(0) if -r $path;
+  }
+
+  return $self->_handler('https')->asset_for($url, $self);
 }
 
 sub _unlink_packed {
