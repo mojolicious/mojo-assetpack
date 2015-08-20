@@ -372,7 +372,7 @@ sub _source_for_url {
   my @path = split '/', $url;
 
   for my $path (map { Cwd::abs_path(File::Spec->catfile($_, @path)) } @look_in) {
-    return $self->_asset($_)->path($path)->in_memory(0) if -r $path;
+    return $self->_asset($_)->path($path)->in_memory(0) if $path and -r $path;
   }
 
   return $self->_handler('https')->asset_for($url, $self);
