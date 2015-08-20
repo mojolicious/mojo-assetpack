@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.59 Not Released
+0.59 2015-08-20T14:42:25+0200
  - Cannot look for packed files in "source_paths"
  - MOJO_ASSETPACK_DEBUG need to be set to "2" for more verbose debug
 
