@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.60 Not Released
+0.60 2015-08-20T17:21:54+0200
  - Fix detecting changed sass/scss files in sub directories, with leading underscore
 
 0.59 2015-08-20T14:42:25+0200
