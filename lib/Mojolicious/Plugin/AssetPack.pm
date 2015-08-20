@@ -280,13 +280,13 @@ sub _packed {
   my $self = shift;
   my $needle = ref $_[0] ? shift : _name(shift);
 
-DIR:
   for my $path (map { File::Spec->catdir($_, 'packed') } @{$self->_app->static->paths}) {
-    opendir my $DH, $path or next DIR;
+    opendir my $DH, $path or next;
     for (readdir $DH) {
       next unless /$needle/;
+      $path = Cwd::abs_path(File::Spec->catfile($path, $_));
       $self->_app->log->debug("Using existing asset $path") if DEBUG;
-      return $self->_asset($_)->path(Cwd::abs_path(File::Spec->catfile($path, $_)))->in_memory(0);
+      return $self->_asset($_)->path($path)->in_memory(0);
     }
   }
 
