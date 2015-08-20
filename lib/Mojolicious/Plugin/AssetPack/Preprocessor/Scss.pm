@@ -101,7 +101,9 @@ sub checksum {
   local $self->{checked} = $self->{checked} || {};
 
   while ($$text =~ /$re/gs) {
-    my $path = $self->_file($dir, $2, $ext) or next;
+    my @rel  = split '/', $2;
+    my $file = pop @rel;
+    my $path = $self->_file(File::Spec->catdir($dir, @rel), $file, $ext) or next;
     $self->{checked}{$path}++ and next;
     push @checksum, $self->checksum(\slurp($path), $path);
   }

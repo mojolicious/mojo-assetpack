@@ -39,6 +39,28 @@ use t::Helper;
 
 is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.com/install', '_url');
 
+{
+  # https://github.com/jhthorsen/mojolicious-plugin-bootstrap3/issues/5
+  my $scss_file = File::Spec->catfile(qw( t public sass subdir _issue-5.scss ));
+  my ($app, $scss);
+
+  $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/bs-issue-5.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#b00}, 'original';
+
+  use Mojo::Util qw( slurp spurt );
+  $scss = slurp $scss_file;
+  $scss =~ s!b00!00b!;
+  spurt $scss => $scss_file;
+
+  $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/bs-issue-5.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#00b}, 'updated';
+
+  $scss =~ s!00b!b00!;
+  spurt $scss => $scss_file;
+}
+
 done_testing;
 
 __DATA__
