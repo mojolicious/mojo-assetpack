@@ -103,7 +103,7 @@ sub checksum {
   while ($$text =~ /$re/gs) {
     my @rel  = split '/', $2;
     my $file = pop @rel;
-    my $path = $self->_file(File::Spec->catdir($dir, @rel), $file, $ext) or next;
+    my $path = $self->_file( $dir, \@rel, $file, $ext) or next;
     $self->{checked}{$path}++ and next;
     push @checksum, $self->checksum(\slurp($path), $path);
   }
@@ -112,10 +112,15 @@ sub checksum {
 }
 
 sub _file {
-  my ($self, $dir, $name, $ext) = @_;
+  my ($self, $dir, $rel, $name, $ext) = @_;
+
   my $path;
-  return $path if -r ($path = catfile $dir, "$name.$ext");
-  return $path if -r ($path = catfile $dir, "_$name.$ext");
+  my @dirs = map File::Spec->catdir($_, @$rel),
+                  split(/:/, $ENV{SASS_PATH}||''), $dir;
+  for ( @dirs ) {
+    return $path if -r ($path = catfile $_, "$name.$ext");
+    return $path if -r ($path = catfile $_, "_$name.$ext");
+  }
   return;
 }
 
