@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.61 Not Released
+0.61 2015-08-23T13:34:34+0200
  - Add include_paths() to Scss preprocessor
  - Fix using SASS_PATH environment variable when calculating checksum #60
  - Deprecating asset->preprocessor() in favor of asset->preprocessors->add()

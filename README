@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.60
+    0.61
 
 SYNOPSIS
   Application
@@ -146,13 +146,9 @@ METHODS
     for mode details.
 
   preprocessor
-      $self = $self->preprocessor($name => \%args);
+    DEPRECATED. Use this instead:
 
-    Use this method to manually register a preprocessor.
-
-    See "SYNOPSIS" in
-    Mojolicious::Plugin::AssetPack::Preprocessor::Browserify for example
-    usage.
+      $self->preprocessors->add($extension => $class => \%attrs);
 
   purge
       $self = $self->purge({always => $bool});
