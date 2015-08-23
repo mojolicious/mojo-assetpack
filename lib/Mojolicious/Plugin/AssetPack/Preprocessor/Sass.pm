@@ -33,30 +33,6 @@ use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
   ? $ENV{ENABLE_LIBSASS_BINDINGS}
   : eval 'require CSS::Sass;1';
 
-=head2 process
-
-This method use "sass" to process C<$text>.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
-
-=cut
-
-sub process {
-  my ($self, $assetpack, $text, $path) = @_;
-
-  if (LIBSASS_BINDINGS) {
-    $$text = CSS::Sass::sass2scss($$text);
-    return $self->SUPER::process($assetpack, $text, $path);
-  }
-  else {
-    my @cmd = ($self->executable, '--stdin', '-I' => dirname $path);
-    push @cmd, qw( -t compressed) if $assetpack->minify;
-    $self->_run(\@cmd, $text, $text);
-  }
-
-  return $self;
-}
-
 sub _extension {'sass'}
 
 =head1 COPYRIGHT AND LICENSE

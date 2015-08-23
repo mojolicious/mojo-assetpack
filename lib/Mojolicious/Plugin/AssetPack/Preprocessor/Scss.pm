@@ -25,7 +25,22 @@ this module work:
 You can force using the executable by setting the environment variable
 C<ENABLE_LIBSASS_BINDINGS> to a false value.
 
-=head1 COMPASS
+=head2 SASS_PATH
+
+The environment variable C<SASS_PATH> can be used to instruct this module
+to search for C<@import> files in directories other than relative to the
+the file containing the C<@import> statement.
+
+Note that C<SASS_PATH> need to hold absolute paths to work properly.
+
+Example usage:
+
+  local $ENV{SASS_PATH} = "/some/dir:/usr/share/other/dir";
+  $app->asset("app.css" => "sass/app.scss");
+
+TODO: Add attribute C<include_paths()> to avoid use of global variables.
+
+=head2 COMPASS
 
 Compass is an open-source CSS Authoring Framework built on top of L</sass>.
 See L<http://compass-style.org/> for more information.
@@ -50,15 +65,19 @@ C<MOJO_ASSETPACK_NO_COMPASS> to a true value.
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use Mojo::Util qw( slurp md5_sum );
-use File::Basename 'dirname';
+use File::Basename ();
 use File::Spec::Functions 'catfile';
 use File::Which ();
 use File::Which ();
+
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
   ? $ENV{ENABLE_LIBSASS_BINDINGS}
   : eval 'require CSS::Sass;1';
 
 $ENV{SASS_PATH} ||= '';
+
+my $IMPORT_RE = qr{ \@import \s+ (["']) (.*?) \1 }x;
 
 =head1 ATTRIBUTES
 
@@ -93,35 +112,20 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub checksum {
   my ($self, $text, $path) = @_;
-  my $ext      = $path =~ /\.(s[ac]ss)$/ ? $1 : $self->_extension;
-  my $dir      = dirname $path;
-  my $re       = qr{ \@import \s+ (["']) (.*?) \1 }x;
-  my @checksum = md5_sum $$text;
+  my $ext           = $path =~ /\.(s[ac]ss)$/ ? $1 : $self->_extension;
+  my @include_paths = $self->_include_paths($path);
+  my @checksum      = md5_sum $$text;
 
   local $self->{checked} = $self->{checked} || {};
 
-  while ($$text =~ /$re/gs) {
-    my @rel  = split '/', $2;
-    my $file = pop @rel;
-    my $path = $self->_file( $dir, \@rel, $file, $ext) or next;
+  while ($$text =~ /$IMPORT_RE/gs) {
+    my $path = $self->_import_path(\@include_paths, split('/', $2), $ext) or next;
+    warn "[ASSETPACK] Found \@import $path\n" if DEBUG == 2;
     $self->{checked}{$path}++ and next;
     push @checksum, $self->checksum(\slurp($path), $path);
   }
 
   return Mojo::Util::md5_sum(join '', @checksum);
-}
-
-sub _file {
-  my ($self, $dir, $rel, $name, $ext) = @_;
-
-  my $path;
-  my @dirs = map File::Spec->catdir($_, @$rel),
-                  split(/:/, $ENV{SASS_PATH}||''), $dir;
-  for ( @dirs ) {
-    return $path if -r ($path = catfile $_, "$name.$ext");
-    return $path if -r ($path = catfile $_, "_$name.$ext");
-  }
-  return;
 }
 
 =head2 process
@@ -134,16 +138,23 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
+  my @include_paths = $self->_include_paths($path);
   my $err;
 
+  if (DEBUG) { local $" = ':'; warn "[ASSETPACK] SASS_PATH=@include_paths\n" }
+
   if (LIBSASS_BINDINGS) {
-    my %args = (include_paths => [dirname($path), split /:/, $ENV{SASS_PATH}]);
+    local $ENV{SASS_PATH} = '';
+    my %args = (include_paths => [@include_paths]);
     $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED() if $assetpack->minify;
+    $$text = CSS::Sass::sass2scss($$text) if $self->_extension eq 'sass';
     ($$text, $err, my $srcmap) = CSS::Sass::sass_compile($$text, %args);
     die $err if $err;
   }
   else {
-    my @cmd = ($self->executable, '--stdin', '--scss', '-I' => dirname $path);
+    local $ENV{SASS_PATH} = join ':', @include_paths;
+    my @cmd = ($self->executable, '--stdin');
+    push @cmd, '--scss'           if $self->_extension eq 'scss';
     push @cmd, qw( -t compressed) if $assetpack->minify;
     push @cmd, qw( --compass ) if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
     $self->_run(\@cmd, $text, $text);
@@ -153,7 +164,26 @@ sub process {
 }
 
 sub _extension {'scss'}
-sub _url       {'http://sass-lang.com/install'}
+
+sub _import_path {
+  my ($self, $include_paths, @rel) = @_;
+  my ($ext, $name, $path) = (pop @rel, pop @rel);
+
+  for my $p (map { File::Spec->catdir($_, @rel) } @$include_paths) {
+    return $path if -r ($path = catfile $p, "$name.$ext");
+    return $path if -r ($path = catfile $p, "_$name.$ext");
+  }
+
+  if (DEBUG == 2) { local $" = '/'; warn "[ASSETPACK] Not found \@import @rel/$name.$ext\n" }
+  return;
+}
+
+sub _include_paths {
+  my ($self, $path) = @_;
+  return File::Basename::dirname($path), split /:/, $ENV{SASS_PATH};
+}
+
+sub _url {'http://sass-lang.com/install'}
 
 =head1 COPYRIGHT AND LICENSE
 

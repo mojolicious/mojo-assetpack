@@ -42,56 +42,51 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
 {
   # https://github.com/jhthorsen/mojolicious-plugin-bootstrap3/issues/5
   my $scss_file = File::Spec->catfile(qw( t public sass subdir _issue-5.scss ));
-  my ($app, $scss);
-
-  $app = t::Helper->t->app;
+  my $app       = t::Helper->t->app;
   $app->asset('change.css' => '/sass/bs-issue-5.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#b00}, 'original';
 
-  use Mojo::Util qw( slurp spurt );
-  $scss = slurp $scss_file;
-  $scss =~ s!b00!00b!;
-  spurt $scss => $scss_file;
-
+  modify($scss_file, sub {s!b00!00b!});
   $app = t::Helper->t->app;
   $app->asset('change.css' => '/sass/bs-issue-5.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#00b}, 'updated';
 
-  $scss =~ s!00b!b00!;
-  spurt $scss => $scss_file;
+  modify($scss_file, sub {s!00b!b00!});    # reset
 }
 
 {
   # https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/60
 
-  local $ENV{SASS_PATH} = File::Spec->catdir(
-    File::Spec->rel2abs( File::Spec->curdir ),
-    qw( t public sass anotherdir)
-  );
+  local $ENV{SASS_PATH} = join(':',
+    '/will/not/find/anything/here',
+    File::Spec->catdir(File::Spec->rel2abs(File::Spec->curdir), qw( t public sass anotherdir )),
+    '/other/directory');
 
-  my $scss_file = File::Spec->catfile(
-    qw( t public sass anotherdir subdir _issue-60.scss )
-  );
-  my ($app, $scss);
+  my $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/issue-60.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#111}, 'original';
 
+  my $scss_file = File::Spec->catfile(qw( t public sass anotherdir subdir _issue-60.scss ));
+  modify($scss_file, sub {s!bbb!ccc!});
   $app = t::Helper->t->app;
   $app->asset('change.css' => '/sass/issue-60.scss');
-  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#bbb}, 'original';
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#111},
+    'SASS_PATH is search after dirname($path)';
 
-  use Mojo::Util qw( slurp spurt );
-  $scss = slurp $scss_file;
-  $scss =~ s!bbb!ccc!;
-  spurt $scss => $scss_file;
+  modify($scss_file, sub {s!ccc!bbb!});    # reset
 
-  $app = t::Helper->t->app;
-  $app->asset('change.css' => '/sass/issue-60.scss');
-  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ccc}, 'updated';
-
-  $scss =~ s!ccc!bbb!;
-  spurt $scss => $scss_file;
+  is int(split ':', $ENV{SASS_PATH}), 3, 'SASS_PATH was localized';
 }
 
 done_testing;
+
+sub modify {
+  use Mojo::Util qw( slurp spurt );
+  my ($scss_file, $cb) = @_;
+  local $_ = slurp $scss_file;
+  $cb->();
+  spurt $_ => $scss_file;
+}
 
 __DATA__
 @@ test1.html.ep

@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.61 Not Released
+ - Fix using SASS_PATH environment variable when calculating checksum #60
+
 0.60 2015-08-20T17:21:54+0200
  - Fix detecting changed sass/scss files in sub directories, with leading underscore
 
