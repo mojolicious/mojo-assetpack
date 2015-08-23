@@ -9,7 +9,7 @@ Mojolicious::Plugin::AssetPack::Preprocessor::Scss - Preprocessor for .scss file
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack::Preprocessor::Scss> is a preprocessor for
-C<.scss> files. This module inherite all the functionality from
+C<.scss> files. This module inherits all the functionality from
 L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass>.
 
 You need either the "sass" executable or the cpan module L<CSS::Sass> to make
@@ -31,7 +31,7 @@ The environment variable C<SASS_PATH> can be used to instruct this module
 to search for C<@import> files in directories other than relative to the
 the file containing the C<@import> statement.
 
-Note that C<SASS_PATH> need to hold absolute paths to work properly.
+Note that C<SASS_PATH> needs to hold absolute paths to work properly.
 
 Example usage:
 
