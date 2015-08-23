@@ -61,6 +61,36 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
   spurt $scss => $scss_file;
 }
 
+{
+  # https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/60
+
+  local $ENV{SASS_PATH} = File::Spec->catdir(
+    File::Spec->rel2abs( File::Spec->curdir ),
+    qw( t public sass anotherdir)
+  );
+
+  my $scss_file = File::Spec->catfile(
+    qw( t public sass anotherdir subdir _issue-60.scss )
+  );
+  my ($app, $scss);
+
+  $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/issue-60.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#bbb}, 'original';
+
+  use Mojo::Util qw( slurp spurt );
+  $scss = slurp $scss_file;
+  $scss =~ s!bbb!ccc!;
+  spurt $scss => $scss_file;
+
+  $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/issue-60.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ccc}, 'updated';
+
+  $scss =~ s!ccc!bbb!;
+  spurt $scss => $scss_file;
+}
+
 done_testing;
 
 __DATA__
