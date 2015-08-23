@@ -38,7 +38,17 @@ Example usage:
   local $ENV{SASS_PATH} = "/some/dir:/usr/share/other/dir";
   $app->asset("app.css" => "sass/app.scss");
 
-TODO: Add attribute C<include_paths()> to avoid use of global variables.
+It is also possible to set the L</include_paths> attribute instead of using
+global variables:
+
+  $app->asset->preprocessors->add(scss => Scss => {include_paths => [...]});
+  $app->asset("app.css" => "sass/app.scss");
+
+The final list of directories to search will be:
+
+  1. dirname $main_sass_file
+  3. $self->include_paths()
+  2. split /:/, $ENV{SASS_PATH}
 
 =head2 COMPASS
 
@@ -87,9 +97,17 @@ my $IMPORT_RE = qr{ \@import \s+ (["']) (.*?) \1 }x;
 
 Holds the path to the "sass" executable. Default to just "sass".
 
+=head2 include_paths
+
+  $self = $self->include_paths(\@paths);
+  $paths = $self->include_paths;
+
+Holds optional paths to search for where to find C<@import> files.
+
 =cut
 
 has executable => sub { File::Which::which('sass') || 'sass' };
+has include_paths => sub { [] };
 
 =head1 METHODS
 
@@ -180,7 +198,7 @@ sub _import_path {
 
 sub _include_paths {
   my ($self, $path) = @_;
-  return File::Basename::dirname($path), split /:/, $ENV{SASS_PATH};
+  return File::Basename::dirname($path), @{$self->include_paths}, split /:/, $ENV{SASS_PATH};
 }
 
 sub _url {'http://sass-lang.com/install'}

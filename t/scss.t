@@ -59,23 +59,30 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
 
   local $ENV{SASS_PATH} = join(':',
     '/will/not/find/anything/here',
-    File::Spec->catdir(File::Spec->rel2abs(File::Spec->curdir), qw( t public sass anotherdir )),
+    File::Spec->catdir(File::Spec->rel2abs(File::Spec->curdir), qw( t public anotherdir )),
     '/other/directory');
 
-  my $app = t::Helper->t->app;
+  # SASS_PATH
+  my $app       = t::Helper->t->app;
+  my $scss_file = File::Spec->catfile(qw( t public anotherdir subdir _issue-60.scss ));
+  modify($scss_file, sub {s!ccc!ddd!});
   $app->asset('change.css' => '/sass/issue-60.scss');
-  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#111}, 'original';
-
-  my $scss_file = File::Spec->catfile(qw( t public sass anotherdir subdir _issue-60.scss ));
-  modify($scss_file, sub {s!bbb!ccc!});
-  $app = t::Helper->t->app;
-  $app->asset('change.css' => '/sass/issue-60.scss');
-  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#111},
-    'SASS_PATH is search after dirname($path)';
-
-  modify($scss_file, sub {s!ccc!bbb!});    # reset
-
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ddd},
+    'SASS_PATH is searched after dirname($path)';
   is int(split ':', $ENV{SASS_PATH}), 3, 'SASS_PATH was localized';
+
+  # include_paths()
+  $app = t::Helper->t->app;
+  modify($scss_file, sub {s!ddd!333!});
+  $app->asset->preprocessors->add(scss => Scss => {include_paths => [split /:/, $ENV{SASS_PATH}]});
+  local $ENV{SASS_PATH} = '';
+  $app->asset('change.css' => '/sass/issue-60.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#333},
+    'include_paths() is searched after dirname($path)';
+  is int(split ':', $ENV{SASS_PATH}), 0, 'SASS_PATH was localized';
+
+  # reset
+  modify($scss_file, sub {s!333!ccc!});
 }
 
 done_testing;
