@@ -63,7 +63,7 @@ You can also define your own preprocessors. Example code:
     $$text = "// yikes!\n" if 5 < rand 10;
   }
 
-  app->asset->preprocessors->add(js => My::Preprocessor->new);
+  app->asset->preprocessors->add(js => 'My::Preprocessor' => {});
 
 =cut
 
@@ -105,23 +105,42 @@ has fallback => sub {
 =head2 add
 
   $self->add($extension => $object);
-
+  $self->add($extension => $class => \%attrs);
   $self->add($extension => sub {
     my ($assetpack, $text, $file) = @_;
     $$text =~ s/foo/bar/ if $file =~ /baz/ and $assetpack->minify;
   });
 
-Define a preprocessor which is run on a given file extension. These
-preprocessors will be chained. The callbacks will be called in the order they
-where added.
+Define a preprocessor which is run on a given file extension. All the
+preprocessors will be called in the order they are added.
 
 In case of C<$object>, the object need to be able to have the C<process()>
 method.
+
+These two are the same:
+
+  use Mojolicious::Plugin::AssetPack::Preprocessor::Scss;
+  my $object = Mojolicious::Plugin::AssetPack::Preprocessor::Scss->new(\%attrs);
+  $self->add(scss => $object);
+  # the above is the same as... (no need to load the package)
+  $self->add(scss => Scss => \%attrs);
+
+A C<$class> without "::" will be prefixed with
+C<Mojolicious::Plugin::AssetPack::Preprocessor::>.
 
 =cut
 
 sub add {
   my ($self, $extension, $arg) = @_;
+
+  # create object
+  if (@_ == 4) {
+    my $class = $arg =~ /::/ ? $arg : "Mojolicious::Plugin::AssetPack::Preprocessor::$arg";
+    eval "require $class;1" or die "Could not load $class: $@\n";
+    warn "[ASSETPACK] Adding $class preprocessor for $extension.\n" if DEBUG;
+    my $object = $class->new(pop);
+    return $self->add($extension => $object);
+  }
 
   # back compat
   if (ref $arg eq 'CODE') {
@@ -219,13 +238,8 @@ sub _preprocessors {
   my @preprocessors = @{$self->subscribers($extension)};
 
   return @preprocessors if @preprocessors;
-
-  if (my $class = $PREPROCESSORS{$extension}) {
-    warn "[ASSETPACK] Adding $class preprocessor.\n" if DEBUG;
-    eval "require $class;1" or die "Could not load $class: $@\n";
-    return $self->add($extension => $class->new);
-  }
-
+  my $class = $PREPROCESSORS{$extension};
+  return $self->add($extension => $class => {}) if $class;
   return $self->fallback;
 }
 

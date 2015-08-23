@@ -55,18 +55,8 @@ sub get {
 
 sub preprocessor {
   my ($self, $name, $args) = @_;
-  my $class = $name =~ /::/ ? $name : "Mojolicious::Plugin::AssetPack::Preprocessor::$name";
-  my $preprocessor;
-
   $args->{extensions} or die "Usage: \$self->preprocessor(\$name => {extensions => [...]})";
-  eval "require $class;1" or die "Could not load $class: $@\n";
-  $preprocessor = $class->new($args);
-
-  for my $ext (@{$args->{extensions}}) {
-    warn "[ASSETPACK] Adding $class preprocessor.\n" if DEBUG;
-    $self->preprocessors->on($ext => $preprocessor);
-  }
-
+  $self->preprocessors->add($_ => $name => $args) for @{$args->{extensions}};
   return $self;
 }
 
@@ -582,12 +572,9 @@ details.
 
 =head2 preprocessor
 
-  $self = $self->preprocessor($name => \%args);
+DEPRECATED. Use this instead:
 
-Use this method to manually register a preprocessor.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessor::Browserify/SYNOPSIS>
-for example usage.
+  $self->preprocessors->add($extension => $class => \%attrs);
 
 =head2 purge
 
