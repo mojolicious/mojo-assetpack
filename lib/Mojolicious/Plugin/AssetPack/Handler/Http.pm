@@ -6,8 +6,8 @@ Mojolicious::Plugin::AssetPack::Handler::Http - A URL handler for http:// assets
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack::Handler::Sprites> is a module that can
-fetch assets from web.
+L<Mojolicious::Plugin::AssetPack::Handler::Http> is a module that can
+fetch assets from the web.
 
 This class is EXPERIMENTAL.
 
@@ -24,7 +24,7 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
   $asset = $self->asset_for($url, $assetpack);
 
-This method tries to download the asset from web.
+This method tries to download the asset from the web.
 
 =cut
 
