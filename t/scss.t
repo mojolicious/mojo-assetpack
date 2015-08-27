@@ -85,6 +85,22 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
   modify($scss_file, sub {s!333!ccc!});
 }
 
+{
+  # https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/62
+
+  my $scss_file = File::Spec->catfile(qw( t public sass issue-62-import.scss ));
+  my $app       = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/issue-62.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ccc}, 'original';
+
+  modify($scss_file, sub {s!ccc!ddd!});
+  $app = t::Helper->t->app;
+  $app->asset('change.css' => '/sass/issue-62.scss');
+  like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ddd}, 'updated';
+
+  modify($scss_file, sub {s!ddd!ccc!});
+}
+
 done_testing;
 
 sub modify {
