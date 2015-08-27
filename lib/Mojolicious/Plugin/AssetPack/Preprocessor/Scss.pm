@@ -188,8 +188,10 @@ sub _import_path {
   my ($ext, $name, $path) = (pop @rel, pop @rel);
 
   for my $p (map { File::Spec->catdir($_, @rel) } @$include_paths) {
-    return $path if -r ($path = catfile $p, "$name.$ext");
-    return $path if -r ($path = catfile $p, "_$name.$ext");
+    for ("$name.$ext", "_$name.$ext", $name, "_$name") {
+      my $f = catfile $p, $_;
+      return $f if -f $f and -r _;
+    }
   }
 
   if (DEBUG == 2) { local $" = '/'; warn "[ASSETPACK] Not found \@import @rel/$name.$ext\n" }
