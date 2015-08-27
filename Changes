@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.62 2015-08-27T11:40:41-0400
+ - Fix @import tracking #62
+
 0.61 2015-08-23T13:34:34+0200
  - Add include_paths() to Scss preprocessor
  - Fix using SASS_PATH environment variable when calculating checksum #60
