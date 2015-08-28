@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.62
+    0.63
 
 SYNOPSIS
   Application
@@ -97,6 +97,16 @@ ATTRIBUTES
 
     NOTE! You need to have a trailing "/" at the end of the string.
 
+  headers
+      $hash_ref = $self->headers;
+      $self = $self->headers({"Cache-Control" => "max-age=31536000"});
+
+    This attribute can hold custom response headers when serving assets. The
+    default is no headers, but this might change in future release to
+    include "Cache-Control".
+
+    This attribute is EXPERIMENTAL.
+
   minify
       $bool = $self->minify;
       $app->plugin("AssetPack" => {minify => $bool});
@@ -163,13 +173,14 @@ METHODS
   register
       plugin AssetPack => {
         base_url     => $str,     # default to "/packed"
+        headers      => {"Cache-Control" => "max-age=31536000"},
         minify       => $bool,    # compress assets
         proxy        => "detect", # autodetect proxy settings
         out_dir      => "/path/to/some/directory",
         source_paths => [...],
       };
 
-    Will register the "compress" helper. All arguments are optional.
+    Will register the "asset" helper. All arguments are optional.
 
   source_paths
       $self = $self->source_paths($array_ref);

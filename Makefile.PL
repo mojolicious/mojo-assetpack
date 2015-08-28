@@ -11,7 +11,7 @@ WriteMakefile(
     resources => {
       bugtracker => 'https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues',
       homepage   => 'https://github.com/jhthorsen/mojolicious-plugin-assetpack',
-      repository => 'https://github.com/jhthorsen/mojolicious-plugin-assetpack',
+      repository => 'https://github.com/jhthorsen/mojolicious-plugin-assetpack.git',
     },
   },
   BUILD_REQUIRES => {'Test::More' => '0.88'},
