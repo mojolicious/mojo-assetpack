@@ -154,7 +154,7 @@ sub _assets_from_memory {
 
       return if $c->req->is_handshake or $c->res->code;
       return unless $path->[1] and 0 == index "$path", $self->base_url;
-      return unless my $asset = $c->asset->_asset($path->[1]);
+      return unless my $asset = $c->asset->{asset}{$path->[1]};
       return if $asset->{internal};
       $c->res->headers->last_modified(Mojo::Date->new($^T))
         ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');

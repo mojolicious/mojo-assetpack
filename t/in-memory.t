@@ -16,6 +16,8 @@ ok !-e File::Spec->catfile(qw( t public packed from-data-f580ad0fd8d617446dda2a0
 
 ok + (grep {/store assets in memory/} @{$args->{log}}), 'AssetPack will store assets in memory';
 
+$t->get_ok('/packed/../../00-basic.t')->status_is(404);
+
 done_testing;
 
 __DATA__
