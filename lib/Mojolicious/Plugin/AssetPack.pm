@@ -15,6 +15,7 @@ use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 our $VERSION = '0.62';
 
 has base_url      => '/packed/';
+has headers       => sub { +{} };
 has minify        => 0;
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 has out_dir       => '';
@@ -97,6 +98,7 @@ sub register {
   $self->_app($app);
   $self->_ua->server->app($app);
   $self->_ua->proxy->detect if $config->{proxy};
+  $self->headers($config->{headers} || {});
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
@@ -144,9 +146,9 @@ sub _assets {
 }
 
 sub _assets_from_memory {
-  my $self = shift;
+  my $self    = shift;
+  my $headers = $self->headers;
 
-  $self->{assets_from_memory_added} = 1;
   $self->_app->hook(
     before_routes => sub {
       my $c    = shift;
@@ -156,8 +158,9 @@ sub _assets_from_memory {
       return unless $path->[1] and 0 == index "$path", $self->base_url;
       return unless my $asset = $c->asset->{asset}{$path->[1]};
       return if $asset->{internal};
-      $c->res->headers->last_modified(Mojo::Date->new($^T))
+      my $h = $c->res->headers->last_modified(Mojo::Date->new($^T))
         ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
+      $h->header($_ => $headers->{$_}) for keys %$headers;
       $c->reply->asset($asset);
     }
   );
@@ -317,9 +320,22 @@ sub _process {
     };
   }
 
-  if (!$self->{assets_from_memory_added} and !$self->out_dir) {
-    $self->_app->log->warn('AssetPack will store assets in memory');
-    $self->_assets_from_memory;
+  unless ($self->{hook_added}++) {
+    if (!$self->out_dir) {
+      $self->_app->log->warn('AssetPack will store assets in memory');
+      $self->_assets_from_memory;
+    }
+    elsif (my $headers = $self->headers) {
+      $self->_app->hook(
+        after_static => sub {
+          my $c    = shift;
+          my $path = $c->req->url->path;
+          return unless $path->[1] and 0 == index "$path", $self->base_url;
+          my $h = $c->res->headers;
+          $h->header($_ => $headers->{$_}) for keys %$headers;
+        }
+      );
+    }
   }
 
   $asset->in_memory(!$self->out_dir)->save;
@@ -515,6 +531,17 @@ See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
 
 NOTE! You need to have a trailing "/" at the end of the string.
 
+=head2 headers
+
+  $hash_ref = $self->headers;
+  $self = $self->headers({"Cache-Control" => "max-age=31536000"});
+
+This attribute can hold custom response headers when serving assets.
+The default is no headers, but this might change in future release to
+include "Cache-Control".
+
+This attribute is EXPERIMENTAL.
+
 =head2 minify
 
   $bool = $self->minify;
@@ -592,13 +619,14 @@ This method is EXPERIMENTAL and can change or be removed at any time.
 
   plugin AssetPack => {
     base_url     => $str,     # default to "/packed"
+    headers      => {"Cache-Control" => "max-age=31536000"},
     minify       => $bool,    # compress assets
     proxy        => "detect", # autodetect proxy settings
     out_dir      => "/path/to/some/directory",
     source_paths => [...],
   };
 
-Will register the C<compress> helper. All L<arguments|/ATTRIBUTES> are optional.
+Will register the C<asset> helper. All L<arguments|/ATTRIBUTES> are optional.
 
 =head2 source_paths
 

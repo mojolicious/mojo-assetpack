@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t({minify => 0, headers => {'Cache-Control' => 'max-age=31536000'}});
 
   ok $t->app->asset->preprocessors->can_process('css'), 'found preprocessor for css';
 
@@ -12,8 +12,11 @@ use t::Helper;
     qr{<link href="/packed/a-09a653553edca03ad3308a868e5a06ac\.css".*<link href="/packed/b-89dbc5a64c4e7e64a3d1ce177b740a7e\.css"}s
     );
 
-  $t->get_ok('/packed/a-09a653553edca03ad3308a868e5a06ac.css')->content_like(qr{a1a1a1;});
+  $t->get_ok('/packed/a-09a653553edca03ad3308a868e5a06ac.css')->content_like(qr{a1a1a1;})
+    ->header_is('Cache-Control', 'max-age=31536000');
   $t->get_ok('/packed/b-89dbc5a64c4e7e64a3d1ce177b740a7e.css')->content_like(qr{b1b1b1;});
+
+  $t->get_ok('/packed/a-not-found.css')->status_is(404)->header_is('Cache-Control', undef);
 }
 
 {
