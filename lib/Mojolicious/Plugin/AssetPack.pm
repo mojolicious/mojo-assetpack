@@ -339,7 +339,7 @@ sub _process {
   }
 
   $asset->in_memory(!$self->out_dir)->save;
-  $self->_app->log->info("Built asset for $moniker");
+  $self->_app->log->info("AssetPack built @{[$asset->path]}");
   $asset;
 }
 
