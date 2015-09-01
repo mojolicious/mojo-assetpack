@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.64 Not Released
+ - Add "SHIPPING" section to Cookbook
  - Fix adding custom response headers when assets are already built #55
  - Improved error reporting when unable to build assets
 

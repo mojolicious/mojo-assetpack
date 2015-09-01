@@ -66,6 +66,37 @@ See also L<http://www.google.com/fonts> for a selection of fonts.
 
 See L<http://api.jquery.com/> for jQuery documentation.
 
+=head1 SHIPPING
+
+=head2 Remember to minify your assets
+
+AssetPack can create both minified and "not minified" assets. This is
+important to remember when you want to ship an application, since you
+might forget to create the production/minified assets while developing.
+
+To makes sure this is done, you can add a unit test that looks pretty much
+like this:
+
+  use Mojo::Base -strict;
+  use Test::Mojo;
+
+  plan skip => "This should be an ./xt test" unless -d ".git";
+
+  for my $mode (qw( development production )) {
+    local $ENV{MOJO_MODE} = $mode;
+    Test::Mojo->new("YourAwesomeMojoApp")->get_ok("/");
+  }
+
+  done_testing;
+
+Note that the test above will only work if you are not manually specifying
+L<Mojolicious::Plugin::AssetPack/minify>.
+
+=head2 Bundling the assets before shipping to CPAN
+
+You can follow the same L<Mojolicious::Guides::Cookbook/Making your application installable>
+guide, since the assets are stored in your "public" directory.
+
 =head1 NEXT
 
 Have a look at the L<unit tests|https://github.com/jhthorsen/mojolicious-plugin-assetpack/tree/t>.
