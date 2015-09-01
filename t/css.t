@@ -20,6 +20,13 @@ use t::Helper;
 }
 
 {
+  # check that headers are added when not building assets
+  my $t = t::Helper->t({minify => 0, headers => {'Cache-Control' => 'max-age=31536000'}});
+  $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
+  $t->get_ok('/packed/a-09a653553edca03ad3308a868e5a06ac.css')->header_is('Cache-Control', 'max-age=31536000');
+}
+
+{
   my $t = t::Helper->t({minify => 1});
 
   $t->app->asset('app.css' => '/css/c.css', '/css/d.css');

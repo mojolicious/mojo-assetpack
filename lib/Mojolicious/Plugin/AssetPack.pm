@@ -107,7 +107,9 @@ sub register {
   if (NO_CACHE) {
     $app->log->info('AssetPack Will rebuild assets on each request in memory');
     $self->out_dir('');
-    $self->_assets_from_memory;
+  }
+  if (!$self->out_dir) {
+    $self->_app->log->warn('AssetPack will serve assets from memory');
   }
 
   $app->helper(
@@ -117,6 +119,8 @@ sub register {
       return $self->_inject(@_);
     }
   );
+
+  $self->_add_hook($app, $config);
 }
 
 sub source_paths {
@@ -132,6 +136,40 @@ sub source_paths {
   }
 }
 
+sub _add_hook {
+  my ($self, $app, $config) = @_;
+  my $headers = $self->headers;
+
+  if (!$self->out_dir) {
+    $app->hook(
+      before_routes => sub {
+        my $c    = shift;
+        my $path = $c->req->url->path;
+
+        return if $c->req->is_handshake or $c->res->code;
+        return unless $path->[1] and 0 == index "$path", $self->base_url;
+        return unless my $asset = $c->asset->{asset}{$path->[1]};
+        return if $asset->{internal};
+        my $h = $c->res->headers->last_modified(Mojo::Date->new($^T))
+          ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
+        $h->header($_ => $headers->{$_}) for keys %$headers;
+        $c->reply->asset($asset);
+      }
+    );
+  }
+  elsif (%$headers) {
+    $app->hook(
+      after_static => sub {
+        my $c    = shift;
+        my $path = $c->req->url->path;
+        return unless $path->[1] and 0 == index "$path", $self->base_url;
+        my $h = $c->res->headers;
+        $h->header($_ => $headers->{$_}) for keys %$headers;
+      }
+    );
+  }
+}
+
 sub _asset {
   my ($self, $name) = @_;
   my $asset = $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new;
@@ -143,27 +181,6 @@ sub _assets {
   my ($self, $moniker, @assets) = @_;
   $self->{assets}{$moniker} = \@assets if @assets;
   $self->{assets}{$moniker} || [];
-}
-
-sub _assets_from_memory {
-  my $self    = shift;
-  my $headers = $self->headers;
-
-  $self->_app->hook(
-    before_routes => sub {
-      my $c    = shift;
-      my $path = $c->req->url->path;
-
-      return if $c->req->is_handshake or $c->res->code;
-      return unless $path->[1] and 0 == index "$path", $self->base_url;
-      return unless my $asset = $c->asset->{asset}{$path->[1]};
-      return if $asset->{internal};
-      my $h = $c->res->headers->last_modified(Mojo::Date->new($^T))
-        ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
-      $h->header($_ => $headers->{$_}) for keys %$headers;
-      $c->reply->asset($asset);
-    }
-  );
 }
 
 sub _build_out_dir {
@@ -318,24 +335,6 @@ sub _process {
       $asset->content($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
       last;
     };
-  }
-
-  unless ($self->{hook_added}++) {
-    if (!$self->out_dir) {
-      $self->_app->log->warn('AssetPack will store assets in memory');
-      $self->_assets_from_memory;
-    }
-    elsif (my $headers = $self->headers) {
-      $self->_app->hook(
-        after_static => sub {
-          my $c    = shift;
-          my $path = $c->req->url->path;
-          return unless $path->[1] and 0 == index "$path", $self->base_url;
-          my $h = $c->res->headers;
-          $h->header($_ => $headers->{$_}) for keys %$headers;
-        }
-      );
-    }
   }
 
   $asset->in_memory(!$self->out_dir)->save;
@@ -533,8 +532,8 @@ NOTE! You need to have a trailing "/" at the end of the string.
 
 =head2 headers
 
+  $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
   $hash_ref = $self->headers;
-  $self = $self->headers({"Cache-Control" => "max-age=31536000"});
 
 This attribute can hold custom response headers when serving assets.
 The default is no headers, but this might change in future release to
@@ -544,8 +543,8 @@ This attribute is EXPERIMENTAL.
 
 =head2 minify
 
-  $bool = $self->minify;
   $app->plugin("AssetPack" => {minify => $bool});
+  $bool = $self->minify;
 
 Set this to true if the assets should be minified.
 
@@ -555,8 +554,8 @@ See also L<Mojolicious::Plugin::AssetPack::Manual::Modes>.
 
 =head2 out_dir
 
-  $str = $self->out_dir;
   $app->plugin("AssetPack" => {out_dir => $str});
+  $str = $self->out_dir;
 
 Holds the path to the directory where packed files can be written.
 

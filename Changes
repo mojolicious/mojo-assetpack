@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.64 Not Released
+ - Fix adding custom response headers when assets are already built #55
+
 0.63 2015-08-29T00:51:29+0200
  - Fix responding 404 when in-memory asset could not be found
  - Add support for custom response headers #55
