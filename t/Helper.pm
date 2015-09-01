@@ -14,6 +14,7 @@ sub t {
   $args->{log} ||= [];
   $t->app->home->parse(Cwd::abs_path(File::Spec->catdir(dirname $0)));
   $t->app->log->on(message => sub { push @{$args->{log}}, $_[2] });
+  $t->app->log->on(message => sub { warn "[$_[1]] $_[2]\n" }) if $ENV{MOJO_ASSETPACK_DEBUG};
   $t->app->static->paths([Cwd::abs_path(File::Spec->catdir(dirname($0), 'public'))]);
   $t->app->plugin(AssetPack => $args || {});
   $t->app->routes->get("/test1" => 'test1');

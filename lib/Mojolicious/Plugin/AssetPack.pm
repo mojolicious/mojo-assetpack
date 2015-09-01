@@ -36,10 +36,10 @@ sub add {
 }
 
 sub fetch {
-  my $self = shift;
-  my $url  = Mojo::URL->new(shift);
-  my $asset
-    = $self->_packed("$url") || $self->_handler($url->scheme)->asset_for($url, $self)->in_memory(!$self->out_dir)->save;
+  my $self  = shift;
+  my $url   = Mojo::URL->new(shift);
+  my $asset = $self->_packed("$url")
+    || $self->_handler($url->scheme)->asset_for($url, $self)->in_memory($self->out_dir ? 0 : 1)->save;
   return $asset if @_;    # internal
   return $asset->path;    # documented api
 }
@@ -95,6 +95,9 @@ sub register {
   $self->{processed}    = {};
   $self->{source_paths} = $self->_build_source_paths($app, $config);
 
+  # Not official. Want to keep it private for now...
+  $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
+
   $self->_app($app);
   $self->_ua->server->app($app);
   $self->_ua->proxy->detect if $config->{proxy};
@@ -109,7 +112,8 @@ sub register {
     $self->out_dir('');
   }
   if (!$self->out_dir) {
-    $self->_app->log->warn('AssetPack will serve assets from memory');
+    $self->_app->log->warn('AssetPack will serve assets from memory.');
+    $self->{assets_from_memory} = 1;
   }
 
   $app->helper(
@@ -120,7 +124,7 @@ sub register {
     }
   );
 
-  $self->_add_hook($app, $config);
+  Mojo::IOLoop->next_tick(sub { $self->_add_hook($app, $config) });
 }
 
 sub source_paths {
@@ -140,7 +144,7 @@ sub _add_hook {
   my ($self, $app, $config) = @_;
   my $headers = $self->headers;
 
-  if (!$self->out_dir) {
+  if ($self->{assets_from_memory}) {
     $app->hook(
       before_routes => sub {
         my $c    = shift;
@@ -305,41 +309,50 @@ sub _packed {
 
 sub _process {
   my ($self, $moniker, @sources) = @_;
+  my $topic = $moniker;
   my ($name, $ext) = (_name($moniker), _ext($moniker));
   my ($asset, $file, @checksum);
 
-  @sources = map {
-    my $source = $self->_source_for_url($_);
-    push @checksum, $self->preprocessors->checksum(_ext($_), \$source->slurp, $source->path);
-    $source;
-  } @sources;
+  eval {
+    for my $s (@sources) {
+      $topic = $s;
+      $s     = $self->_source_for_url($s);    # rewrite @sources
+      push @checksum, $self->preprocessors->checksum(_ext($topic), \$s->slurp, $s->path);
+    }
 
-  @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
-  $asset = $self->_packed($self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$});
-  return $asset if $asset;
+    @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
+    $asset = $self->_packed($self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$});
+    return $asset if $asset;                  # already processed
 
-  $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
-  $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
-  $asset->in_memory(1)->path(File::Spec->catfile($self->out_dir, $file));
+    $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
+    $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
+    $asset->in_memory(1)->path(File::Spec->catfile($self->out_dir, $file));
 
-  for my $source (@sources) {
-    eval {
-      my $content = $source->slurp;
-      $self->preprocessors->process(_ext($source->path), $self, \$content, $source->path);
+    for my $s (@sources) {
+      $topic = $s->basename;
+      my $content = $s->slurp;
+      $self->preprocessors->process(_ext($s->path), $self, \$content, $s->path);
       $asset->content($asset->content . $content);
-      1;
-    } or do {
-      my $e = $@;
-      warn "[ASSETPACK] process(@{[$source->path]}) FAIL $e\n" if DEBUG;
-      $asset->path(File::Spec->catfile($self->out_dir, "$name-$checksum[0].err.$ext"));
-      $asset->content($self->_make_error_asset($moniker, $source->basename, $e || 'Unknown error'));
-      last;
-    };
-  }
+    }
 
-  $asset->in_memory(!$self->out_dir)->save;
-  $self->_app->log->info("AssetPack built @{[$asset->path]}");
-  $asset;
+    $asset->in_memory($self->out_dir ? 0 : 1)->save;
+    $self->_app->log->info("AssetPack built @{[$asset->path]}");
+  } or do {
+    my $err          = $@;
+    my $source_paths = join ',', @{$self->source_paths};
+    my $static_paths = join ',', @{$self->_app->static->paths};
+    $err =~ s!\s+$!!;    # remove newlines
+    my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
+    $self->_app->log->error($msg);
+    die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
+    $file ||= "$name-@{[time]}.$ext";
+    $file =~ s!$ext$!err.$ext!;
+    $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new(in_memory => 1, path => $file);
+    $asset->content($self->_make_error_asset($moniker, $topic, $err || 'Unknown error'));
+  };
+
+  $self->{assets_from_memory}++ if $asset->in_memory;
+  return $asset;
 }
 
 sub _process_many {
@@ -377,7 +390,7 @@ sub _source_for_url {
   my @path = split '/', $url;
 
   for my $path (map { Cwd::abs_path(File::Spec->catfile($_, @path)) } @look_in) {
-    return $self->_asset($_)->path($path)->in_memory(0) if $path and -r $path;
+    return $self->_asset($path)->path($path)->in_memory(0) if $path and -r $path;
   }
 
   return $self->_handler('https')->asset_for($url, $self);
