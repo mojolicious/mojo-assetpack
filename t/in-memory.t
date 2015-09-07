@@ -15,7 +15,7 @@ $t->get_ok('/packed/from-data-f580ad0fd8d617446dda2a00e75cf8c2.css')->content_li
 ok !-e File::Spec->catfile(qw( t public packed from-data-f580ad0fd8d617446dda2a00e75cf8c2.css )),
   'no file was created on disk';
 
-ok + (grep {/serve assets from memory/} @{$args->{log}}), 'AssetPack will serve assets from memory';
+ok $t->app->asset->{assets_from_memory}, 'AssetPack will serve assets from memory';
 
 $t->get_ok('/packed/../../00-basic.t')->status_is(404)->header_is('Cache-Control', undef);
 

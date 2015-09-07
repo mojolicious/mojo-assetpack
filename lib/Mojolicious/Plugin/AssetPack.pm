@@ -112,7 +112,6 @@ sub register {
     $self->out_dir('');
   }
   if (!$self->out_dir) {
-    $self->_app->log->warn('AssetPack will serve assets from memory.');
     $self->{assets_from_memory} = 1;
   }
 
@@ -309,6 +308,7 @@ sub _packed {
 
 sub _process {
   my ($self, $moniker, @sources) = @_;
+  my $app   = $self->_app;
   my $topic = $moniker;
   my ($name, $ext) = (_name($moniker), _ext($moniker));
   my ($asset, $file, @checksum);
@@ -336,14 +336,13 @@ sub _process {
     }
 
     $asset->in_memory($self->out_dir ? 0 : 1)->save;
-    $self->_app->log->info("AssetPack built @{[$asset->path]}");
   } or do {
     my $err          = $@;
     my $source_paths = join ',', @{$self->source_paths};
-    my $static_paths = join ',', @{$self->_app->static->paths};
+    my $static_paths = join ',', @{$app->static->paths};
     $err =~ s!\s+$!!;    # remove newlines
     my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
-    $self->_app->log->error($msg);
+    $app->log->error($msg);
     die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
     $file ||= "$name-@{[time]}.$ext";
     $file =~ s!$ext$!err.$ext!;
@@ -351,7 +350,14 @@ sub _process {
     $asset->content($self->_make_error_asset($moniker, $topic, $err || 'Unknown error'));
   };
 
-  $self->{assets_from_memory}++ if $asset->in_memory;
+  if ($asset->in_memory) {
+    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]} in memory.");
+    $self->{assets_from_memory}++;
+  }
+  elsif ($file) {
+    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]}.");
+  }
+
   return $asset;
 }
 
