@@ -48,7 +48,7 @@ sub minify {
     $$text = JavaScript::Minifier::XS::minify($$text);
   }
 
-  $$text .= "\n";
+  $$text .= "\n" if length $$text;
 
   $self;
 }
