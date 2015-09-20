@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.64 Not Released
+0.64 2015-09-20T11:44:26+0200
  - Add "SHIPPING" section to Cookbook
  - Fix adding custom response headers when assets are already built #55
  - Fix always add newline to JavaScript assets to prevent issues with comments

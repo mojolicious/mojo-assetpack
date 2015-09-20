@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.63
+    0.64
 
 SYNOPSIS
   Application
@@ -98,8 +98,8 @@ ATTRIBUTES
     NOTE! You need to have a trailing "/" at the end of the string.
 
   headers
+      $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
       $hash_ref = $self->headers;
-      $self = $self->headers({"Cache-Control" => "max-age=31536000"});
 
     This attribute can hold custom response headers when serving assets. The
     default is no headers, but this might change in future release to
@@ -108,8 +108,8 @@ ATTRIBUTES
     This attribute is EXPERIMENTAL.
 
   minify
-      $bool = $self->minify;
       $app->plugin("AssetPack" => {minify => $bool});
+      $bool = $self->minify;
 
     Set this to true if the assets should be minified.
 
@@ -118,8 +118,8 @@ ATTRIBUTES
     See also Mojolicious::Plugin::AssetPack::Manual::Modes.
 
   out_dir
-      $str = $self->out_dir;
       $app->plugin("AssetPack" => {out_dir => $str});
+      $str = $self->out_dir;
 
     Holds the path to the directory where packed files can be written.
 
