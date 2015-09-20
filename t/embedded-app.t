@@ -2,7 +2,7 @@ use t::Helper;
 use Cwd;
 
 my $working_dir = getcwd;
-my $md5         = '527b09c38362b669ec6e16c00d9fb30d';
+my $md5         = '278ce8b881b15d1972024a8e9ece6799';
 my ($embedded, $main);
 
 {

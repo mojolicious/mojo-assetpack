@@ -22,6 +22,12 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use JavaScript::Minifier::XS;
 use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH} || 300;    # might change
 
+my $COMMENT_RE = do {
+  my $re = sprintf '^\s*(%s)', join '|', map {quotemeta} qw( /* */ // );
+  $re = qr{$re};
+  $re;
+};
+
 =head1 METHODS
 
 =head2 minify
@@ -35,21 +41,15 @@ code.
 
 sub minify {
   my ($self, $text) = @_;
-  my $minified = 0;
 
+  # Guess if the input text is already minified
   while ($$text =~ /^(.+)$/mg) {
     my $line = $1;
-    next if $line =~ m!^(\s*/\*|\s*\*|\s*//)!;    # comments /*, */ and //
-    $minified = length $line > MINIFIED_LINE_LENGTH ? 1 : 0;
-    last unless $minified;
+    next if $line =~ $COMMENT_RE;                          # comments /*, */ and //
+    return $self if MINIFIED_LINE_LENGTH < length $line;
   }
 
-  if (!$minified and length $$text) {
-    $$text = JavaScript::Minifier::XS::minify($$text);
-  }
-
-  $$text .= "\n" if length $$text;
-
+  $$text = JavaScript::Minifier::XS::minify($$text) if length $$text;
   $self;
 }
 
@@ -64,7 +64,9 @@ See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
-  return $self->minify($text) if $assetpack->minify;
+  $self->minify($text) if $assetpack->minify;
+  $$text .= "\n" if length $$text and $$text !~ /[\n\r]+$/;
+
   return $self;
 }
 

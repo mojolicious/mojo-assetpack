@@ -255,7 +255,7 @@ sub _inject {
 
   eval {
     if ($args->{inline}) {
-      return $c->$tag_helper(@attrs, sub { join "\n", $self->get($moniker, $args) });
+      return $c->$tag_helper(@attrs, sub { join '', $self->get($moniker, $args) });
     }
     else {
       return Mojo::ByteStream->new(join "\n", map { $c->$tag_helper($_, @attrs) } $self->get($moniker, $args));
