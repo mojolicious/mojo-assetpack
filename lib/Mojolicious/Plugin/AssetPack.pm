@@ -20,8 +20,7 @@ has minify        => 0;
 has out_dir       => sub { Carp::confess('out_dir() must be set.') };
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 
-has _app => undef;
-has _ua  => sub {
+has _ua => sub {
   require Mojo::UserAgent;
   Mojo::UserAgent->new(max_redirects => 3);
 };
@@ -94,8 +93,9 @@ sub register {
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
   $self->{source_paths} = $self->_build_source_paths($app, $config);
 
-  $self->_app($app);
   $self->_ua->server->app($app);
+  Scalar::Util::weaken($self->_ua->server->{app});
+
   $self->_ua->proxy->detect if $config->{proxy};
   $self->headers($config->{headers} || {});
   $self->minify($config->{minify} // $app->mode ne 'development');
@@ -110,7 +110,7 @@ sub register {
     }
   );
 
-  Mojo::IOLoop->next_tick(sub { $self->_add_hook($app, $config) });
+  Mojo::IOLoop->next_tick(sub { $self->_add_hook($config) });
 }
 
 sub source_paths {
@@ -127,11 +127,11 @@ sub source_paths {
 }
 
 sub _add_hook {
-  my ($self, $app, $config) = @_;
+  my ($self, $config) = @_;
   my $headers = $self->headers;
 
   if (%$headers) {
-    $app->hook(
+    $self->_app->hook(
       after_static => sub {
         my $c    = shift;
         my $path = $c->req->url->path;
@@ -142,6 +142,8 @@ sub _add_hook {
     );
   }
 }
+
+sub _app { shift->_ua->server->app }
 
 sub _asset {
   my ($self, $name) = @_;
