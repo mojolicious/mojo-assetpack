@@ -105,7 +105,6 @@ sub register {
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
-  $self->_reloader($app, $config->{reloader}) if $config->{reloader};
 
   if (NO_CACHE) {
     $app->log->info('AssetPack Will rebuild assets on each request in memory');
@@ -367,22 +366,16 @@ sub _process_many {
   map { my $name = _name($_); $self->_process("$name.$ext" => $_) } @files;
 }
 
-sub _reloader {
-  my ($self, $app, $config) = @_;
-  my $reloader = $self->_asset('reloader.js');
+sub _processed {
+  my ($self, $moniker, @assets) = @_;
 
-  return if !$config->{enabled} and $app->mode ne 'development';
-
-  warn "[ASSETPACK] Adding reloader asset and route\n" if DEBUG;
-  $reloader->path('reloader.js')->{internal} = 1;
-  $self->{assets}{'reloader.js'} = [$reloader];
-  push @{$app->renderer->classes}, __PACKAGE__;
-  $app->routes->get('/packed/reloader')->to(template => 'packed/reloader', strategy => 'document', %$config);
-  $app->routes->websocket('/packed/reloader/ws')->to(
-    cb => sub {
-      shift->on(message => sub { shift->send('pong'); });
-    }
-  )->name('assetpack.ws');
+  if (@assets) {
+    $self->{processed}{$moniker} = [map { sprintf 'packed/%s', basename $_->path } @assets];
+    return $self;
+  }
+  else {
+    return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []};
+  }
 }
 
 sub _source_for_url {
@@ -678,37 +671,3 @@ Per Edin - C<info@peredin.com>
 Viktor Turskyi
 
 =cut
-
-__DATA__
-@@ packed/reloader.js.ep
-;window.addEventListener('load', function(e) {
-  var xhr, socket, t, reloaded = 0;
-  var connect = function() {
-    socket = new WebSocket('<%= url_for('assetpack.ws')->userinfo(undef)->to_abs %>'.replace(/^http/, 'ws'));
-    socket.onopen = function(e) {
-      if (reloaded++) {
-        xhr = new XMLHttpRequest();
-        xhr.responseType = 'document';
-        xhr.open('GET', window.location.href);
-        xhr.onreadystatechange = function() {
-          if (xhr.readyState != 4) return;
-          if (window.console) console.log('[AssetPack] Replacing <head>...</head>');
-          document.head.innerHTML = this.responseXML.getElementsByTagName('head')[0].innerHTML;
-        };
-        xhr.send(null);
-      }
-      t = setInterval(function() { socket.send('ping'); }, 5000);
-    }
-    socket.onclose = function() {
-      if (t) clearTimeout(t);
-      if (window.console) console.log('[AssetPack] Reloading with strategy "<%= $strategy %>" (' + reloaded + ')');
-      if ('<%= $strategy %>' == 'document') {
-        return window.location = window.location.href;
-      }
-      else {
-        setTimeout(function() { connect() }, 500);
-      }
-    };
-  };
-  connect();
-});
