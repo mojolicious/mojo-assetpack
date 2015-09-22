@@ -6,6 +6,9 @@ sub startup {
   my $app = shift;
   my $r   = $app->routes;
 
+  $app->home->parse('t') if -d 't';
+  unshift @{$app->static->paths}, $app->home->rel_dir('public');
+
   $app->mode('production');
   $app->plugin('AssetPack');
   $app->plugin(Config => {default => {bg_color => 'blue'}});

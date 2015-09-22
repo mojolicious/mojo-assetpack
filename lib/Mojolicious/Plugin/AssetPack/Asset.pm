@@ -1,102 +1,98 @@
 package Mojolicious::Plugin::AssetPack::Asset;
 
-=head1 NAME
+use Mojo::Base -base;
+use File::Basename 'dirname';
+use Fcntl qw( O_CREAT O_EXCL O_RDONLY O_RDWR );
+use IO::File;
 
-Mojolicious::Plugin::AssetPack::Asset - AssetPack asset storage
+has handle => sub {
+  my $self   = shift;
+  my $path   = $self->path;
+  my $handle = IO::File->new;
+  my $mode   = -w $path ? O_RDWR : -w dirname($path) ? O_CREAT | O_EXCL | O_RDWR : O_RDONLY;
 
-=head1 VERSION
+  $handle->open($path, $mode) or die "Can't open $path: $!";
+  $handle;
+};
 
-0.01
+has path => undef;
 
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Asset> is storage class for assets.
-
-This class is EXPERIMENTAL.
-
-=cut
-
-use Mojo::Base 'Mojo::Asset::Memory';
-use Mojo::Util     ();
-use Cwd            ();
-use Carp           ();
-use File::Basename ();
-use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
-
-=head1 ATTRIBUTES
-
-=head2 content
-
-  $self = $self->content($data);
-  $data = $self->content;
-
-=head2 in_memory
-
-Boolean true if this file only exists in memory, false if stored on disk.
-
-=head2 path
-
-Either location on disk or a virtual location.
-
-=cut
-
-has content   => '';
-has in_memory => 1;
-has path      => '';
-
-=head1 METHODS
-
-=head2 basename
-
-Returns the basename of L</path>.
-
-=cut
-
-sub basename { File::Basename::basename(shift->path); }
-
-=head2 slurp
-
-  $bytes = $self->slurp;
-
-Read in the contents of the asset. Returns the data from L</content>
-if L</in_memory> is true.
-
-=cut
-
-sub slurp {
+sub add_chunk {
   my $self = shift;
-  $self->in_memory ? $self->{content} // '' : Mojo::Util::slurp($self->path);
-}
-
-=head2 save
-
-  $self = $self->->save;
-
-L</save> is used to write L</content> to disk. This method does nothing if
-L</in_memory> is true.
-
-=cut
-
-sub save {
-  my $self = shift;
-
-  if ($self->in_memory) {
-    warn "[ASSETPACK] Cannot save in_memory asset @{[$self->path]}\n" if DEBUG == 2;
-  }
-  elsif (not defined $self->{content}) {
-    warn "[ASSETPACK] Cannot save asset without content @{[$self->path]}\n" if DEBUG == 2;
-  }
-  else {
-    warn "[ASSETPACK] Save @{[$self->path]}\n" if DEBUG;
-    Mojo::Util::spurt(delete $self->{content}, $self->path);
-  }
-
+  defined $self->handle->syswrite($_[0]) or die "Can't write to @{[$self->path]}: $!";
   return $self;
 }
 
+sub slurp {
+  my $self   = shift;
+  my $handle = $self->handle;
+  $handle->sysseek(0, 0);
+  defined $handle->sysread(my $content, -s $handle, 0) or die "Can't read from @{[$self->path]}: $!";
+  return $content;
+}
+
+sub spurt {
+  my $self   = shift;
+  my $handle = $self->handle;
+  $handle->truncate(0);
+  $handle->sysseek(0, 0);
+  defined $handle->syswrite($_[0]) or die "Can't write to @{[$self->path]}: $!";
+  return $self;
+}
+
+1;
+__END__
+
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Asset - Represents an asset file
+
+=head1 DESCRIPTION
+
+This module repesents a file on disk.
+
+This module is EXPERIMENTAL.
+
+=head1 ATTRIBUTES
+
+=head2 handle
+
+  $fh = $self->handle;
+  $self = $self->handle($fh);
+
+Returns a filehandle to L</path> with the correct read/write mode,
+dependent on the file system permissions.
+
+=head2 path
+
+  $str = $self->path;
+  $self = $self->path($str);
+
+Holds the location of the file.
+
+=head1 METHODS
+
+=head2 add_chunk
+
+  $self = $self->add_chunk($chunk);
+
+Will append a C<$chunk> to the L</path>.
+
+=head2 slurp
+
+  $content = $self->slurp;
+
+Will return the contents of L</path>.
+
+=head2 spurt
+
+  $self = $self->spurt($content);
+
+Used to truncate and write C<$content> to L</path>.
+
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014, Jan Henning Thorsen
+Copyright (C) 2015, Jan Henning Thorsen
 
 This program is free software, you can redistribute it and/or modify it under
 the terms of the Artistic License version 2.0.
@@ -106,5 +102,3 @@ the terms of the Artistic License version 2.0.
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
 
 =cut
-
-1;

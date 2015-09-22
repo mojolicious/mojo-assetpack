@@ -36,10 +36,7 @@ plan skip_all => 'Require t/bin/coffee to make failing test' unless -x catfile $
 
   is_deeply(
     \%src,
-    {
-      coffee  => '/packed/c-accff0dbd3d143a751e4d54eea182cfa.err.js',
-      invalid => '/packed/dummy-81e6a22b62fc6e28e355713517fdc3d8.err.foo',
-    },
+    {coffee => '/packed/c-err.js', invalid => '/packed/dummy-err.foo',},
     'error assets are generated in development mode'
   );
 

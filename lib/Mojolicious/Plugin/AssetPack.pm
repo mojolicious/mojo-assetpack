@@ -5,10 +5,10 @@ use Mojo::ByteStream;
 use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Preprocessors;
-use Cwd            ();
-use File::Basename ();
-use File::Path     ();
-use File::Spec     ();
+use Cwd ();
+use File::Basename qw( basename );
+use File::Path ();
+use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
@@ -17,8 +17,8 @@ our $VERSION = '0.64';
 has base_url      => '/packed/';
 has headers       => sub { +{} };
 has minify        => 0;
+has out_dir       => sub { Carp::confess('out_dir() must be set.') };
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
-has out_dir       => '';
 
 has _app => undef;
 has _ua  => sub {
@@ -30,28 +30,27 @@ sub add {
   my ($self, $moniker, @files) = @_;
 
   @files = $self->_expand_wildcards(@files);
-  return $self->tap(sub { $self->{files}{$moniker} = \@files }) if NO_CACHE;
-  return $self->tap(sub { $self->_assets($moniker => $self->_process($moniker, @files)) }) if $self->minify;
-  return $self->tap(sub { $self->_assets($moniker => $self->_process_many($moniker, @files)) });
+  return $self->tap(sub { $self->{files}{$moniker} = \@files; $self }) if NO_CACHE;
+  return $self->tap(sub { $self->_processed($moniker => $self->_process($moniker, @files)) }) if $self->minify;
+  return $self->tap(sub { $self->_processed($moniker => $self->_process_many($moniker, @files)) });
 }
 
 sub fetch {
   my $self  = shift;
   my $url   = Mojo::URL->new(shift);
-  my $asset = $self->_packed("$url")
-    || $self->_handler($url->scheme)->asset_for($url, $self)->in_memory($self->out_dir ? 0 : 1)->save;
+  my $asset = $self->_packed("$url") || $self->_handler($url->scheme)->asset_for($url, $self);
   return $asset if @_;    # internal
   return $asset->path;    # documented api
 }
 
 sub get {
   my ($self, $moniker, $args) = @_;
-  my $assets = $self->_assets($moniker);
+  my @assets = $self->_processed($moniker);
 
-  die "Asset '$moniker' is not defined." unless @$assets;
-  return @$assets if $args->{assets};
-  return map { $_->slurp } @$assets if $args->{inline};
-  return map { $self->base_url . $_->basename } @$assets;
+  die "Asset '$moniker' is not defined." unless @assets;
+  return @assets if $args->{assets};
+  return map { $_->slurp } @assets if $args->{inline};
+  return map { $self->base_url . basename($_->path) } @assets;
 }
 
 sub preprocessor {
@@ -70,14 +69,14 @@ sub purge {
   local $args->{always} = $args->{always} // $self->_app->mode eq 'development';
 
   return $self unless $args->{always};
-  die '$app->asset->purge() must be called AFTER $app->asset(...)' unless keys %{$self->{assets} || {}};
-  return $self unless $self->out_dir and opendir $PACKED, $self->out_dir;
+  die '$app->asset->purge() must be called AFTER $app->asset(...)' unless keys %{$self->{asset} || {}};
+  return $self unless -w $self->out_dir and opendir $PACKED, $self->out_dir;
   $existing{$_} = 1 for grep { $_ =~ $file_re } readdir $PACKED;
-  delete $existing{$_->basename} for map {@$_} values %{$self->{assets} || {}};
+  delete $existing{$_} for map { basename $_->path } values %{$self->{asset} || {}};
 
   for my $file (keys %existing) {
     $self->_unlink_packed($file);
-    warn "[ASSETPACK] Purged $file ($!)\n" if DEBUG;
+    $self->_app->log->debug("AssetPack purge $file: @{[$! || 'Deleted']}");
   }
 
   return $self;
@@ -91,12 +90,9 @@ sub register {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
   }
 
-  $self->{assets}       = {};
-  $self->{processed}    = {};
-  $self->{source_paths} = $self->_build_source_paths($app, $config);
-
   # Not official. Want to keep it private for now...
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
+  $self->{source_paths} = $self->_build_source_paths($app, $config);
 
   $self->_app($app);
   $self->_ua->server->app($app);
@@ -105,14 +101,6 @@ sub register {
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
-
-  if (NO_CACHE) {
-    $app->log->info('AssetPack Will rebuild assets on each request in memory');
-    $self->out_dir('');
-  }
-  if (!$self->out_dir) {
-    $self->{assets_from_memory} = 1;
-  }
 
   $app->helper(
     $helper => sub {
@@ -134,7 +122,7 @@ sub source_paths {
     return $self;
   }
   else {
-    return $self->{source_paths} || return $app->static->paths;
+    return $self->{source_paths} || $app->static->paths;
   }
 }
 
@@ -142,24 +130,7 @@ sub _add_hook {
   my ($self, $app, $config) = @_;
   my $headers = $self->headers;
 
-  if ($self->{assets_from_memory}) {
-    $app->hook(
-      before_routes => sub {
-        my $c    = shift;
-        my $path = $c->req->url->path;
-
-        return if $c->req->is_handshake or $c->res->code;
-        return unless $path->[1] and 0 == index "$path", $self->base_url;
-        return unless my $asset = $c->asset->{asset}{$path->[1]};
-        return if $asset->{internal};
-        my $h = $c->res->headers->last_modified(Mojo::Date->new($^T))
-          ->content_type($c->app->types->type($asset->path =~ /\.(\w+)$/ ? $1 : 'txt') || 'text/plain');
-        $h->header($_ => $headers->{$_}) for keys %$headers;
-        $c->reply->asset($asset);
-      }
-    );
-  }
-  elsif (%$headers) {
+  if (%$headers) {
     $app->hook(
       after_static => sub {
         my $c    = shift;
@@ -175,14 +146,9 @@ sub _add_hook {
 sub _asset {
   my ($self, $name) = @_;
   my $asset = $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new;
-  $asset->path(File::Spec->catfile($self->out_dir, $name)) unless $asset->path;
-  $asset;
-}
 
-sub _assets {
-  my ($self, $moniker, @assets) = @_;
-  $self->{assets}{$moniker} = \@assets if @assets;
-  $self->{assets}{$moniker} || [];
+  $asset->path(catfile $self->out_dir, $name) if !$asset->path and $name =~ s!^packed/!!;
+  $asset;
 }
 
 sub _build_out_dir {
@@ -190,19 +156,24 @@ sub _build_out_dir {
   my $out_dir = $config->{out_dir};
 
   if ($out_dir) {
-    my $static_dir = Cwd::abs_path(File::Spec->catdir($out_dir, File::Spec->updir));
+    my $static_dir = Cwd::abs_path(catdir $out_dir, File::Spec->updir);
     push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
   }
-  elsif (!defined $out_dir) {
+  if (!$out_dir) {
     for my $path (@{$app->static->paths}) {
-      next unless -w $path;
-      $out_dir = File::Spec->catdir($path, 'packed');
-      last;
+      my $packed = catdir $path, 'packed';
+      if (-w $path) { $out_dir = $packed; last }
+      if (-r $packed) { $out_dir ||= $packed }
     }
   }
+  if (!$out_dir) {
+    die "[AssetPack] Could not auto detect out_dir: "
+      . "Neither readable, nor writeable 'packed' directory could be found in static paths, @{$app->static->paths}. Maybe you forgot to pre-pack the assets? "
+      . "https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Manual::Cookbook";
+  }
 
-  File::Path::make_path($out_dir) if $out_dir and !-d $out_dir;
-  return $out_dir // '';
+  File::Path::make_path($out_dir) unless -d $out_dir;
+  return $out_dir;
 }
 
 sub _build_source_paths {
@@ -221,7 +192,7 @@ sub _expand_wildcards {
       my @rel = split '/', $file;
       my $glob = pop @rel;
 
-      for my $path (map { File::Spec->catdir($_, @rel) } @{$self->source_paths}) {
+      for my $path (map { catdir $_, @rel } @{$self->source_paths}) {
         my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new($path);
         push @files, grep { !$seen{$_} } map { join '/', @rel, $_ } sort glob $glob;
       }
@@ -249,7 +220,7 @@ sub _inject {
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
   if (NO_CACHE) {
-    $self->_assets($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
+    $self->_processed($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
   }
 
   eval {
@@ -292,13 +263,13 @@ sub _packed {
   my $self = shift;
   my $needle = ref $_[0] ? shift : _name(shift);
 
-  for my $path (map { File::Spec->catdir($_, 'packed') } @{$self->_app->static->paths}) {
+  for my $path (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
     opendir my $DH, $path or next;
     for (readdir $DH) {
       next unless /$needle/;
-      $path = Cwd::abs_path(File::Spec->catfile($path, $_));
+      $path = catfile $path, $_;
       $self->_app->log->debug("Using existing asset $path") if DEBUG;
-      return $self->_asset($_)->path($path)->in_memory(0);
+      return $self->_asset("packed/$_");
     }
   }
 
@@ -310,6 +281,7 @@ sub _process {
   my $app   = $self->_app;
   my $topic = $moniker;
   my ($name, $ext) = (_name($moniker), _ext($moniker));
+  my $err_file = "$name-err.$ext";
   my ($asset, $file, @checksum);
 
   eval {
@@ -324,40 +296,31 @@ sub _process {
     return $asset if $asset;                  # already processed
 
     $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
-    $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new;
-    $asset->in_memory(1)->path(File::Spec->catfile($self->out_dir, $file));
+    $asset = $self->_asset("packed/$file");
 
     for my $s (@sources) {
-      $topic = $s->basename;
+      $topic = basename($s->path);
       my $content = $s->slurp;
       $self->preprocessors->process(_ext($s->path), $self, \$content, $s->path);
-      $asset->content($asset->content . $content);
+      $asset->add_chunk($content);
     }
 
-    $asset->in_memory($self->out_dir ? 0 : 1)->save;
+    unlink catfile $self->out_dir, $err_file;
+    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]}.");
   } or do {
-    my $err          = $@;
+    my $err = $@ || 'Unknown error';
     my $source_paths = join ',', @{$self->source_paths};
     my $static_paths = join ',', @{$app->static->paths};
     $err =~ s!\s+$!!;    # remove newlines
     my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
     $app->log->error($msg);
     die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
-    $file ||= "$name-@{[time]}.$ext";
-    $file =~ s!$ext$!err.$ext!;
-    $asset = $self->{asset}{$file} = Mojolicious::Plugin::AssetPack::Asset->new(in_memory => 1, path => $file);
-    $asset->content($self->_make_error_asset($moniker, $topic, $err || 'Unknown error'));
+    $asset = $self->_asset("packed/$file")->path(catfile $self->out_dir, $err_file)
+      ->add_chunk($self->_make_error_asset($moniker, $topic, $err));
   };
 
-  if ($asset->in_memory) {
-    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]} in memory.");
-    $self->{assets_from_memory}++;
-  }
-  elsif ($file) {
-    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]}.");
-  }
-
-  return $asset;
+  return $asset if $asset;
+  return;
 }
 
 sub _process_many {
@@ -388,8 +351,8 @@ sub _source_for_url {
   my @look_in = (@{$self->source_paths}, @{$self->_app->static->paths});
   my @path = split '/', $url;
 
-  for my $path (map { Cwd::abs_path(File::Spec->catfile($_, @path)) } @look_in) {
-    return $self->_asset($path)->path($path)->in_memory(0) if $path and -r $path;
+  for my $file (map { catfile $_, @path } @look_in) {
+    return $self->_asset("$url")->path($file) if $file and -r $file;
   }
 
   return $self->_handler('https')->asset_for($url, $self);
@@ -397,16 +360,16 @@ sub _source_for_url {
 
 sub _unlink_packed {
   my ($self, $file) = @_;
-  unlink File::Spec->catfile($self->out_dir, $file);
+  unlink catfile $self->out_dir, $file;
 }
 
 # utils
-sub _ext { local $_ = File::Basename::basename($_[0]); /\.(\w+)$/ ? $1 : 'unknown'; }
+sub _ext { local $_ = basename $_[0]; /\.(\w+)$/ ? $1 : 'unknown'; }
 
 sub _name {
   local $_ = $_[0];
   return do { s![^\w-]!_!g; $_ } if /^https?:/;
-  $_ = File::Basename::basename($_);
+  $_ = basename $_;
   /^(.*)\./ ? $1 : $_;
 }
 
@@ -569,10 +532,7 @@ See also L<Mojolicious::Plugin::AssetPack::Manual::Modes>.
   $app->plugin("AssetPack" => {out_dir => $str});
   $str = $self->out_dir;
 
-Holds the path to the directory where packed files can be written.
-
-Defaults to empty string if no directory can be found, which again results in
-keeping all packed files in memory.
+Holds the path to the directory where packed files are located.
 
 =head2 preprocessors
 

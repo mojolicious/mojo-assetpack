@@ -31,10 +31,9 @@ This method tries to download the asset from the web.
 sub asset_for {
   my ($self, $url, $assetpack) = @_;
   my $name = Mojolicious::Plugin::AssetPack::_name($url);
-
-  my $tx  = $assetpack->_ua->get($url);
-  my $ct  = $tx->res->headers->content_type // 'text/plain';
-  my $ext = Mojolicious::Types->new->detect($ct) || 'txt';
+  my $tx   = $assetpack->_ua->get($url);
+  my $ct   = $tx->res->headers->content_type // 'text/plain';
+  my $ext  = Mojolicious::Types->new->detect($ct) || 'txt';
 
   if (my $e = $tx->error) {
     die "Asset $url could not be fetched: $e->{message}";
@@ -43,7 +42,7 @@ sub asset_for {
   $ext = $ext->[0] if ref $ext;
   $ext = $tx->req->url->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
   $assetpack->_app->log->info("Asset $url was fetched successfully");
-  $assetpack->_asset("$name.$ext")->content($tx->res->body);
+  $assetpack->_asset("packed/$name.$ext")->spurt($tx->res->body);
 }
 
 =head1 COPYRIGHT AND LICENSE
