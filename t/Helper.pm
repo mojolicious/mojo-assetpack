@@ -9,13 +9,16 @@ use File::Spec;
 
 sub t {
   my ($class, $args) = @_;
+  my $static = delete $args->{static} || ['public'];
   my $t = Test::Mojo->new(Mojolicious->new(secrets => ['s3cret']));
 
   $args->{log} ||= [];
+  $_ = Cwd::abs_path(File::Spec->catdir('t', $_)) for @$static;
+
   $t->app->home->parse(Cwd::abs_path(File::Spec->catdir(dirname $0)));
   $t->app->log->on(message => sub { push @{$args->{log}}, $_[2] });
   $t->app->log->on(message => sub { warn "[$_[1]] $_[2]\n" }) if $ENV{HARNESS_IS_VERBOSE};
-  $t->app->static->paths([Cwd::abs_path(File::Spec->catdir(dirname($0), 'public'))]);
+  $t->app->static->paths($static);
   $t->app->plugin(AssetPack => $args || {});
   $t->app->routes->get("/test1" => 'test1');
   $t;

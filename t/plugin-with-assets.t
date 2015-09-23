@@ -1,54 +1,70 @@
-use Mojo::Base -base;
-use Mojolicious::Lite;
-use Test::Mojo;
-use Test::More;
+use t::Helper;
+use File::Find ();
+use File::Spec::Functions qw( catdir catfile );
 
-plan skip_all => 'Something weird is going on with cygwin filesystem', if $^O eq 'cygwin';
+my $source_dir   = catdir qw( t read-only-with-source-assets );
+my $existing_dir = catdir qw( t read-only-with-existing-assets );
+my $plugin_name  = make_plugin();
+my $t            = Test::Mojo->new(Mojolicious->new);
 
-my @READ_ONLY = qw( t/read-only-with-source-assets t/read-only-with-existing-assets );
+chmod_assets(0555) or plan skip_all => "Unable to chmod 0555 $source_dir, $existing_dir";
 
-unlink $_ for glob "$READ_ONLY[0]/packed/my-plugin-*.css";
-mkdir $_  for @READ_ONLY;
-chmod 0555, $_ for @READ_ONLY;
-
-my $t = Test::Mojo->new;
+# set up app
 $t->app->mode('production');
+$t->app->log->on(message => sub { warn "[$_[1]] $_[2]\n" }) if $ENV{HARNESS_IS_VERBOSE};
+$t->app->static->paths([catdir qw( t public )]);
 $t->app->routes->get('/test1' => 'test1');
-$t->app->static->paths([@READ_ONLY]);
 $t->app->plugin('AssetPack');
 
-my $assetpack = $t->app->asset;
-plan skip_all => "Cannot run tests when @READ_ONLY is writeable" if $assetpack->out_dir;
+# undefined asset
+$t->get_ok('/test1')->status_is(200)->content_like(qr(Asset 'my-plugin-existing.css' is not defined));
 
-$t->app->plugin('t::SomePluginWithAssets');
-is $t->app->asset, $assetpack, 'same assetpack';
+# define asset
+$t->app->plugin($plugin_name);
+$t->get_ok('/test1')->status_is(200)->content_like(qr/body\{color:\#aaa\}body\{color:\#aaa\}/);
 
-$t->get_ok('/test1')->status_is(200)->content_like(qr/body\{color:\#aaa\}body\{color:\#aaa\}/)
-  ->content_like(qr/body\{color:\#bbb\}body\{color:\#bbb\}/);
+# make sure we did not create a new asset
+ok !-e catfile(qw( t public packed my-plugin-existing-7c174b801d6fc968f1576055e88c18cb.css )), 'using existing asset';
 
-my @href = $t->tx->res->dom->find('link')->map(sub { $_->{href} })->each;
-my @names = map { File::Basename::basename($_) } @href;
-
-is_deeply(
-  [@names],
-  ['my-plugin-existing-7c174b801d6fc968f1576055e88c18cb.css', 'my-plugin-new-a81a17483efca304199a951e10068095.min.css'],
-  'got assets'
-);
-
-is $assetpack->_asset($names[0])->in_memory, 0, 'existing is bundled with t::SomePluginWithAssets';
-like $assetpack->_asset($names[0])->path, qr{t/read-only-with-existing-assets$href[0]$}, 'and stored in memory';
-$t->get_ok($href[0])->status_is(200)->content_like(qr{color:\#aaa});
-
-is $assetpack->_asset($names[1])->in_memory, 1, 'new is regerated now and stored in memory';
-is $assetpack->_asset($names[1])->path, File::Spec->catfile('', $names[1]), 'and has a virtual url';
-$t->get_ok($href[1])->status_is(200)->content_like(qr{color:\#bbb});
-
-chmod 0775, $_ for @READ_ONLY;
+chmod_assets(0775);
 done_testing;
+
+sub chmod_assets {
+  my $mode = $_[0];
+  my @success;
+
+  File::Find::find(
+    sub {
+      my $m = -d $_ ? $mode : $mode & 0666;
+      push @success, chmod $m, $_;
+    },
+    $source_dir,
+    $existing_dir
+  );
+
+  return 0 if grep { !$_ } @success;
+  return 1;
+}
+
+sub make_plugin {
+  eval <<"HERE" or die $@;
+package t::SomePluginWithAssets;
+use Mojolicious::Plugin::AssetPack;
+use Mojo::Base 'Mojolicious::Plugin';
+
+sub register {
+  my (\$self, \$app, \$config) = \@_;
+
+  \$app->plugin('AssetPack') unless eval { \$app->asset };
+
+  push \@{\$app->static->paths}, "$existing_dir";
+  push \@{\$app->asset->source_paths}, "$source_dir";
+  \$app->asset('my-plugin-existing.css' => qw( /css/my-plugin-a.css /css/my-plugin-a.css ));
+}
+__PACKAGE__;
+HERE
+}
 
 __DATA__
 @@ test1.html.ep
 %= asset 'my-plugin-existing.css', { inline => 1 }
-%= asset 'my-plugin-new.css', { inline => 1 }
-%= asset 'my-plugin-existing.css'
-%= asset 'my-plugin-new.css'

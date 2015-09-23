@@ -91,7 +91,8 @@ sub register {
 
   # Not official. Want to keep it private for now...
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
-  $self->{source_paths} = $self->_build_source_paths($app, $config);
+  $self->{fallback_to_latest}   = $config->{fallback_to_latest};
+  $self->{source_paths}         = $self->_build_source_paths($app, $config);
 
   $self->_ua->server->app($app);
   Scalar::Util::weaken($self->_ua->server->{app});
@@ -163,9 +164,9 @@ sub _build_out_dir {
   }
   if (!$out_dir) {
     for my $path (@{$app->static->paths}) {
-      my $packed = Cwd::abs_path(catdir $path, 'packed');
-      if (-w $path) { $out_dir = $packed; last }
-      if (-r $packed) { $out_dir ||= $packed }
+      my $packed = catdir $path, 'packed';
+      if (-w $path) { $out_dir = Cwd::abs_path($packed); last }
+      if (-r $packed) { $out_dir ||= Cwd::abs_path($packed) }
     }
   }
   if (!$out_dir) {
@@ -216,13 +217,22 @@ sub _expand_wildcards {
 
 sub _handle_process_error {
   my ($self, $moniker, $topic, $err) = @_;
+  my ($name, $ext) = $moniker =~ /^(.+)\.(\w+)$/ ? ($1, $2) : ('', '');
   my $app          = $self->_app;
   my $source_paths = join ',', @{$self->source_paths};
   my $static_paths = join ',', @{$app->static->paths};
+  my ($asset, $msg);
 
   $err =~ s!\s+$!!;    # remove newlines
-  my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
+  $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
   $app->log->error($msg);
+
+  # find fallback asset
+  if ($self->{fallback_to_latest}) {
+    $asset = $self->_packed($self->minify ? qr{\b$name-\w+(\.min)?\.$ext$} : qr{\b$name-\w+\.$ext$}, \&_sort_by_mtime);
+    return $asset if $asset;
+  }
+
   die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
 
   $err =~ s!\r!!g;
@@ -278,16 +288,16 @@ sub _inject {
 }
 
 sub _packed {
-  my $self = shift;
+  my $sorter = ref $_[-1] eq 'CODE' ? pop : sub {@_};
+  my $self   = shift;
   my $needle = ref $_[0] ? shift : _name(shift);
 
-  for my $path (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
-    opendir my $DH, $path or next;
-    for (readdir $DH) {
-      next unless /$needle/;
-      $path = catfile $path, $_;
-      $self->_app->log->debug("Using existing asset $path") if DEBUG;
-      return $self->_asset("packed/$_");
+  for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
+    opendir my $DH, $dir or next;
+    for my $file ($sorter->(map { catfile $dir, $_ } readdir $DH)) {
+      next unless $file =~ /$needle/;
+      $self->_app->log->debug("Using existing asset $file") if DEBUG;
+      return $self->_asset('packed/' . basename $file)->path($file);
     }
   }
 
@@ -308,7 +318,7 @@ sub _process {
     }
 
     @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
-    $asset = $self->_packed($self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$});
+    $asset = $self->_packed($self->minify ? qr{\b$name-$checksum[0](\.min)?\.$ext$} : qr{\b$name-$checksum[0]\.$ext$});
     return $asset if $asset;                  # already processed
 
     $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
@@ -351,6 +361,10 @@ sub _processed {
 sub _source_for_url {
   my ($self, $url) = @_;
 
+  if ($self->{asset}{$url}) {
+    warn "[AssetPack] Asset already loaded: $url\n" if DEBUG;
+    return $self->{asset}{$url};
+  }
   if (my $scheme = Mojo::URL->new($url)->scheme) {
     warn "[AssetPack] Asset from online resource: $url\n" if DEBUG;
     return $self->fetch($url, 'internal');
@@ -382,6 +396,10 @@ sub _name {
   return do { s![^\w-]!_!g; $_ } if /^https?:/;
   $_ = basename $_;
   /^(.*)\./ ? $1 : $_;
+}
+
+sub _sort_by_mtime {
+  map { $_->[0] } sort { $b->[1] <=> $a->[1] } map { [$_, (stat $_)[9]] } @_;
 }
 
 1;
@@ -600,15 +618,21 @@ This method is EXPERIMENTAL and can change or be removed at any time.
 =head2 register
 
   plugin AssetPack => {
-    base_url     => $str,     # default to "/packed"
-    headers      => {"Cache-Control" => "max-age=31536000"},
-    minify       => $bool,    # compress assets
-    proxy        => "detect", # autodetect proxy settings
-    out_dir      => "/path/to/some/directory",
-    source_paths => [...],
+    base_url           => $str,     # default to "/packed"
+    fallback_to_latest => $bool, # default to false
+    headers            => {"Cache-Control" => "max-age=31536000"},
+    minify             => $bool,    # compress assets
+    proxy              => "detect", # autodetect proxy settings
+    out_dir            => "/path/to/some/directory",
+    source_paths       => [...],
   };
 
 Will register the C<asset> helper. All L<arguments|/ATTRIBUTES> are optional.
+
+"fallback_to_latest" allow this module to use the last packed file created
+(by modify time) in case it fail to generate the asset. This feature is
+EXPERIMENTAL and will not work when checking out from git, but might work
+when installing new versions on disk.
 
 =head2 source_paths
 
