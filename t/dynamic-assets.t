@@ -1,8 +1,7 @@
-use Mojo::Base -base;
-use Mojolicious::Lite;
-use Test::Mojo;
-use Test::More;
+use t::Helper;
 use t::Dynamic;
+use Mojolicious::Plugin::AssetPack;
+use Mojolicious::Lite;
 
 my $t = Test::Mojo->new(t::Dynamic->new);
 

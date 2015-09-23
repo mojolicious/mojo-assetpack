@@ -163,7 +163,7 @@ sub _build_out_dir {
   }
   if (!$out_dir) {
     for my $path (@{$app->static->paths}) {
-      my $packed = catdir $path, 'packed';
+      my $packed = Cwd::abs_path(catdir $path, 'packed');
       if (-w $path) { $out_dir = $packed; last }
       if (-r $packed) { $out_dir ||= $packed }
     }
@@ -183,6 +183,12 @@ sub _build_source_paths {
 
   return undef unless my $paths = $config->{source_paths};
   return [map { -d $_ ? Cwd::abs_path($_) : $app->home->rel_file($_) } @$paths];
+}
+
+sub _error_asset_for {
+  my ($self, $moniker) = @_;
+  $moniker =~ s!^(.+)\.(\w+)$!! or die "Invalid moniker: $moniker";
+  return $self->_asset("packed/$1-err.$2");
 }
 
 sub _expand_wildcards {
@@ -206,6 +212,38 @@ sub _expand_wildcards {
   }
 
   return @files;
+}
+
+sub _handle_process_error {
+  my ($self, $moniker, $topic, $err) = @_;
+  my $app          = $self->_app;
+  my $source_paths = join ',', @{$self->source_paths};
+  my $static_paths = join ',', @{$app->static->paths};
+
+  $err =~ s!\s+$!!;    # remove newlines
+  my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
+  $app->log->error($msg);
+  die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
+
+  $err =~ s!\r!!g;
+  $err =~ s!\n+$!!;
+  $err = "$topic: $err";
+
+  if ($moniker =~ /\.js$/) {
+    $err =~ s!'!"!g;
+    $err =~ s!\n!\\n!g;
+    $err =~ s!\s! !g;
+    $err = "alert('$err');console.log('$err');";
+  }
+  else {
+    $err =~ s!"!'!g;
+    $err =~ s!\n!\\A!g;
+    $err =~ s!\s! !g;
+    $err
+      = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
+  }
+
+  return $self->_error_asset_for($moniker)->spurt($err);
 }
 
 sub _handler {
@@ -239,28 +277,6 @@ sub _inject {
   };
 }
 
-sub _make_error_asset {
-  my ($self, $moniker, $file, $err) = @_;
-
-  $err =~ s!\r!!g;
-  $err =~ s!\n+$!!;
-  $err = "$file: $err";
-
-  if ($moniker =~ /\.js$/) {
-    $err =~ s!'!"!g;
-    $err =~ s!\n!\\n!g;
-    $err =~ s!\s! !g;
-    return "alert('$err');console.log('$err');";
-  }
-  else {
-    $err =~ s!"!'!g;
-    $err =~ s!\n!\\A!g;
-    $err =~ s!\s! !g;
-    return
-      qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
-  }
-}
-
 sub _packed {
   my $self = shift;
   my $needle = ref $_[0] ? shift : _name(shift);
@@ -280,10 +296,8 @@ sub _packed {
 
 sub _process {
   my ($self, $moniker, @sources) = @_;
-  my $app   = $self->_app;
   my $topic = $moniker;
   my ($name, $ext) = (_name($moniker), _ext($moniker));
-  my $err_file = "$name-err.$ext";
   my ($asset, $file, @checksum);
 
   eval {
@@ -299,6 +313,7 @@ sub _process {
 
     $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
     $asset = $self->_asset("packed/$file");
+    warn sprintf "[AssetPack] Creating %s from %s\n", $file, join ', ', map { $_->path } @sources if DEBUG;
 
     for my $s (@sources) {
       $topic = basename($s->path);
@@ -307,22 +322,12 @@ sub _process {
       $asset->add_chunk($content);
     }
 
-    unlink catfile $self->out_dir, $err_file;
-    $app->log->info("AssetPack built @{[$asset->path]} for @{[$app->moniker]}.");
-  } or do {
-    my $err = $@ || 'Unknown error';
-    my $source_paths = join ',', @{$self->source_paths};
-    my $static_paths = join ',', @{$app->static->paths};
-    $err =~ s!\s+$!!;    # remove newlines
-    my $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
-    $app->log->error($msg);
-    die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
-    $asset = $self->_asset("packed/$file")->path(catfile $self->out_dir, $err_file)
-      ->add_chunk($self->_make_error_asset($moniker, $topic, $err));
+    unlink $self->_error_asset_for($moniker)->path;
+    $self->_app->log->info("AssetPack built @{[$asset->path]} for @{[$self->_app->moniker]}.");
   };
 
-  return $asset if $asset;
-  return;
+  return $asset unless $@;
+  return $self->_handle_process_error($moniker, $topic, $@);
 }
 
 sub _process_many {
@@ -347,6 +352,7 @@ sub _source_for_url {
   my ($self, $url) = @_;
 
   if (my $scheme = Mojo::URL->new($url)->scheme) {
+    warn "[AssetPack] Asset from online resource: $url\n" if DEBUG;
     return $self->fetch($url, 'internal');
   }
 
@@ -354,9 +360,12 @@ sub _source_for_url {
   my @path = split '/', $url;
 
   for my $file (map { catfile $_, @path } @look_in) {
-    return $self->_asset("$url")->path($file) if $file and -r $file;
+    next unless $file and -r $file;
+    warn "[AssetPack] Asset from disk: $url ($file)\n" if DEBUG;
+    return $self->_asset("$url")->path($file);
   }
 
+  warn "[AssetPack] Asset from @{[$self->_app->moniker]}: $url\n" if DEBUG;
   return $self->_handler('https')->asset_for($url, $self);
 }
 
