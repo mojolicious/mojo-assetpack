@@ -83,7 +83,7 @@ sub _run {
   local ($!, $?) = (0, -1);
   IPC::Run3::run3($cmd, $in, $out, \$err, {return_if_system_error => 1});
   $! = 0 if !$? and $! == POSIX::ENOTTY;
-  warn "[ASSETPACK] @$cmd \$?=$? \$!=$! $err\n" if DEBUG;
+  warn "[AssetPack] @$cmd \$?=$? \$!=$! $err\n" if DEBUG;
 
   return $self unless $?;
   die sprintf "Cannot execute '%s'. See %s\n", $cmd->[0], $self->_url if $! == 2;

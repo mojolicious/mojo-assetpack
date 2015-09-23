@@ -138,7 +138,7 @@ sub checksum {
 
   while ($$text =~ /$IMPORT_RE/gs) {
     my $path = $self->_import_path(\@include_paths, split('/', $2), $ext) or next;
-    warn "[ASSETPACK] Found \@import $path\n" if DEBUG == 2;
+    warn "[AssetPack] Found \@import $path\n" if DEBUG == 2;
     $self->{checked}{$path}++ and next;
     push @checksum, $self->checksum(\slurp($path), $path);
   }
@@ -159,7 +159,7 @@ sub process {
   my @include_paths = $self->_include_paths($path);
   my $err;
 
-  if (DEBUG) { local $" = ':'; warn "[ASSETPACK] SASS_PATH=@include_paths\n" }
+  if (DEBUG) { local $" = ':'; warn "[AssetPack] SASS_PATH=@include_paths\n" }
 
   if (LIBSASS_BINDINGS) {
     local $ENV{SASS_PATH} = '';
@@ -194,7 +194,7 @@ sub _import_path {
     }
   }
 
-  if (DEBUG == 2) { local $" = '/'; warn "[ASSETPACK] Not found \@import @rel/$name.$ext\n" }
+  if (DEBUG == 2) { local $" = '/'; warn "[AssetPack] Not found \@import @rel/$name.$ext\n" }
   return;
 }
 

@@ -137,7 +137,7 @@ sub add {
   if (@_ == 4) {
     my $class = $arg =~ /::/ ? $arg : "Mojolicious::Plugin::AssetPack::Preprocessor::$arg";
     eval "require $class;1" or die "Could not load $class: $@\n";
-    warn "[ASSETPACK] Adding $class preprocessor for $extension.\n" if DEBUG;
+    warn "[AssetPack] Adding $class preprocessor for $extension.\n" if DEBUG;
     my $object = $class->new(pop);
     return $self->add($extension => $object);
   }

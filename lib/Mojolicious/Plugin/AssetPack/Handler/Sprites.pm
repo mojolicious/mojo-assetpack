@@ -66,7 +66,7 @@ sub asset_for {
     $cn =~ s!\.\w+$!!;
     $cn =~ s!\W!-!g;
     $css .= ".$name.$cn { background-position: 0px -$size[1]px; width: ${w}px; height: ${h}px; }\n";
-    warn "[ASSETPACK] Adding $directory/$file to sprite $name.png $w x $h\n" if DEBUG;
+    warn "[AssetPack] Adding $directory/$file to sprite $name.png $w x $h\n" if DEBUG;
     $tiled->paste(src => $tile, left => 0, top => $size[1]) or die $tiled->errstr;
     $size[1] += $h;
     $size[0] = $w if $size[0] < $w;
