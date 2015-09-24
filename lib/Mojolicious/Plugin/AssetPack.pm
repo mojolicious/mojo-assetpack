@@ -17,7 +17,6 @@ use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 our $VERSION = '0.64';
 
 has base_url      => '/packed/';
-has headers       => sub { +{} };
 has minify        => 0;
 has out_dir       => sub { Carp::confess('out_dir() must be set.') };
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
@@ -52,6 +51,20 @@ sub get {
   return @assets if $args->{assets};
   return map { $_->slurp } @assets if $args->{inline};
   return map { $self->base_url . basename($_->path) } @assets;
+}
+
+sub headers {
+  my ($self, $headers) = @_;
+
+  $self->_app->hook(
+    after_static => sub {
+      my $c    = shift;
+      my $path = $c->req->url->path->canonicalize;
+      return unless $path->[1] and 0 == index "$path", $self->base_url;
+      my $h = $c->res->headers;
+      $h->header($_ => $headers->{$_}) for keys %$headers;
+    }
+  );
 }
 
 sub preprocessor {
@@ -100,7 +113,7 @@ sub register {
   Scalar::Util::weaken($self->_ua->server->{app});
 
   $self->_ua->proxy->detect if $config->{proxy};
-  $self->headers($config->{headers} || {});
+  $self->headers($config->{headers}) if $config->{headers};
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
@@ -113,8 +126,6 @@ sub register {
       return $self->_inject(@_);
     }
   );
-
-  Mojo::IOLoop->next_tick(sub { $self->_add_hook($config) });
 }
 
 sub save_mapping {
@@ -170,23 +181,6 @@ sub test_app {
 
   Test::More::ok($n, "Generated $n assets for $app");
   return $class;
-}
-
-sub _add_hook {
-  my ($self, $config) = @_;
-  my $headers = $self->headers;
-
-  if (%$headers) {
-    $self->_app->hook(
-      after_static => sub {
-        my $c    = shift;
-        my $path = $c->req->url->path;
-        return unless $path->[1] and 0 == index "$path", $self->base_url;
-        my $h = $c->res->headers;
-        $h->header($_ => $headers->{$_}) for keys %$headers;
-      }
-    );
-  }
 }
 
 sub _app { shift->_ua->server->app }
@@ -597,17 +591,6 @@ See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for more details.
 
 NOTE! You need to have a trailing "/" at the end of the string.
 
-=head2 headers
-
-  $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
-  $hash_ref = $self->headers;
-
-This attribute can hold custom response headers when serving assets.
-The default is no headers, but this might change in future release to
-include "Cache-Control".
-
-This attribute is EXPERIMENTAL.
-
 =head2 minify
 
   $app->plugin("AssetPack" => {minify => $bool});
@@ -659,6 +642,16 @@ contain one file if L</minify> is true.
 
 See L<Mojolicious::Plugin::AssetPack::Manual::Include/Full control> for mode
 details.
+
+=head2 headers
+
+  $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
+  $app->asset->headers({"Cache-Control" => "max-age=31536000"});
+
+Calling this method will add a L<after_static|Mojolicious/after_static> hook which
+will set additional response headers when an asset is served.
+
+This method is EXPERIMENTAL.
 
 =head2 preprocessor
 
