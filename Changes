@@ -6,6 +6,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
  - Add EXPERIMENTAL test_app() to ensure all assets are created
  - Changed headers() into a method
  - Remove EXPERIMENTAL support for reloader.js
+ - Remove preprocessor() method
  - Remove support for in-memory assets #64
  - Fix memory leak
 

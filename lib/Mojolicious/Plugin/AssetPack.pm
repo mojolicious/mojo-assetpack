@@ -67,13 +67,6 @@ sub headers {
   );
 }
 
-sub preprocessor {
-  my ($self, $name, $args) = @_;
-  $args->{extensions} or die "Usage: \$self->preprocessor(\$name => {extensions => [...]})";
-  $self->preprocessors->add($_ => $name => $args) for @{$args->{extensions}};
-  return $self;
-}
-
 sub purge {
   my ($self, $args) = @_;
   my $file_re = $self->minify ? qr/^(.*?)-(\w{32})\.min\.(\w+)$/ : qr/^(.*?)-(\w{32})\.(\w+)$/;
@@ -652,12 +645,6 @@ Calling this method will add a L<after_static|Mojolicious/after_static> hook whi
 will set additional response headers when an asset is served.
 
 This method is EXPERIMENTAL.
-
-=head2 preprocessor
-
-DEPRECATED. Use this instead:
-
-  $self->preprocessors->add($extension => $class => \%attrs);
 
 =head2 purge
 
