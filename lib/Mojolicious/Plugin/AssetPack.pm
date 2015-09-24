@@ -16,6 +16,8 @@ use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
 our $VERSION = '0.64';
 
+our $MINIFY = undef;    # internal use only!
+
 has base_url      => '/packed/';
 has minify        => 0;
 has out_dir       => sub { Carp::confess('out_dir() must be set.') };
@@ -107,7 +109,7 @@ sub register {
 
   $self->_ua->proxy->detect if $config->{proxy};
   $self->headers($config->{headers}) if $config->{headers};
-  $self->minify($config->{minify} // $app->mode ne 'development');
+  $self->minify($MINIFY // $config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
   $self->_load_mapping;
@@ -149,24 +151,23 @@ sub source_paths {
 }
 
 sub test_app {
-  my ($class, $app, @modes) = @_;
+  my ($class, $app) = @_;
   my $n = 0;
 
   require Test::Mojo;
-  @modes = qw( development production ) unless @modes;
 
-  for my $mode (@modes) {
-    local $ENV{MOJO_MODE} = $mode;
-    Test::More::diag("MOJO_MODE=$mode") if DEBUG;
+  for my $m (0, 1) {
+    Test::More::diag("minify=$m") if DEBUG;
+    local $MINIFY = $m;
     my $t = Test::Mojo->new($app);
     my $processed = $t->app->asset->{processed} or next;
     for my $asset (map {@$_} values %$processed) {
       $t->get_ok("/$asset")->status_is(200);
       $n++;
     }
+    Test::More::ok($n, "Generated $n assets for $app with minify=$m");
   }
 
-  Test::More::ok($n, "Generated $n assets for $app");
   return $class;
 }
 
@@ -664,13 +665,11 @@ This method is EXPERIMENTAL and can change, but will most likely not be removed.
 
 =head2 test_app
 
-  Mojolicious::Plugin::AssetPack->test_app("MyApp", @modes);
+  Mojolicious::Plugin::AssetPack->test_app("MyApp");
 
-This method will loop through C<@modes>, set C<MOJO_MODE>, create a test
-instance of "MyApp" and see that all the assets can be fetched.
-C<@modes> default to C<("development","production")>. See
-L<Mojolicious::Plugin::AssetPack::Manual::Cookbook/SHIPPING> for more
-details.
+This method will create two L<Mojo::Test> instances of "MyApp" and create
+assets with L</minify> set to 0 and 1.
+L<Mojolicious::Plugin::AssetPack::Manual::Cookbook/SHIPPING> for more details.
 
 This method is EXPERIMENTAL.
 

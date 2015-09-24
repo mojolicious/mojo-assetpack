@@ -70,7 +70,7 @@ See L<http://api.jquery.com/> for jQuery documentation.
 
 =head2 Remember to minify your assets
 
-AssetPack can create both minified and not-minified assets, dependent on the
+AssetPack can create both minified and expanded assets, dependent on the
 L<mode|Mojolicious::Plugin::AssetPack/minify>. This is important to remember
 when you want to ship an application, since you might forget to create the
 production assets while developing.
@@ -81,9 +81,6 @@ To makes sure this is done, you can add the code below as a unit test:
   use Mojolicious::Plugin::AssetPack;
   Mojolicious::Plugin::AssetPack->test_app("MyApp");
   done_testing;
-
-Note that the test above will only work if you are not manually specifying
-L<Mojolicious::Plugin::AssetPack/minify>.
 
 See also L<Mojolicious::Plugin::AssetPack/test_app>.
 

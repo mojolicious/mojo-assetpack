@@ -9,7 +9,7 @@ sub startup {
   $app->home->parse('t') if -d 't';
   unshift @{$app->static->paths}, $app->home->rel_dir('public');
 
-  $app->mode('production') unless $ENV{MOJO_MODE};
+  $app->mode('production');
   $app->plugin('AssetPack');
   $app->plugin(Config => {default => {bg_color => 'blue'}});
 
