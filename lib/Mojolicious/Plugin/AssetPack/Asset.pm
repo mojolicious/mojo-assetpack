@@ -40,6 +40,30 @@ sub spurt {
   return $self;
 }
 
+sub _spurt_error_message_for {
+  my ($self, $ext, $topic, $err) = @_;
+
+  $err =~ s!\r!!g;
+  $err =~ s!\n+$!!;
+  $err = "$topic: $err";
+
+  if ($ext eq 'js') {
+    $err =~ s!'!"!g;
+    $err =~ s!\n!\\n!g;
+    $err =~ s!\s! !g;
+    $err = "alert('$err');console.log('$err');";
+  }
+  else {
+    $err =~ s!"!'!g;
+    $err =~ s!\n!\\A!g;
+    $err =~ s!\s! !g;
+    $err
+      = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
+  }
+
+  $self->spurt($err);
+}
+
 1;
 __END__
 

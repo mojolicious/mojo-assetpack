@@ -47,7 +47,6 @@ sub get {
   my ($self, $moniker, $args) = @_;
   my @assets = $self->_processed($moniker);
 
-  die "Asset '$moniker' is not defined." unless @assets;
   return @assets if $args->{assets};
   return map { $_->slurp } @assets if $args->{inline};
   return map { $self->base_url . basename($_->path) } @assets;
@@ -82,7 +81,7 @@ sub purge {
   delete $existing{$_} for map { basename $_->path } values %{$self->{asset} || {}};
 
   for my $file (keys %existing) {
-    $self->_unlink_packed($file);
+    unlink catfile $self->out_dir, $file;
     $self->_app->log->debug("AssetPack purge $file: @{[$! || 'Deleted']}");
   }
 
@@ -96,11 +95,12 @@ sub register {
   if (eval { $app->$helper }) {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
   }
+  if (my $paths = $config->{source_paths}) {
+    $self->{source_paths} = [map { -d $_ ? Cwd::abs_path($_) : $app->home->rel_file($_) } @$paths];
+  }
 
-  # Not official. Want to keep it private for now...
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
-  $self->{fallback_to_latest}   = $config->{fallback_to_latest};
-  $self->{source_paths}         = $self->_build_source_paths($app, $config);
+  $self->{fallback_to_latest} = $config->{fallback_to_latest};
 
   $self->_ua->server->app($app);
   Scalar::Util::weaken($self->_ua->server->{app});
@@ -143,15 +143,9 @@ sub save_mapping {
 
 sub source_paths {
   my $self = shift;
-  my $app  = $self->_app;
-
-  if (@_) {
-    $self->{source_paths} = shift;
-    return $self;
-  }
-  else {
-    return $self->{source_paths} || $app->static->paths;
-  }
+  return $self->{source_paths} || $self->_app->static->paths unless @_;
+  $self->{source_paths} = shift;
+  return $self;
 }
 
 sub test_app {
@@ -211,13 +205,6 @@ sub _build_out_dir {
   return $out_dir;
 }
 
-sub _build_source_paths {
-  my ($self, $app, $config) = @_;
-
-  return undef unless my $paths = $config->{source_paths};
-  return [map { -d $_ ? Cwd::abs_path($_) : $app->home->rel_file($_) } @$paths];
-}
-
 sub _error_asset_for {
   my ($self, $moniker) = @_;
   $moniker =~ s!^(.+)\.(\w+)$!! or die "Invalid moniker: $moniker";
@@ -271,27 +258,10 @@ sub _handle_process_error {
     return $asset if $asset;
   }
 
-  die $msg if $self->{die_on_process_error};    # prevent hot reloading when assetpack fail
+  # EXPERIMENTAL: Prevent hot reloading when assetpack fail
+  die $msg if $self->{die_on_process_error};
 
-  $err =~ s!\r!!g;
-  $err =~ s!\n+$!!;
-  $err = "$topic: $err";
-
-  if ($moniker =~ /\.js$/) {
-    $err =~ s!'!"!g;
-    $err =~ s!\n!\\n!g;
-    $err =~ s!\s! !g;
-    $err = "alert('$err');console.log('$err');";
-  }
-  else {
-    $err =~ s!"!'!g;
-    $err =~ s!\n!\\A!g;
-    $err =~ s!\s! !g;
-    $err
-      = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
-  }
-
-  return $self->_error_asset_for($moniker)->spurt($err);
+  return $self->_error_asset_for($moniker)->_spurt_error_message_for($ext, $topic, $err);
 }
 
 sub _handler {
@@ -307,22 +277,12 @@ sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
-  if (NO_CACHE) {
-    $self->_processed($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
-  }
+  NO_CACHE and $self->_processed($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
 
-  eval {
-    if ($args->{inline}) {
-      return $c->$tag_helper(@attrs, sub { join '', $self->get($moniker, $args) });
-    }
-    else {
-      return Mojo::ByteStream->new(join "\n", map { $c->$tag_helper($_, @attrs) } $self->get($moniker, $args));
-    }
-    1;
-  } or do {
-    $self->_app->log->error($@);
-    return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->));
-  };
+  return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->))
+    unless my @res = $self->get($moniker, $args);
+  return $c->$tag_helper(@attrs, sub { join '', @res }) if $args->{inline};
+  return Mojo::ByteStream->new(join "\n", map { $c->$tag_helper($_, @attrs) } @res);
 }
 
 sub _load_mapping {
@@ -393,19 +353,14 @@ sub _process {
 sub _process_many {
   my ($self, $moniker, @files) = @_;
   my $ext = _ext($moniker);
-  map { my $name = _name($_); $self->_process("$name.$ext" => $_) } @files;
+  return map { my $name = _name($_); $self->_process("$name.$ext" => $_) } @files;
 }
 
 sub _processed {
   my ($self, $moniker, @assets) = @_;
-
-  if (@assets) {
-    $self->{processed}{$moniker} = [map { sprintf 'packed/%s', basename $_->path } @assets];
-    return $self;
-  }
-  else {
-    return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []};
-  }
+  return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []} unless @assets;
+  $self->{processed}{$moniker} = [map { sprintf 'packed/%s', basename $_->path } @assets];
+  return $self;
 }
 
 sub _source_for_url {
@@ -431,11 +386,6 @@ sub _source_for_url {
 
   warn "[AssetPack] Asset from @{[$self->_app->moniker]}: $url\n" if DEBUG;
   return $self->_handler('https')->asset_for($url, $self);
-}
-
-sub _unlink_packed {
-  my ($self, $file) = @_;
-  unlink catfile $self->out_dir, $file;
 }
 
 # utils
@@ -528,7 +478,7 @@ in different modes.
 See L<Mojolicious::Plugin::AssetPack::Manual::CustomDomain> for how to
 serve your assets from a custom host.
 
-=item * 
+=item *
 
 See L<Mojolicious::Plugin::AssetPack::Preprocessors> for details on the
 different (official) preprocessors.
