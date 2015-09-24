@@ -2,6 +2,7 @@ package Mojolicious::Plugin::AssetPack;
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::ByteStream;
+use Mojo::JSON ();
 use Mojo::Util ();
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Preprocessors;
@@ -9,7 +10,8 @@ use Cwd ();
 use File::Basename qw( basename );
 use File::Path ();
 use File::Spec::Functions qw( catdir catfile );
-use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
+use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
+use constant MAP_FILE => '_assetpack_files.map';
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
 our $VERSION = '0.64';
@@ -102,6 +104,7 @@ sub register {
   $self->minify($config->{minify} // $app->mode ne 'development');
   $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
+  $self->_load_mapping;
 
   $app->helper(
     $helper => sub {
@@ -112,6 +115,26 @@ sub register {
   );
 
   Mojo::IOLoop->next_tick(sub { $self->_add_hook($config) });
+}
+
+sub save_mapping {
+  my $self     = shift;
+  my $mode     = $self->minify ? 'min' : 'normal';
+  my $map_file = catfile $self->out_dir, MAP_FILE;
+  my $mapping  = {};
+
+  unless (keys %{$self->{processed} || {}}) {
+    die '$app->asset->save_mapping() must be called AFTER $app->asset(...)';
+  }
+  unless (-w $self->out_dir) {
+    $self->_app->log->debug(sprintf 'AssetPack cannot write %s to %s.', MAP_FILE, $self->out_dir);
+    return $self;
+  }
+
+  $mapping = Mojo::JSON::decode_json(Mojo::Util::slurp($map_file)) if -r $map_file;
+  $mapping->{$mode} = $self->{processed};
+  Mojo::Util::spurt(Mojo::JSON::encode_json($mapping), $map_file);
+  return $self;
 }
 
 sub source_paths {
@@ -221,15 +244,21 @@ sub _handle_process_error {
   my $app          = $self->_app;
   my $source_paths = join ',', @{$self->source_paths};
   my $static_paths = join ',', @{$app->static->paths};
-  my ($asset, $msg);
+  my $msg;
 
   $err =~ s!\s+$!!;    # remove newlines
   $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
   $app->log->error($msg);
 
+  # use fixed mapping
+  if (my @assets = $self->_processed($moniker)) {
+    return @assets;
+  }
+
   # find fallback asset
   if ($self->{fallback_to_latest}) {
-    $asset = $self->_packed($self->minify ? qr{\b$name-\w+(\.min)?\.$ext$} : qr{\b$name-\w+\.$ext$}, \&_sort_by_mtime);
+    my $asset
+      = $self->_packed($self->minify ? qr{\b$name-\w+(\.min)?\.$ext$} : qr{\b$name-\w+\.$ext$}, \&_sort_by_mtime);
     return $asset if $asset;
   }
 
@@ -285,6 +314,18 @@ sub _inject {
     $self->_app->log->error($@);
     return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->));
   };
+}
+
+sub _load_mapping {
+  my $self = shift;
+  my $mode = $self->minify ? 'min' : 'normal';
+
+  for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
+    my $mapping = catfile $dir, MAP_FILE;
+    next unless -s $mapping;
+    $mapping = Mojo::JSON::decode_json(Mojo::Util::slurp($mapping));
+    $self->{processed}{$_} ||= $mapping->{$mode}{$_} for keys %{$mapping->{$mode} || {}};
+  }
 }
 
 sub _packed {
@@ -633,6 +674,16 @@ Will register the C<asset> helper. All L<arguments|/ATTRIBUTES> are optional.
 (by modify time) in case it fail to generate the asset. This feature is
 EXPERIMENTAL and will not work when checking out from git, but might work
 when installing new versions on disk.
+
+=head2 save_mapping
+
+  $self = $self->save_mapping;
+
+This method will take a snapshot of the connection between a asset moniker
+and the packed files it points to. This mapping will be used as fallback if
+AssetPack fail to process an asset.
+
+This method is EXPERIMENTAL.
 
 =head2 source_paths
 

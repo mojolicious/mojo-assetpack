@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.65 Not Released
+ - Add fixed mapping between moniker to packed files #64
  - Add EXPERIMENTAL support for "fallback_to_latest"
  - Remove EXPERIMENTAL support for reloader.js
  - Remove support for in-memory assets #64
