@@ -150,6 +150,28 @@ sub source_paths {
   }
 }
 
+sub test_app {
+  my ($class, $app, @modes) = @_;
+  my $n = 0;
+
+  require Test::Mojo;
+  @modes = qw( development production ) unless @modes;
+
+  for my $mode (@modes) {
+    local $ENV{MOJO_MODE} = $mode;
+    Test::More::diag("MOJO_MODE=$mode") if DEBUG;
+    my $t = Test::Mojo->new($app);
+    my $processed = $t->app->asset->{processed} or next;
+    for my $asset (map {@$_} values %$processed) {
+      $t->get_ok("/$asset")->status_is(200);
+      $n++;
+    }
+  }
+
+  Test::More::ok($n, "Generated $n assets for $app");
+  return $class;
+}
+
 sub _add_hook {
   my ($self, $config) = @_;
   my $headers = $self->headers;
@@ -698,6 +720,18 @@ See also L<Mojolicious::Plugin::AssetPack::Manual::Assets/Custom source director
 for more information.
 
 This method is EXPERIMENTAL and can change, but will most likely not be removed.
+
+=head2 test_app
+
+  Mojolicious::Plugin::AssetPack->test_app("MyApp", @modes);
+
+This method will loop through C<@modes>, set C<MOJO_MODE>, create a test
+instance of "MyApp" and see that all the assets can be fetched.
+C<@modes> default to C<("development","production")>. See
+L<Mojolicious::Plugin::AssetPack::Manual::Cookbook/SHIPPING> for more
+details.
+
+This method is EXPERIMENTAL.
 
 =head1 COPYRIGHT AND LICENSE
 

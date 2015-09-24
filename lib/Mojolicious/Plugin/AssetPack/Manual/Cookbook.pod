@@ -74,23 +74,18 @@ AssetPack can create both minified and "not minified" assets. This is
 important to remember when you want to ship an application, since you
 might forget to create the production/minified assets while developing.
 
-To makes sure this is done, you can add a unit test that looks pretty much
-like this:
+To makes sure this is done, you can add the code below as a unit test
+to make sure this is done:
 
-  use Mojo::Base -strict;
-  use Test::Mojo;
-
-  plan skip => "This should be an ./xt test" unless -d ".git";
-
-  for my $mode (qw( development production )) {
-    local $ENV{MOJO_MODE} = $mode;
-    Test::Mojo->new("YourAwesomeMojoApp")->get_ok("/");
-  }
-
+  use Test::More;
+  use Mojolicious::Plugin::AssetPack;
+  Mojolicious::Plugin::AssetPack->test_app("MyApp");
   done_testing;
 
 Note that the test above will only work if you are not manually specifying
 L<Mojolicious::Plugin::AssetPack/minify>.
+
+See also L<Mojolicious::Plugin::AssetPack/test_app>.
 
 =head2 Bundling the assets before shipping to CPAN
 

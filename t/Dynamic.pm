@@ -9,7 +9,7 @@ sub startup {
   $app->home->parse('t') if -d 't';
   unshift @{$app->static->paths}, $app->home->rel_dir('public');
 
-  $app->mode('production');
+  $app->mode('production') unless $ENV{MOJO_MODE};
   $app->plugin('AssetPack');
   $app->plugin(Config => {default => {bg_color => 'blue'}});
 
@@ -34,6 +34,7 @@ sub startup {
 
   # Start event loop if necessary
   $app->asset('myapp.css' => $app->url_for('mystyle'));
+  $app->asset->save_mapping;
 }
 
 1;
