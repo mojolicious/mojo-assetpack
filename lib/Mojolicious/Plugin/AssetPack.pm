@@ -423,9 +423,20 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
   # load plugin
   plugin "AssetPack";
 
-  # define assets: $moniker => @real_assets
+  # Define assets: $moniker => @real_assets
   app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
-  app->asset->purge; # remove old packed files
+
+  # Add custom response headers for assets
+  app->asset->headers({"Cache-Control" => "max-age=31536000"});
+
+  # Remove old assets
+  app->asset->purge;
+
+  # Make sure the assets can be loaded even with missing dependencies
+  # or changes in AssetPack
+  app->asset->save_mapping;
+
+  # Start the application
   app->start;
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Assets> for more
