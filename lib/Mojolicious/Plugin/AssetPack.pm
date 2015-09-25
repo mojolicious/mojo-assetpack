@@ -312,7 +312,8 @@ sub _process {
       $asset->add_chunk($content);
     }
 
-    $self->{processed}{$moniker} = [basename $asset->path];
+    $self->{changed}++ unless $self->{processed}{$moniker} and $self->{processed}{$moniker}[0] eq $file;
+    $self->{processed}{$moniker} = [$file];
     $self->_app->log->info("AssetPack built @{[$asset->path]} for @{[$self->_app->moniker]}.");
   };
 
@@ -340,7 +341,7 @@ sub _processed {
   return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []} unless @assets;
   $self->{processed}{$moniker} = [map { basename $_->path } @assets];
   Mojo::Util::spurt(Mojo::JSON::encode_json($self->{mapping}), catfile $self->out_dir, $self->{map_file})
-    if -w $self->out_dir;
+    if $self->{changed};
   return $self;
 }
 
