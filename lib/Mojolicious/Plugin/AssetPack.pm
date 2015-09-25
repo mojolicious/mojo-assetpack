@@ -16,6 +16,7 @@ use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 our $VERSION = '0.64';
 
 our $MINIFY = undef;    # internal use only!
+my $MONIKER_RE = qr{^(.+)\.(\w+)$};
 
 has base_url      => '/packed/';
 has minify        => 0;
@@ -38,7 +39,7 @@ sub add {
 sub fetch {
   my $self  = shift;
   my $url   = Mojo::URL->new(shift);
-  my $asset = $self->_packed("$url") || $self->_handler($url->scheme)->asset_for($url, $self);
+  my $asset = $self->_handler($url->scheme)->asset_for($url, $self);
   return $asset if @_;    # internal
   return $asset->path;    # documented api
 }
@@ -208,7 +209,7 @@ sub _expand_wildcards {
 
 sub _handle_process_error {
   my ($self, $moniker, $err) = @_;
-  my ($name, $ext) = $moniker =~ /^(.+)\.(\w+)$/ ? ($1, $2) : ('', '');
+  my ($name, $ext) = $moniker =~ $MONIKER_RE;
   my $app          = $self->_app;
   my $source_paths = join ',', @{$self->source_paths};
   my $static_paths = join ',', @{$app->static->paths};
@@ -267,14 +268,13 @@ sub _load_mapping {
 
 sub _packed {
   my $sorter = ref $_[-1] eq 'CODE' ? pop : sub {@_};
-  my $self   = shift;
-  my $needle = ref $_[0] ? shift : _name(shift);
+  my ($self, $needle) = @_;
 
   for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
     opendir my $DH, $dir or next;
     for my $file ($sorter->(map { catfile $dir, $_ } readdir $DH)) {
       my $name = basename $file;
-      next unless $name =~ /$needle/;
+      next unless $name =~ $needle;
       $self->_app->log->debug("Using existing asset $file") if DEBUG;
       return $self->_asset($name)->path($file);
     }
@@ -286,7 +286,7 @@ sub _packed {
 sub _process {
   my ($self, $moniker, @sources) = @_;
   my $topic = $moniker;
-  my ($name, $ext) = (_name($moniker), _ext($moniker));
+  my ($name, $ext) = $moniker =~ $MONIKER_RE;
   my ($asset, $file, @checksum);
 
   eval {
@@ -323,7 +323,15 @@ sub _process {
 sub _process_many {
   my ($self, $moniker, @files) = @_;
   my $ext = _ext($moniker);
-  return map { my $name = _name($_); $self->_process("$name.$ext" => $_) } @files;
+
+  return map {
+    my $topic = $_;
+    local $_ = $topic;    # do not modify input
+    s![^\w-]!_!g if /^https?:/;
+    s!\.\w+$!!;
+    $_ = basename $_;
+    $self->_process("$_.$ext" => $topic);
+  } @files;
 }
 
 sub _processed {
@@ -362,13 +370,6 @@ sub _source_for_url {
 
 # utils
 sub _ext { local $_ = basename $_[0]; /\.(\w+)$/ ? $1 : 'unknown'; }
-
-sub _name {
-  local $_ = $_[0];
-  return do { s![^\w-]!_!g; $_ } if /^https?:/;
-  $_ = basename $_;
-  /^(.*)\./ ? $1 : $_;
-}
 
 sub _sort_by_mtime {
   map { $_->[0] } sort { $b->[1] <=> $a->[1] } map { [$_, (stat $_)[9]] } @_;

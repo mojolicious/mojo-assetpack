@@ -30,18 +30,19 @@ This method tries to download the asset from the web.
 
 sub asset_for {
   my ($self, $url, $assetpack) = @_;
-  my $name = Mojolicious::Plugin::AssetPack::_name($url);
-  my $tx   = $assetpack->_ua->get($url);
-  my $ct   = $tx->res->headers->content_type // 'text/plain';
-  my $ext  = Mojolicious::Types->new->detect($ct) || 'txt';
+  my $name = do { local $_ = "$url"; s![^\w-]!_!g; $_ };
+  my ($asset, $e, $tx, $ext);
 
-  if (my $e = $tx->error) {
-    die "Asset $url could not be fetched: $e->{message}";
-  }
+  # already downloaded
+  return $asset if $asset = $assetpack->_packed(qr{^$name\.\w+$});
+
+  $tx = $assetpack->_ua->get($url);
+  $ext = Mojolicious::Types->new->detect($tx->res->headers->content_type // 'text/plain');
+  die "Asset $url could not be fetched: $e->{message}" if $e = $tx->error;
 
   $ext = $ext->[0] if ref $ext;
   $ext = $tx->req->url->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
-  $assetpack->_app->log->info("Asset $url was fetched successfully");
+  $assetpack->_app->log->info("Asset $url was saved as $name.$ext");
   $assetpack->_asset("$name.$ext")->spurt($tx->res->body);
 }
 
