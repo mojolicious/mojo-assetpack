@@ -242,7 +242,7 @@ sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
-  NO_CACHE and $self->_process_many($moniker, @{$self->{files}{$moniker} || []});
+  NO_CACHE and $self->_processed($moniker, $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
 
   return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->))
     unless my @res = $self->get($moniker, $args);
@@ -294,6 +294,7 @@ sub _process {
       $topic = $s;
       $s     = $self->_source_for_url($s);    # rewrite @sources
       push @checksum, $self->preprocessors->checksum(_ext($topic), \$s->slurp, $s->path);
+      warn sprintf "[AssetPack] Checksum $checksum[-1] from %s\n", $s->path if DEBUG;
     }
 
     @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
