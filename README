@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.64
+    0.65
 
 SYNOPSIS
   Application
@@ -12,9 +12,16 @@ SYNOPSIS
       # load plugin
       plugin "AssetPack";
 
-      # define assets: $moniker => @real_assets
+      # Define assets: $moniker => @real_assets
       app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
-      app->asset->purge; # remove old packed files
+
+      # Add custom response headers for assets
+      app->asset->headers({"Cache-Control" => "max-age=31536000"});
+
+      # Remove old assets
+      app->asset->purge;
+
+      # Start the application
       app->start;
 
     See also Mojolicious::Plugin::AssetPack::Manual::Assets for more details
@@ -97,16 +104,6 @@ ATTRIBUTES
 
     NOTE! You need to have a trailing "/" at the end of the string.
 
-  headers
-      $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
-      $hash_ref = $self->headers;
-
-    This attribute can hold custom response headers when serving assets. The
-    default is no headers, but this might change in future release to
-    include "Cache-Control".
-
-    This attribute is EXPERIMENTAL.
-
   minify
       $app->plugin("AssetPack" => {minify => $bool});
       $bool = $self->minify;
@@ -116,15 +113,6 @@ ATTRIBUTES
     Default is false in "development" mode and true otherwise.
 
     See also Mojolicious::Plugin::AssetPack::Manual::Modes.
-
-  out_dir
-      $app->plugin("AssetPack" => {out_dir => $str});
-      $str = $self->out_dir;
-
-    Holds the path to the directory where packed files can be written.
-
-    Defaults to empty string if no directory can be found, which again
-    results in keeping all packed files in memory.
 
   preprocessors
       $obj = $self->preprocessors;
@@ -155,10 +143,24 @@ METHODS
     See "Full control" in Mojolicious::Plugin::AssetPack::Manual::Include
     for mode details.
 
-  preprocessor
-    DEPRECATED. Use this instead:
+  headers
+      $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
+      $app->asset->headers({"Cache-Control" => "max-age=31536000"});
 
-      $self->preprocessors->add($extension => $class => \%attrs);
+    Calling this method will add a after_static hook which will set
+    additional response headers when an asset is served.
+
+    This method is EXPERIMENTAL.
+
+  out_dir
+      $app->plugin("AssetPack" => {out_dir => $str});
+      $str = $self->out_dir;
+
+    Returns the path to the directory where generated packed files are
+    located.
+
+    Changing this from the default will probably lead to inconsistency.
+    Please report back if you are using this feature with success.
 
   purge
       $self = $self->purge({always => $bool});
@@ -195,6 +197,15 @@ METHODS
 
     This method is EXPERIMENTAL and can change, but will most likely not be
     removed.
+
+  test_app
+      Mojolicious::Plugin::AssetPack->test_app("MyApp");
+
+    This method will create two Mojo::Test instances of "MyApp" and create
+    assets with "minify" set to 0 and 1. "SHIPPING" in
+    Mojolicious::Plugin::AssetPack::Manual::Cookbook for more details.
+
+    This method is EXPERIMENTAL.
 
 COPYRIGHT AND LICENSE
     Copyright (C) 2014, Jan Henning Thorsen.
