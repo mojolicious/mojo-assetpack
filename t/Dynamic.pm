@@ -34,7 +34,6 @@ sub startup {
 
   # Start event loop if necessary
   $app->asset('myapp.css' => $app->url_for('mystyle'));
-  $app->asset->save_mapping;
 }
 
 1;

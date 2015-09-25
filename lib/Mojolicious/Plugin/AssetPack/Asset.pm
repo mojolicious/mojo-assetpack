@@ -41,11 +41,10 @@ sub spurt {
 }
 
 sub _spurt_error_message_for {
-  my ($self, $ext, $topic, $err) = @_;
+  my ($self, $ext, $err) = @_;
 
   $err =~ s!\r!!g;
   $err =~ s!\n+$!!;
-  $err = "$topic: $err";
 
   if ($ext eq 'js') {
     $err =~ s!'!"!g;

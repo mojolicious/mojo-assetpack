@@ -41,18 +41,18 @@ plan skip_all => 'Require t/bin/coffee to make failing test' unless -x catfile $
   );
 
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=42, \$!=\d+\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('.*c\.coffee\W+Failed to run .*coffee.*\(\$\?=42, \$!=\d+\) Whoopsie'\);console\.log},
     "coffee.js 42 content");
 
   $t->get_ok($src{invalid})->status_is(200)
-    ->content_like(qr/^html:before\{.*content:"dummy\.foo: No preprocessor defined for .*dummy\.foo";\}/,
+    ->content_like(qr/^html:before\{.*content:".*dummy\.foo\W+No preprocessor defined for .*dummy\.foo";\}/,
     "invalid.foo content");
 
   # error files are always generated
   $ENV{EXITCODE} = 31;
   $t->app->asset('coffee.js' => '/js/c.coffee');
   $t->get_ok($src{coffee})->status_is(200)->content_unlike(qr{[\n\r]})
-    ->content_like(qr{^alert\('c\.coffee: Failed to run .*coffee.*\(\$\?=31, \$!=\d+\) Whoopsie'\);console\.log},
+    ->content_like(qr{^alert\('.*c\.coffee\W+Failed to run .*coffee.*\(\$\?=31, \$!=\d+\) Whoopsie'\);console\.log},
     "coffee.js 31 content");
 }
 

@@ -10,8 +10,7 @@ use Cwd ();
 use File::Basename qw( basename );
 use File::Path ();
 use File::Spec::Functions qw( catdir catfile );
-use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
-use constant MAP_FILE => '_assetpack_files.map';
+use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
 our $VERSION = '0.64';
@@ -32,8 +31,8 @@ sub add {
 
   @files = $self->_expand_wildcards(@files);
   return $self->tap(sub { $self->{files}{$moniker} = \@files; $self }) if NO_CACHE;
-  return $self->tap(sub { $self->_processed($moniker => $self->_process($moniker, @files)) }) if $self->minify;
-  return $self->tap(sub { $self->_processed($moniker => $self->_process_many($moniker, @files)) });
+  return $self->tap(sub { $self->_processed($moniker, $self->_process($moniker, @files)) }) if $self->minify;
+  return $self->tap(sub { $self->_processed($moniker, $self->_process_many($moniker, @files)) });
 }
 
 sub fetch {
@@ -103,6 +102,7 @@ sub register {
   }
 
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
+  $self->{map_file} = '_assetpack.map';
 
   $self->_ua->server->app($app);
   Scalar::Util::weaken($self->_ua->server->{app});
@@ -121,26 +121,6 @@ sub register {
       return $self->_inject(@_);
     }
   );
-}
-
-sub save_mapping {
-  my $self     = shift;
-  my $mode     = $self->minify ? 'min' : 'normal';
-  my $map_file = catfile $self->out_dir, MAP_FILE;
-  my $mapping  = {};
-
-  unless (keys %{$self->{processed} || {}}) {
-    die '$app->asset->save_mapping() must be called AFTER $app->asset(...)';
-  }
-  unless (-w $self->out_dir) {
-    $self->_app->log->debug(sprintf 'AssetPack cannot write %s to %s.', MAP_FILE, $self->out_dir);
-    return $self;
-  }
-
-  $mapping = Mojo::JSON::decode_json(Mojo::Util::slurp($map_file)) if -r $map_file;
-  $mapping->{$mode} = $self->{processed};
-  Mojo::Util::spurt(Mojo::JSON::encode_json($mapping), $map_file);
-  return $self;
 }
 
 sub source_paths {
@@ -203,12 +183,6 @@ sub _build_out_dir {
   $self->{out_dir} = $out_dir;
 }
 
-sub _error_asset_for {
-  my ($self, $moniker) = @_;
-  $moniker =~ s!^(.+)\.(\w+)$!! or die "Invalid moniker: $moniker";
-  return $self->_asset("$1-err.$2");
-}
-
 sub _expand_wildcards {
   my $self = shift;
   my (@files, %seen);
@@ -233,7 +207,7 @@ sub _expand_wildcards {
 }
 
 sub _handle_process_error {
-  my ($self, $moniker, $topic, $err) = @_;
+  my ($self, $moniker, $err) = @_;
   my ($name, $ext) = $moniker =~ /^(.+)\.(\w+)$/ ? ($1, $2) : ('', '');
   my $app          = $self->_app;
   my $source_paths = join ',', @{$self->source_paths};
@@ -241,18 +215,17 @@ sub _handle_process_error {
   my $msg;
 
   $err =~ s!\s+$!!;    # remove newlines
-  $msg = "AssetPack failed to process $topic: $err {source_paths=[$source_paths], static_paths=[$static_paths]}";
-  $app->log->error($msg);
+  $msg = "$err {source_paths=[$source_paths], static_paths=[$static_paths]}";
 
   # use fixed mapping
   if (my @assets = $self->_processed($moniker)) {
+    $app->log->debug("AssetPack falls back to predefined mapping on: $msg");
     return @assets;
   }
 
-  # EXPERIMENTAL: Prevent hot reloading when assetpack fail
-  die $msg if $self->{die_on_process_error};
-
-  return $self->_error_asset_for($moniker)->_spurt_error_message_for($ext, $topic, $err);
+  $app->log->error($msg);
+  die $msg if $self->{die_on_process_error};    # EXPERIMENTAL: Prevent hot reloading when assetpack fail
+  return $self->_asset("$name-err.$ext")->_spurt_error_message_for($ext, $err);
 }
 
 sub _handler {
@@ -268,7 +241,7 @@ sub _inject {
   my ($self, $c, $moniker, $args, @attrs) = @_;
   my $tag_helper = $moniker =~ /\.js/ ? 'javascript' : 'stylesheet';
 
-  NO_CACHE and $self->_processed($moniker => $self->_process_many($moniker, @{$self->{files}{$moniker} || []}));
+  NO_CACHE and $self->_process_many($moniker, @{$self->{files}{$moniker} || []});
 
   return Mojo::ByteStream->new(qq(<!-- Asset '$moniker' is not defined\. -->))
     unless my @res = $self->get($moniker, $args);
@@ -280,11 +253,15 @@ sub _load_mapping {
   my $self = shift;
   my $mode = $self->minify ? 'min' : 'normal';
 
+  $self->{mapping} = {normal => {}, min => {}, meta => {ts => time}};
+  $self->{processed} = $self->{mapping}{$mode};
+
   for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
-    my $mapping = catfile $dir, MAP_FILE;
-    next unless -s $mapping;
-    $mapping = Mojo::JSON::decode_json(Mojo::Util::slurp($mapping));
-    $self->{processed}{$_} ||= $mapping->{$mode}{$_} for keys %{$mapping->{$mode} || {}};
+    my $file = catfile $dir, $self->{map_file};
+    my $mapping = -s $file ? Mojo::JSON::decode_json(Mojo::Util::slurp($file)) : next;
+    for my $mode (keys %$mapping) {
+      $self->{mapping}{$mode}{$_} ||= $mapping->{$mode}{$_} for keys %{$mapping->{$mode}};
+    }
   }
 }
 
@@ -334,12 +311,13 @@ sub _process {
       $asset->add_chunk($content);
     }
 
-    unlink $self->_error_asset_for($moniker)->path;
+    $self->{processed}{$moniker} = [basename $asset->path];
     $self->_app->log->info("AssetPack built @{[$asset->path]} for @{[$self->_app->moniker]}.");
   };
 
   return $asset unless $@;
-  return $self->_handle_process_error($moniker, $topic, $@);
+  return $self->_handle_process_error($moniker, "AssetPack could not read $topic: $@") unless $file;
+  return $self->_handle_process_error($moniker, "AssetPack could not generate $file ($topic): $@");
 }
 
 sub _process_many {
@@ -352,6 +330,8 @@ sub _processed {
   my ($self, $moniker, @assets) = @_;
   return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []} unless @assets;
   $self->{processed}{$moniker} = [map { basename $_->path } @assets];
+  Mojo::Util::spurt(Mojo::JSON::encode_json($self->{mapping}), catfile $self->out_dir, $self->{map_file})
+    if -w $self->out_dir;
   return $self;
 }
 
@@ -423,10 +403,6 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
   # Remove old assets
   app->asset->purge;
-
-  # Make sure the assets can be loaded even with missing dependencies
-  # or changes in AssetPack
-  app->asset->save_mapping;
 
   # Start the application
   app->start;
@@ -626,16 +602,6 @@ This method is EXPERIMENTAL and can change or be removed at any time.
   };
 
 Will register the C<asset> helper. All L<arguments|/ATTRIBUTES> are optional.
-
-=head2 save_mapping
-
-  $self = $self->save_mapping;
-
-This method will take a snapshot of the connection between a asset moniker
-and the packed files it points to. This mapping will be used as fallback if
-AssetPack fail to process an asset.
-
-This method is EXPERIMENTAL.
 
 =head2 source_paths
 
