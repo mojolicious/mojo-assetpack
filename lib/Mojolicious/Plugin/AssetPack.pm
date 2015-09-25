@@ -102,7 +102,6 @@ sub register {
   }
 
   $self->{die_on_process_error} = $ENV{MOJO_ASSETPACK_DIE_ON_PROCESS_ERROR} // $app->mode ne 'development';
-  $self->{fallback_to_latest} = $config->{fallback_to_latest};
 
   $self->_ua->server->app($app);
   Scalar::Util::weaken($self->_ua->server->{app});
@@ -250,13 +249,6 @@ sub _handle_process_error {
   # use fixed mapping
   if (my @assets = $self->_processed($moniker)) {
     return @assets;
-  }
-
-  # find fallback asset
-  if ($self->{fallback_to_latest}) {
-    my $asset
-      = $self->_packed($self->minify ? qr{\b$name-\w+(\.min)?\.$ext$} : qr{\b$name-\w+\.$ext$}, \&_sort_by_mtime);
-    return $asset if $asset;
   }
 
   # EXPERIMENTAL: Prevent hot reloading when assetpack fail
@@ -623,21 +615,15 @@ This method is EXPERIMENTAL and can change or be removed at any time.
 =head2 register
 
   plugin AssetPack => {
-    base_url           => $str,     # default to "/packed"
-    fallback_to_latest => $bool, # default to false
-    headers            => {"Cache-Control" => "max-age=31536000"},
-    minify             => $bool,    # compress assets
-    proxy              => "detect", # autodetect proxy settings
-    out_dir            => "/path/to/some/directory",
-    source_paths       => [...],
+    base_url     => $str,     # default to "/packed"
+    headers      => {"Cache-Control" => "max-age=31536000"},
+    minify       => $bool,    # compress assets
+    proxy        => "detect", # autodetect proxy settings
+    out_dir      => "/path/to/some/directory",
+    source_paths => [...],
   };
 
 Will register the C<asset> helper. All L<arguments|/ATTRIBUTES> are optional.
-
-"fallback_to_latest" allow this module to use the last packed file created
-(by modify time) in case it fail to generate the asset. This feature is
-EXPERIMENTAL and will not work when checking out from git, but might work
-when installing new versions on disk.
 
 =head2 save_mapping
 
