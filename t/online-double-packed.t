@@ -3,10 +3,16 @@ use File::Spec::Functions 'catdir';
 
 plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
 
-for my $m (1, 0) {
+for my $m (0, 1) {
   my $t = t::Helper->t({minify => $m});
+  my $n = 0;
   $t->app->asset('shim.js' => ('http://cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.min.js',));
-  $t->get_ok('/test1')->status_is(200);
+  my $processed = $t->app->asset->{processed} or next;
+  for my $asset (map {@$_} values %$processed) {
+    $t->get_ok("/packed/$asset")->status_is(200);
+    $n++;
+  }
+  ok $n, "Generated $n assets with minify=$m";
 }
 
 opendir(my $DH, catdir qw( t public packed )) or die $!;
