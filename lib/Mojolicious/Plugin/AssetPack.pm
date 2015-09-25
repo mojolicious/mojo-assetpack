@@ -257,13 +257,13 @@ sub _load_mapping {
   $self->{mapping} = {normal => {}, min => {}, meta => {ts => time}};
   $self->{processed} = $self->{mapping}{$mode};
 
-  for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
-    my $file = catfile $dir, $self->{map_file};
-    my $mapping = -s $file ? Mojo::JSON::decode_json(Mojo::Util::slurp($file)) : next;
+  eval {
+    my $file = catfile $self->out_dir, $self->{map_file};
+    my $mapping = Mojo::JSON::decode_json(Mojo::Util::slurp($file));
     for my $mode (keys %$mapping) {
       $self->{mapping}{$mode}{$_} ||= $mapping->{$mode}{$_} for keys %{$mapping->{$mode}};
     }
-  }
+  };
 }
 
 sub _packed {
