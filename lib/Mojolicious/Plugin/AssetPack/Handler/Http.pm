@@ -42,7 +42,7 @@ sub asset_for {
   $ext = $ext->[0] if ref $ext;
   $ext = $tx->req->url->path =~ m!\.(\w+)$! ? $1 : 'txt' if !$ext or $ext eq 'bin';
   $assetpack->_app->log->info("Asset $url was fetched successfully");
-  $assetpack->_asset("packed/$name.$ext")->spurt($tx->res->body);
+  $assetpack->_asset("$name.$ext")->spurt($tx->res->body);
 }
 
 =head1 COPYRIGHT AND LICENSE

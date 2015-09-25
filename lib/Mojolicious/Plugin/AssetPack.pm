@@ -20,7 +20,6 @@ our $MINIFY = undef;    # internal use only!
 
 has base_url      => '/packed/';
 has minify        => 0;
-has out_dir       => sub { Carp::confess('out_dir() must be set.') };
 has preprocessors => sub { Mojolicious::Plugin::AssetPack::Preprocessors->new };
 
 has _ua => sub {
@@ -68,6 +67,8 @@ sub headers {
   );
 }
 
+sub out_dir { shift->{out_dir} }
+
 sub purge {
   my ($self, $args) = @_;
   my $file_re = $self->minify ? qr/^(.*?)-(\w{32})\.min\.(\w+)$/ : qr/^(.*?)-(\w{32})\.(\w+)$/;
@@ -109,8 +110,8 @@ sub register {
   $self->_ua->proxy->detect if $config->{proxy};
   $self->headers($config->{headers}) if $config->{headers};
   $self->minify($MINIFY // $config->{minify} // $app->mode ne 'development');
-  $self->out_dir($self->_build_out_dir($app, $config));
   $self->base_url($config->{base_url}) if $config->{base_url};
+  $self->_build_out_dir($app, $config);
   $self->_load_mapping;
 
   $app->helper(
@@ -161,7 +162,7 @@ sub test_app {
     my $t = Test::Mojo->new($app);
     my $processed = $t->app->asset->{processed} or next;
     for my $asset (map {@$_} values %$processed) {
-      $t->get_ok("/$asset")->status_is(200);
+      $t->get_ok("/packed/$asset")->status_is(200);
       $n++;
     }
     Test::More::ok($n, "Generated $n assets for $app with minify=$m");
@@ -174,17 +175,14 @@ sub _app { shift->_ua->server->app }
 
 sub _asset {
   my ($self, $name) = @_;
-  my $asset = $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new;
-
-  $asset->path(catfile $self->out_dir, $name) if !$asset->path and $name =~ s!^packed/!!;
-  $asset;
+  $self->{asset}{$name} ||= Mojolicious::Plugin::AssetPack::Asset->new(path => catfile $self->out_dir, $name);
 }
 
 sub _build_out_dir {
   my ($self, $app, $config) = @_;
-  my $out_dir = $config->{out_dir};
+  my $out_dir;
 
-  if ($out_dir) {
+  if ($out_dir = $config->{out_dir}) {
     my $static_dir = Cwd::abs_path(catdir $out_dir, File::Spec->updir);
     push @{$app->static->paths}, $static_dir unless grep { $_ eq $static_dir } @{$app->static->paths};
   }
@@ -202,13 +200,13 @@ sub _build_out_dir {
   }
 
   File::Path::make_path($out_dir) unless -d $out_dir;
-  return $out_dir;
+  $self->{out_dir} = $out_dir;
 }
 
 sub _error_asset_for {
   my ($self, $moniker) = @_;
   $moniker =~ s!^(.+)\.(\w+)$!! or die "Invalid moniker: $moniker";
-  return $self->_asset("packed/$1-err.$2");
+  return $self->_asset("$1-err.$2");
 }
 
 sub _expand_wildcards {
@@ -298,9 +296,10 @@ sub _packed {
   for my $dir (map { catdir $_, 'packed' } @{$self->_app->static->paths}) {
     opendir my $DH, $dir or next;
     for my $file ($sorter->(map { catfile $dir, $_ } readdir $DH)) {
-      next unless $file =~ /$needle/;
+      my $name = basename $file;
+      next unless $name =~ /$needle/;
       $self->_app->log->debug("Using existing asset $file") if DEBUG;
-      return $self->_asset('packed/' . basename $file)->path($file);
+      return $self->_asset($name)->path($file);
     }
   }
 
@@ -321,11 +320,11 @@ sub _process {
     }
 
     @checksum = (Mojo::Util::md5_sum(join '', @checksum)) if @checksum > 1;
-    $asset = $self->_packed($self->minify ? qr{\b$name-$checksum[0](\.min)?\.$ext$} : qr{\b$name-$checksum[0]\.$ext$});
+    $asset = $self->_packed($self->minify ? qr{^$name-$checksum[0](\.min)?\.$ext$} : qr{^$name-$checksum[0]\.$ext$});
     return $asset if $asset;                  # already processed
 
     $file = $self->minify ? "$name-$checksum[0].min.$ext" : "$name-$checksum[0].$ext";
-    $asset = $self->_asset("packed/$file");
+    $asset = $self->_asset($file);
     warn sprintf "[AssetPack] Creating %s from %s\n", $file, join ', ', map { $_->path } @sources if DEBUG;
 
     for my $s (@sources) {
@@ -352,7 +351,7 @@ sub _process_many {
 sub _processed {
   my ($self, $moniker, @assets) = @_;
   return map { $self->_asset($_) } @{$self->{processed}{$moniker} || []} unless @assets;
-  $self->{processed}{$moniker} = [map { sprintf 'packed/%s', basename $_->path } @assets];
+  $self->{processed}{$moniker} = [map { basename $_->path } @assets];
   return $self;
 }
 
@@ -549,13 +548,6 @@ Default is false in "development" L<mode|Mojolicious/mode> and true otherwise.
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Modes>.
 
-=head2 out_dir
-
-  $app->plugin("AssetPack" => {out_dir => $str});
-  $str = $self->out_dir;
-
-Holds the path to the directory where packed files are located.
-
 =head2 preprocessors
 
   $obj = $self->preprocessors;
@@ -599,6 +591,16 @@ Calling this method will add a L<after_static|Mojolicious/after_static> hook whi
 will set additional response headers when an asset is served.
 
 This method is EXPERIMENTAL.
+
+=head2 out_dir
+
+  $app->plugin("AssetPack" => {out_dir => $str});
+  $str = $self->out_dir;
+
+Returns the path to the directory where generated packed files are located.
+
+Changing this from the default will probably lead to inconsistency. Please
+report back if you are using this feature with success.
 
 =head2 purge
 
