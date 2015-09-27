@@ -569,8 +569,6 @@ details.
 Calling this method will add a L<after_static|Mojolicious/after_static> hook which
 will set additional response headers when an asset is served.
 
-This method is EXPERIMENTAL.
-
 =head2 out_dir
 
   $app->plugin("AssetPack" => {out_dir => $str});
@@ -591,7 +589,7 @@ L</out_dir> with many versions of the packed file.
 C<always> default to true if in "development" L<mode|Mojolicious/mode> and
 false otherwise.
 
-This method is EXPERIMENTAL and can change or be removed at any time.
+This method is EXPERIMENTAL.
 
 =head2 register
 
@@ -617,8 +615,6 @@ specify your own paths.
 
 See also L<Mojolicious::Plugin::AssetPack::Manual::Assets/Custom source directories>
 for more information.
-
-This method is EXPERIMENTAL and can change, but will most likely not be removed.
 
 =head2 test_app
 

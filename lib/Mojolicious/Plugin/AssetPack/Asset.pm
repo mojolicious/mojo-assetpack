@@ -72,9 +72,10 @@ Mojolicious::Plugin::AssetPack::Asset - Represents an asset file
 
 =head1 DESCRIPTION
 
-This module repesents a file on disk.
+L<Mojolicious::Plugin::AssetPack::Asset> is class that can represent a file
+on disk.
 
-This module is EXPERIMENTAL.
+This class is EXPERIMENTAL.
 
 =head1 ATTRIBUTES
 

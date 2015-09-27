@@ -80,8 +80,6 @@ If there is a need to set a load precedence, simply add the files that need
 to be loaded first into the array before the wildcard or prefix the filenames
 with a number: C<01-polyfill.js>, C<02-main.js>, ...
 
-This feature is currently EXPERIMENTAL.
-
 =head2 Custom source directories
 
 It's possible to make AssetPack look for source files in a different directory

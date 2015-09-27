@@ -2,6 +2,9 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.66 Not Released
  - Skip some tests on windows
+ - Remove EXPERIMENTAL remark for wildcards in filenames #52
+ - Remove EXPERIMENTAL remark from headers()
+ - Remove EXPERIMENTAL remark from source_paths()
 
 0.65 2015-09-25T16:55:49+0200
  - Add EXPERIMENTAL fixed mapping between moniker to packed files #64
@@ -49,7 +52,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.56 2015-08-05T10:44:15+0200
  - Add purge() method (EXPERIMENTAL)
- - Add support for wildcards in filenames (EXPERIMENTAL) #52
+ - Add EXPERIMENTAL support for wildcards in filenames #52
 
 0.55 2015-05-25T12:58:04+0200
  - Will not add memory asset route if not needed #56
