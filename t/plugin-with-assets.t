@@ -2,6 +2,8 @@ use t::Helper;
 use File::Find ();
 use File::Spec::Functions qw( catdir catfile );
 
+plan skip_all => 'Cannot chmod on Win32' if $^O eq 'Win32';
+
 my $source_dir   = catdir qw( t read-only-with-source-assets );
 my $existing_dir = catdir qw( t read-only-with-existing-assets );
 my $plugin_name  = make_plugin();

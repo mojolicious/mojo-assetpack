@@ -17,7 +17,7 @@ my @mtime;
   $t->get_ok('/test1')->status_is(200)->content_like(qr{c1c1c1});
 
   # make sure we find packed assets in public directories
-  is_deeply [mtime($t)], \@mtime, 'same packed file';
+  is_deeply [mtime($t)], \@mtime, 'same packed file' unless $^O eq 'Win32';
 }
 
 done_testing;

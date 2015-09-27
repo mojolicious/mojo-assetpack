@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.66 Not Released
+ - Skip some tests on windows
+
 0.65 2015-09-25T16:55:49+0200
  - Add EXPERIMENTAL fixed mapping between moniker to packed files #64
  - Add EXPERIMENTAL test_app() to ensure all assets are created
