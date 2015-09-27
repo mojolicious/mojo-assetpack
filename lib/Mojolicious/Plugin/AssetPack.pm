@@ -175,8 +175,9 @@ sub _build_out_dir {
     }
   }
   if (!$out_dir) {
-    die "[AssetPack] Could not auto detect out_dir: "
-      . "Neither readable, nor writeable 'packed' directory could be found in static paths, @{$app->static->paths}. Maybe you forgot to pre-pack the assets? "
+    die "[AssetPack] Neither readable, nor writeable 'out_dir' directory "
+      . "could be found in static paths @{$app->static->paths}. "
+      . "Maybe you forgot to pre-pack the assets? "
       . "https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Manual::Cookbook";
   }
 
