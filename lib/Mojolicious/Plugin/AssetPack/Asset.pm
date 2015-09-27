@@ -9,10 +9,18 @@ has handle => sub {
   my $self   = shift;
   my $path   = $self->path;
   my $handle = IO::File->new;
-  my $mode   = -w $path ? O_RDWR : -w dirname($path) ? O_CREAT | O_EXCL | O_RDWR : O_RDONLY;
 
-  $handle->open($path, $mode) or die "Can't open $path: $!";
-  $handle;
+  if (-w $path) {
+    $handle->open($path, O_RDWR) or die "Can't open $path (O_RDWR): $!";
+  }
+  elsif (!-r _ and -w dirname($path)) {
+    $handle->open($path, O_CREAT | O_EXCL | O_RDWR) or die "Can't open $path (O_CREAT|O_EXCL|O_RDWR): $!";
+  }
+  else {
+    $handle->open($path, O_RDONLY) or die "Can't open $path (O_RDONLY): $!";
+  }
+
+  return $handle;
 };
 
 has path => undef;
