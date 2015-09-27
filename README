@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.65
+    0.66
 
 SYNOPSIS
   Application
@@ -150,8 +150,6 @@ METHODS
     Calling this method will add a after_static hook which will set
     additional response headers when an asset is served.
 
-    This method is EXPERIMENTAL.
-
   out_dir
       $app->plugin("AssetPack" => {out_dir => $str});
       $str = $self->out_dir;
@@ -170,7 +168,7 @@ METHODS
 
     "always" default to true if in "development" mode and false otherwise.
 
-    This method is EXPERIMENTAL and can change or be removed at any time.
+    This method is EXPERIMENTAL.
 
   register
       plugin AssetPack => {
@@ -194,9 +192,6 @@ METHODS
 
     See also "Custom source directories" in
     Mojolicious::Plugin::AssetPack::Manual::Assets for more information.
-
-    This method is EXPERIMENTAL and can change, but will most likely not be
-    removed.
 
   test_app
       Mojolicious::Plugin::AssetPack->test_app("MyApp");

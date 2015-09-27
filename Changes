@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.66 Not Released
+0.66 2015-09-27T14:56:56+0200
  - Skip some tests on windows
  - Remove EXPERIMENTAL remark for wildcards in filenames #52
  - Remove EXPERIMENTAL remark from headers()
