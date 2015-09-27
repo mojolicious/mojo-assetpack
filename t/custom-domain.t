@@ -1,21 +1,15 @@
 use t::Helper;
 
-{
-  local $TODO = "Not sure if expanded files should be served from custom base_url";
-  my $t = t::Helper->t({minify => 0, base_url => "http://example.com/static/"});
+my $t = t::Helper->t({minify => 0, base_url => "http://example.com/static/"});
+$t->app->asset('app.css' => '/css/a.css');
 
-  $t->app->asset('app.css' => '/css/a.css');
-  $t->get_ok('/test1')->status_is(200)
-    ->content_like(qr{<link href="http://example\.com/static/css/a\.css"}, 'http://example.com/static/');
-}
+$t->get_ok('/test1')->status_is(200)
+  ->element_exists('[href="http://example.com/static/a-09a653553edca03ad3308a868e5a06ac.css"]');
 
-{
-  my $t = t::Helper->t({minify => 1, base_url => "http://example.com/minified/"});
-
-  $t->app->asset('app.css' => '/css/a.css');
-  $t->get_ok('/test1')->status_is(200)
-    ->content_like(qr{<link href="http://example\.com/minified/app-\w+\.min\.css"}, 'http://example\.com/minified/');
-}
+$t = t::Helper->t({minify => 1, base_url => "http://example.com/minified/"});
+$t->app->asset('app.css' => '/css/a.css');
+$t->get_ok('/test1')->status_is(200)
+  ->content_like(qr{<link href="http://example\.com/minified/app-\w+\.min\.css"}, 'http://example\.com/minified/');
 
 done_testing;
 
