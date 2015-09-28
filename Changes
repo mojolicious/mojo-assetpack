@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.68 Not Released
+0.68 2015-09-28T08:28:29+0200
  - Will skip tests unless possible to write to out_dir
 
 0.67 2015-09-27T15:24:23+0200
