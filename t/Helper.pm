@@ -18,8 +18,17 @@ sub t {
   $t->app->home->parse(Cwd::abs_path(File::Spec->catdir(dirname $0)));
   $t->app->log->on(message => sub { push @{$args->{log}}, $_[2] });
   $t->app->log->on(message => sub { warn "[$_[1]] $_[2]\n" }) if $ENV{HARNESS_IS_VERBOSE};
-  $t->app->static->paths($static);
-  $t->app->plugin(AssetPack => $args || {});
+
+  eval {
+    $t->app->static->paths($static);
+    $t->app->plugin(AssetPack => $args || {});
+    my $out_dir = $t->app->asset->out_dir;
+    die "Cannot write to out_dir=$out_dir\n" unless -w $out_dir;
+    1;
+  } or do {
+    plan skip_all => $@;
+  };
+
   $t->app->routes->get("/test1" => 'test1');
   $t;
 }
