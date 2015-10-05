@@ -34,10 +34,21 @@ Serve files directly (by absolute url) from CDN (or Amazon S3).
 To use the feature, just set a custom L</base_url>:
 
   plugin "AssetPack" => {
-    base_url => "http://cdn.example.com/my-assets/",
+    base_url => "http://cdn.example.com/my-assets/"
   };
 
 See also L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
+
+=head1 CAVEAT
+
+Many recent browsers blocks mixed content, meaning if your HTML is served
+over HTTPS, then you can't serve the assets over HTTP. One way to fix this
+is by using "//" instead of a scheme specific URL. Example:
+
+  base_url => "//cdn.example.com/my-assets/"
+
+This will tell the browser to use the same scheme for fetching assets, as
+it did fetching the web page.
 
 =head1 AUTHOR
 
