@@ -9,7 +9,7 @@ Mojolicious::Plugin::AssetPack::Handler::Sprites - A URL handler for sprites:// 
 L<Mojolicious::Plugin::AssetPack::Handler::Sprites> is a module that can
 generate sprites from image files in a directory.
 
-This module require L<Imager> and L<Imager::File::PNG> to work. Below you can
+This module requires L<Imager> and L<Imager::File::PNG> to work. Below you can
 see how to install it on Debian or Ubuntu:
 
   $ apt-get install libpng12-dev
