@@ -174,12 +174,6 @@ sub _build_out_dir {
       if (-r $packed) { $out_dir ||= Cwd::abs_path($packed) }
     }
   }
-  if (!$out_dir) {
-    die "[AssetPack] Neither readable, nor writeable 'out_dir' directory "
-      . "could be found in static paths @{$app->static->paths}. "
-      . "Maybe you forgot to pre-pack the assets? "
-      . "https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Manual::Cookbook";
-  }
 
   File::Path::make_path($out_dir) unless -d $out_dir;
   $self->{out_dir} = $out_dir;
