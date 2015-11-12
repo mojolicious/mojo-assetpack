@@ -161,7 +161,7 @@ sub _asset {
 
 sub _build_out_dir {
   my ($self, $app, $config) = @_;
-  my $out_dir;
+  my ($out_dir, $packed);
 
   if ($out_dir = $config->{out_dir}) {
     my $static_dir = Cwd::abs_path(catdir $out_dir, File::Spec->updir);
@@ -169,12 +169,13 @@ sub _build_out_dir {
   }
   if (!$out_dir) {
     for my $path (@{$app->static->paths}) {
-      my $packed = catdir $path, 'packed';
+      $packed = catdir $path, 'packed';
       if (-w $path) { $out_dir = Cwd::abs_path($packed); last }
       if (-r $packed) { $out_dir ||= Cwd::abs_path($packed) }
     }
   }
 
+  $out_dir ||= $packed or die "[AssetPack] app->static->paths is not set";
   File::Path::make_path($out_dir) unless -d $out_dir;
   $self->{out_dir} = $out_dir;
 }
