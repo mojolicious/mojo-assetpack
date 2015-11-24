@@ -24,7 +24,8 @@ file is changed. Example:
 
   <script src="/packed/app-ed6d968e39843a556dbe6dad8981e3e0.js">
 
-This is done using L</process>.
+This is done using C<process> method of the appropriate
+L<preprocessor|Mojolicious::Plugin::AssetPack::Preprocessors>.
 
 =head2 Development mode
 
