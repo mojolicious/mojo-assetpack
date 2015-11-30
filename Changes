@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+0.69 Not Released
+ - Fix "uninitialized value" warning in Scss.pm line 203 #65
+
 0.68 2015-09-28T08:28:29+0200
  - Will skip tests unless possible to write to out_dir
 

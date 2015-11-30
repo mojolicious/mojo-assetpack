@@ -85,8 +85,6 @@ use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
   ? $ENV{ENABLE_LIBSASS_BINDINGS}
   : eval 'require CSS::Sass;1';
 
-$ENV{SASS_PATH} ||= '';
-
 my $IMPORT_RE = qr{ \@import \s+ (["']) (.*?) \1 }x;
 
 =head1 ATTRIBUTES
@@ -200,7 +198,8 @@ sub _import_path {
 
 sub _include_paths {
   my ($self, $path) = @_;
-  return File::Basename::dirname($path), @{$self->include_paths}, split /:/, $ENV{SASS_PATH};
+  my $sass_path = $ENV{SASS_PATH} // '';
+  return File::Basename::dirname($path), @{$self->include_paths}, split /:/, $sass_path;
 }
 
 sub _url {'http://sass-lang.com/install'}

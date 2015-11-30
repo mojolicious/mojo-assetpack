@@ -101,6 +101,14 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
   modify($scss_file, sub {s!ddd!ccc!});
 }
 
+{
+  my @warn;
+  local $ENV{SASS_PATH} = undef;
+  local $SIG{__WARN__} = sub { push @warn, $_[0] };
+  Mojolicious::Plugin::AssetPack::Preprocessor::Scss->new->_include_paths(Cwd::getcwd);
+  is "@warn", "", "No uninitialized value warning";
+}
+
 done_testing;
 
 sub modify {
