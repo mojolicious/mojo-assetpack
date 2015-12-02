@@ -13,7 +13,7 @@ use File::Spec::Functions qw( catdir catfile );
 use constant DEBUG    => $ENV{MOJO_ASSETPACK_DEBUG}    || 0;
 use constant NO_CACHE => $ENV{MOJO_ASSETPACK_NO_CACHE} || 0;
 
-our $VERSION = '0.68';
+our $VERSION = '0.69';
 
 our $MINIFY = undef;    # internal use only!
 my $MONIKER_RE = qr{^(.+)\.(\w+)$};
@@ -383,7 +383,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.68
+0.69
 
 =head1 SYNOPSIS
 

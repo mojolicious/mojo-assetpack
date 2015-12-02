@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.69 Not Released
+0.69 2015-12-02T16:37:36+0100
  - Fix "uninitialized value" warning in Scss.pm line 203 #65
  - Fix fetch() from $app
 
