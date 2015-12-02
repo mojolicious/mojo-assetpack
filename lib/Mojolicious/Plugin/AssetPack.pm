@@ -39,7 +39,7 @@ sub add {
 sub fetch {
   my $self  = shift;
   my $url   = Mojo::URL->new(shift);
-  my $asset = $self->_handler($url->scheme)->asset_for($url, $self);
+  my $asset = $self->_handler($url->scheme || 'https')->asset_for($url, $self);
   return $asset if @_;    # internal
   return $asset->path;    # documented api
 }
