@@ -1,13 +1,18 @@
 package Mojolicious::Plugin::Assetpipe;
 use Mojo::Base 'Mojolicious::Plugin';
+use Mojolicious::Plugin::Assetpipe::Asset;
 
 our $VERSION = '0.01';
 
 has route => sub {
   my $self = shift;
   Scalar::Util::weaken($self);
-  $self->_app->routes->route('/asset/:name/:checksum')->via(qw( HEAD GET ))
+  $self->_app->routes->route('/asset/:checksum/:name')->via(qw( HEAD GET ))
     ->name('assetpipe')->to(cb => sub { $self->_serve(@_) });
+};
+
+has static => sub {
+  Mojolicious::Static->new->paths([shift->_app->home->rel_dir('assets')]);
 };
 
 # read-only attribute
@@ -15,8 +20,11 @@ sub ua { $_[0]->{ua} ||= Mojo::UserAgent->new->max_redirects(3) }
 
 sub process {
   my ($self, $topic) = (shift, shift);
-  my $sources = Mojo::Collection->new(@_);
-  my $assets  = Mojo::Collection->new;
+
+  # TODO: The idea with (ref $_) is that maybe the user can pass inn
+  # Mojolicious::Plugin::Assetpipe::Sprites object, with images to generate
+  # CSS from?
+  my $assets = Mojo::Collection->new(map { ref $_ ? $_ : $self->_asset($_) } @_);
 
   $self->{by_topic}{$topic} = $assets;
   $self;
@@ -39,6 +47,10 @@ sub register {
 }
 
 sub _app { shift->ua->server->app }
+
+sub _asset {
+  Mojolicious::Plugin::Assetpipe::Asset->new(assetpipe => $_[0], url => $_[1]);
+}
 
 sub _tag_helpers {
   my ($self, $c, $topic, @attrs) = @_;
