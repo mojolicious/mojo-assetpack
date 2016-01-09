@@ -1,8 +1,11 @@
 package Mojolicious::Plugin::Assetpipe;
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::Assetpipe::Asset;
+use Mojolicious::Plugin::Assetpipe::Util qw(diag has_ro load_module DEBUG);
 
 our $VERSION = '0.01';
+
+has minify => sub { shift->_app->mode ne 'development' };
 
 has route => sub {
   my $self = shift;
@@ -12,21 +15,41 @@ has route => sub {
 };
 
 has static => sub {
-  Mojolicious::Static->new->paths([shift->_app->home->rel_dir('assets')]);
+  my $self = shift;
+  return Mojolicious::Static->new->classes([@{$self->_app->static->classes}])
+    ->paths([$self->_app->home->rel_dir('assets')]);
 };
 
-# read-only attribute
-sub ua { $_[0]->{ua} ||= Mojo::UserAgent->new->max_redirects(3) }
+has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
 
 sub process {
   my ($self, $topic) = (shift, shift);
 
-  # TODO: The idea with (ref $_) is that maybe the user can pass inn
+  # Used by diag()
+  local $Mojolicious::Plugin::Assetpipe::Util::TOPIC = $topic;
+
+  # TODO: The idea with blessed($_) is that maybe the user can pass inn
   # Mojolicious::Plugin::Assetpipe::Sprites object, with images to generate
   # CSS from?
-  my $assets = Mojo::Collection->new(map { ref $_ ? $_ : $self->_asset($_) } @_);
+  my $assets = Mojo::Collection->new(
+    map {
+      Scalar::Util::blessed($_)
+        ? $_
+        : Mojolicious::Plugin::Assetpipe::Asset->new(assetpipe => $self, url => $_)
+    } @_
+  );
+
+  for my $pipe (@{$self->{pipes}}) {
+    $pipe->topic($topic);
+    for my $method (qw( _process _combine )) {
+      next unless $pipe->can($method);
+      diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
+      $pipe->$method($assets);
+    }
+  }
 
   $self->{by_topic}{$topic} = $assets;
+  $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self;
 }
 
@@ -39,17 +62,36 @@ sub register {
 
   if (my $proxy = $config->{proxy} // {}) {
     local $ENV{NO_PROXY} = $proxy->{no_proxy} || join ':', grep {$_} $ENV{NO_PROXY},
-      $ENV{no_proxy}, '127.0.0.1', '::1', 'localhost';
+      $ENV{no_proxy}, '127.0.0.1', 'localhost';
+    diag 'Detecting proxy settings. (NO_PROXY=%s)', $ENV{NO_PROXY} if DEBUG;
     $self->ua->proxy->detect;
   }
 
+  $self->_pipes($config->{pipes});
   $app->helper($helper => sub { @_ == 1 ? $self : $self->_tag_helpers(@_) });
 }
 
 sub _app { shift->ua->server->app }
 
-sub _asset {
-  Mojolicious::Plugin::Assetpipe::Asset->new(assetpipe => $_[0], url => $_[1]);
+sub _pipes {
+  my $self = shift;
+  my $names = shift || [qw(Css JavaScript Combine)];
+
+  $self->{pipes} = [
+    map {
+      my $class = load_module /::/ ? $_ : "Mojolicious::Plugin::Assetpipe::Pipe::$_";
+      diag 'Loading pipe "%s".', $class if DEBUG;
+      die qq(Unable to load "$_": $@) unless $class;
+      $class->new(assetpipe => $self);
+    } @$names
+  ];
+}
+
+sub _serve {
+  my ($self, $c) = @_;
+  my $asset = $self->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
+  $self->static->serve_asset($c, $asset);
+  $c->rendered;
 }
 
 sub _tag_helpers {

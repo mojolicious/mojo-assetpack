@@ -5,19 +5,17 @@ use Mojo::Util ();
 use constant DEBUG   => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
-our @EXPORT  = qw( DEBUG diag checksum has_ro );
+our @EXPORT  = qw(DEBUG diag checksum has_ro load_module);
 our $SUM_LEN = 10;
 our $TOPIC;
 
-sub checksum {
-  substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN;
-}
+sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
 sub diag {
   my $pkg = caller;
+  my $f = @_ > 1 ? shift : '%s';
   $pkg = 'Assetpipe' unless $pkg =~ s!.*::Assetpipe::Pipe!Assetpipe!;
-  warn sprintf "%s[%s%s] %s\n", TESTING ? '# ' : '', $pkg, $TOPIC ? "/$TOPIC" : "",
-    join ' ', @_;
+  warn sprintf "%s[%s%s] $f\n", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
 }
 
 sub has_ro {
@@ -38,6 +36,12 @@ sub has_ro {
   }
 }
 
+sub load_module {
+  my $module = shift;
+  eval "require $module;1";
+  return $@ ? '' : $module;
+}
+
 1;
 
 =encoding utf8
@@ -45,10 +49,6 @@ sub has_ro {
 =head1 NAME
 
 Mojolicious::Plugin::Assetpipe::Util - Description
-
-=head1 VERSION
-
-0.01
 
 =head1 DESCRIPTION
 
@@ -62,13 +62,6 @@ L<Mojolicious::Plugin::Assetpipe::Util> is a ...
 =head1 ATTRIBUTES
 
 =head1 METHODS
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2014, Jan Henning Thorsen
-
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
 
 =head1 AUTHOR
 

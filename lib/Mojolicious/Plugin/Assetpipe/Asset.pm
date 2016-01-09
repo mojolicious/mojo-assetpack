@@ -1,23 +1,32 @@
 package Mojolicious::Plugin::Assetpipe::Asset;
 use Mojo::Base -base;
-use Mojo::Util;
+use Mojo::Asset::Memory;
 use Mojolicious::Plugin::Assetpipe::Util 'has_ro';
 
-has assetpipe => sub { };
-has checksum  => sub { Mojolicious::Plugin::Assetpipe::Util::checksum(shift->slurp) };
-has format    => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
+has checksum => sub { Mojolicious::Plugin::Assetpipe::Util::checksum(shift->content) };
+has format   => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
+has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
+has mtime    => sub { shift->_asset->mtime };
 
+has_ro 'assetpipe';
 has_ro name => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
 has_ro 'url';
 
-sub slurp {
+has _asset => sub {
   my $self = shift;
-  my $url  = $self->url;
-  $url =~ s!^/!!;
-  my $file = $self->assetpipe->static->file($url)
-    or die die qq(Cannot find asset for "@{[$self->url]}".);
-  return $file->slurp;
+  return $self->assetpipe->static->file($self->url)
+    || die die qq(Cannot find asset for "@{[$self->url]}".);
+};
+
+sub content {
+  my $self = shift;
+  return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0])) if @_;
+  return $self->_asset->slurp;
 }
+
+sub get_chunk { shift->_asset->get_chunk(@_) }
+sub is_file   { shift->_asset->isa('Mojo::Asset::File') }
+sub size      { shift->_asset->size }
 
 1;
 
