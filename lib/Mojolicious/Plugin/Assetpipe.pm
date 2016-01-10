@@ -39,6 +39,9 @@ sub process {
     } @_
   );
 
+  # Prepare asset attributes
+  $assets->map($_) for qw(checksum mtime);
+
   for my $pipe (@{$self->{pipes}}) {
     $pipe->topic($topic);
     for my $method (qw( _process _combine )) {

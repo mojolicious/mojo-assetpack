@@ -4,20 +4,20 @@ use Mojolicious::Plugin::Assetpipe::Util qw(diag load_module DEBUG);
 
 sub _process {
   my ($self, $assets) = @_;
-  my $l;
 
   return unless $self->assetpipe->minify;
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      return if $asset->format ne 'js' or $asset->minified;
+      return
+           if $asset->format ne 'js'
+        or $asset->minified
+        or $asset->cache_load({minified => 1});
+      return unless length(my $c = $asset->content);
       load_module 'JavaScript::Minifier::XS'
-        or die qq(Could not to load "JavaScript::Minifier::XS": $@)
-        unless $l++;
-
+        or die qq(Could not load "JavaScript::Minifier::XS": $@);
       diag 'Minify "%s" with checksum "%s".', $asset->url, $asset->checksum if DEBUG;
-      $asset->checksum;    # make sure checksum() is calculated before changing content()
-      $asset->content(JavaScript::Minifier::XS::minify($asset->content))->minified(1);
+      $asset->minified(1)->content(JavaScript::Minifier::XS::minify($c));
     }
   );
 }

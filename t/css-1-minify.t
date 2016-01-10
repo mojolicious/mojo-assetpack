@@ -1,7 +1,6 @@
 BEGIN { $ENV{MOJO_MODE} = 'not_development' }
 use Mojo::Base -strict;
 use Mojo::Loader 'data_section';
-use Mojolicious::Lite;
 use Mojolicious::Plugin::Assetpipe::Util 'checksum';
 use Test::Mojo;
 use Test::More;
@@ -9,9 +8,13 @@ use Test::More;
 my @assets = qw( d/one.css d/two.css d/already-min.css );
 my $checksum = checksum join ':', map { checksum(data_section __PACKAGE__, $_) } @assets;
 
+use Mojolicious::Lite;
 get '/' => 'index';
 plugin 'assetpipe';
 app->asset->process('app.css' => @assets);
+
+my $file = app->asset->static->file('cache/one-f956a3f925.min.css');
+ok $file, 'cache one';
 
 my $t = Test::Mojo->new;
 
