@@ -331,4 +331,3 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
  - Add default preprocessors for js, css, scss and less
  - Can expand from moniker to multiple script/link tags
  - Can compress multiple files to one moniker asset
-

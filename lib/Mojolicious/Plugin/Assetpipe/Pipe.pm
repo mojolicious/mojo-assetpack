@@ -24,18 +24,29 @@ Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
 
 This is the base class for all pipe classes.
 
+=head1 ATTRIBUTES
+
+=head2 assetpipe
+
+  $obj = $self->assetpipe;
+
+Holds a L<Mojolicious::Plugin::Assetpipe> object.
+
+=head2 topic
+
+  $str = $self->topic;
+  $self = $self->topic("app.css");
+
+Returns the name of the current asset topic.
+
 =head1 METHODS
 
 =head2 new
 
-Makes sure L</assetpipe> is weaken.
+Object constructor. Makes sure L</assetpipe> is weaken.
 
-=head2 topic
+=head1 SEE ALSO
 
-Returns the name of the current asset name.
-
-=head1 AUTHOR
-
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+L<Mojolicious::Plugin::Assetpipe>.
 
 =cut

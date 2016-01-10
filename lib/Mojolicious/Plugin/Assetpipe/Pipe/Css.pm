@@ -28,23 +28,18 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Css - Description
+Mojolicious::Plugin::Assetpipe::Pipe::Css - Minify CSS
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Css> is a ...
+L<Mojolicious::Plugin::Assetpipe::Pipe::Css> will minify your "css" assets
+if L<Mojolicious::Plugin::Assetpipe/minify> is true and the asset is not
+already minified.
 
-=head1 SYNOPSIS
+This module require the optional module L<CSS::Minifier::XS> to minify.
 
-  use Mojolicious::Plugin::Assetpipe::Pipe::Css;
-  my $obj = Mojolicious::Plugin::Assetpipe::Pipe::Css->new;
+=head1 SEE ALSO
 
-=head1 ATTRIBUTES
-
-=head1 METHODS
-
-=head1 AUTHOR
-
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+L<Mojolicious::Plugin::Assetpipe>.
 
 =cut
