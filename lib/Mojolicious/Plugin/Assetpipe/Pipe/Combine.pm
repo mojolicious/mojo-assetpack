@@ -18,23 +18,15 @@ sub _combine {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Combine - Description
+Mojolicious::Plugin::Assetpipe::Pipe::Combine - Combine multiple assets to one
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Combine> is a ...
+L<Mojolicious::Plugin::Assetpipe::Pipe::Combine> will take a list of
+assets and turn them into a single asset.
 
-=head1 SYNOPSIS
+=head1 SEE ALSO
 
-  use Mojolicious::Plugin::Assetpipe::Pipe::Combine;
-  my $obj = Mojolicious::Plugin::Assetpipe::Pipe::Combine->new;
-
-=head1 ATTRIBUTES
-
-=head1 METHODS
-
-=head1 AUTHOR
-
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+L<Mojolicious::Plugin::Assetpipe>.
 
 =cut

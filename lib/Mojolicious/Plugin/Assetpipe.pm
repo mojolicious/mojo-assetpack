@@ -61,8 +61,8 @@ sub register {
   Scalar::Util::weaken($self->ua->server->{app});
 
   if (my $proxy = $config->{proxy} // {}) {
-    local $ENV{NO_PROXY} = $proxy->{no_proxy} || join ':', grep {$_} $ENV{NO_PROXY},
-      $ENV{no_proxy}, '127.0.0.1', 'localhost';
+    local $ENV{NO_PROXY} = $proxy->{no_proxy} || join ',', grep {$_} $ENV{NO_PROXY},
+      $ENV{no_proxy}, '127.0.0.1', '::1', 'localhost';
     diag 'Detecting proxy settings. (NO_PROXY=%s)', $ENV{NO_PROXY} if DEBUG;
     $self->ua->proxy->detect;
   }
@@ -116,24 +116,114 @@ sub _tag_helpers {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe - Description
+Mojolicious::Plugin::Assetpipe - EXPERIMENTAL alternative to AssetPack
 
 =head1 VERSION
 
 0.01
 
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::Assetpipe> is a ...
-
 =head1 SYNOPSIS
 
-  use Mojolicious::Plugin::Assetpipe;
-  my $obj = Mojolicious::Plugin::Assetpipe->new;
+=head2 Application
+
+  use Mojolicious::Lite;
+
+  # Load plugin
+  plugin "assetpipe";
+
+  # define asset
+  app->asset->process(
+    "app.css" => (              # virtual name of the asset
+      "sass/bar.scss",          # relative to static()
+      "/usr/share/vendor.css",  # absolute path
+    )
+  );
+
+=head2 Template
+
+  <html>
+    <head>
+      %= asset "app.css"
+    </head>
+    <body><%= content %></body>
+  </html>
+
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::Assetpipe> is an re-implementation of
+L<Mojolicious::Plugin::AssetPack>.
 
 =head1 ATTRIBUTES
 
+=head2 minify
+
+  $bool = $self->minify;
+  $self = $self->minify($bool);
+
+Set this to true to combine and minify the assets. Will be true unless
+L<Mojolicious/mode> is "development".
+
+=head2 route
+
+  $route = $self->route;
+  $self = $self->route($route);
+
+The route used to generate paths to assets and also dispatch to a callback
+which can serve the assets.
+
+=head2 static
+
+  $static = $self->static;
+  $self = $self->static(Mojolicious::Static->new);
+
+A L<Mojolicious::Static> object used to locate relative assets. Assets can
+be located on disk or in a L<DATA|Mojo::Util/data_section> section.
+
+=head2 ua
+
+  $ua = $self->ua;
+
+Holds a L<Mojo::UserAgent> which can be used to fetch assets either from local
+application or from remote web servers.
+
 =head1 METHODS
+
+=head2 process
+
+  $self = $self->process($topic => @assets);
+
+Used to process assets.
+
+=head2 register
+
+  $self->register($app, \%config);
+
+Used to register the plugin in the application. C<%config> can contain:
+
+=over 2
+
+=item * helper
+
+Name of the helper to add to the application. Default is "asset".
+
+=item * pipes
+
+A list of pipe classes to load. The default is:
+
+  [qw( Css JavaScript Combine )];
+
+Note! The default will change when more pipe classes are added.
+
+=item * proxy
+
+A hash of proxy settings. Set this to C<undef> to disable proxy detection.
+Currently only "no_proxy" is supported, which will set which requests that
+should bypass the proxy (if any proxy is detected). Default is to bypass
+all requests to localhost.
+
+See L<Mojo::UserAgent::Proxy/detect> for more infomation.
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 

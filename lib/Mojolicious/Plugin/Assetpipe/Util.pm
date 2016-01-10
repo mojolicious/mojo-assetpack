@@ -24,12 +24,17 @@ sub has_ro {
 
   if ($builder) {
     Mojo::Util::monkey_patch(
-      $caller => $name => sub { $_[0]->{$name} //= $builder->($_[0]) });
+      $caller => $name => sub {
+        Carp::confess(qq("$name" is read-only")) if @_ > 1;
+        $_[0]->{$name} //= $builder->($_[0]);
+      }
+    );
   }
   else {
     Mojo::Util::monkey_patch(
       $caller => $name => sub {
-        return $_[0]->{$name} if $_[0]->{$name} and @_ == 1;
+        Carp::confess(qq("$name" is read-only")) if @_ > 1;
+        return $_[0]->{$name} if exists $_[0]->{$name};
         Carp::confess(qq("$name" is required in constructor'));
       }
     );
@@ -48,23 +53,46 @@ sub load_module {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Util - Description
+Mojolicious::Plugin::Assetpipe::Util - Utility functions for pipes
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Util> is a ...
+L<Mojolicious::Plugin::Assetpipe::Util> holds utility functions.
 
 =head1 SYNOPSIS
 
   use Mojolicious::Plugin::Assetpipe::Util;
-  my $obj = Mojolicious::Plugin::Assetpipe::Util->new;
+  use Mojolicious::Plugin::Assetpipe::Util qw(checksum diag DEBUG)
 
-=head1 ATTRIBUTES
+=head1 FUNCTIONS
 
-=head1 METHODS
+=head2 checksum
 
-=head1 AUTHOR
+  $str = checksum $bytes;
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+Used to calculate checksum of C<$bytes>.
+
+=head2 diag
+
+  diag "some messsage";
+  diag "some %s", "messsage";
+
+Same as C<warn()>, but with a prefix. It will also use C<sprintf()> if
+more than one argument is given.
+
+=head2 has_ro
+
+Same as L<Mojo::Base/has>, but creates a read-only attribute.
+
+=head2 load_module
+
+  $module = load_module $module;
+
+Used to load C<$module>. Echo back C<$module> on success and returns empty
+string on failure. C<$@> holds the error message on failure.
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::Assetpipe>.
 
 =cut
