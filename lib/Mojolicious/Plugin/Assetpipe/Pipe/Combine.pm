@@ -9,7 +9,7 @@ sub _combine {
   my $checksum = checksum $assets->map('checksum')->join(':');
   diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
   @$assets = ($assets->first->new(assetpipe => $self->assetpipe, url => $self->topic)
-      ->checksum($checksum)->content($assets->map('content')->join("\n")));
+      ->checksum($checksum)->minified(1)->content($assets->map('content')->join("\n")));
 }
 
 1;
