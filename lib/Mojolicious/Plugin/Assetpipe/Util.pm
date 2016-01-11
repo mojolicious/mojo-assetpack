@@ -4,8 +4,7 @@ use Mojo::Util ();
 
 use constant DEBUG => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
 use constant SILENT => $ENV{HARNESS_ACTIVE}
-  && !$ENV{HARNESS_IS_VERBOSE}
-  && !$ENV{TEST_DIAG};
+  && !$ENV{HARNESS_IS_VERBOSE} ? !$ENV{TEST_DIAG} : 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE} || 0;
 
 our @EXPORT  = qw(diag checksum has_ro load_module DEBUG);
@@ -16,9 +15,10 @@ sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
 sub diag {
   return if SILENT;
-  my $pkg = caller;
   my $f = @_ > 1 ? shift : '%s';
-  $pkg = 'Assetpipe' unless $pkg =~ s!.*::Assetpipe::Pipe!Assetpipe!;
+  my ($i, $pkg) = (0);
+  while ($pkg = caller $i++) { $pkg =~ s!.*::(Assetpipe::)Pipe::!$1! and last }
+  $pkg = 'Assetpipe' unless $pkg;
   warn sprintf "%s[%s%s] $f\n", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
 }
 

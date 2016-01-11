@@ -12,7 +12,7 @@ my $url_checksum = checksum 'd/one.css';
 $t->app->asset->process('app.css' => @assets);
 
 my $file = $t->app->asset->store->file('processed/one-ada9270f07.min.css');
-ok $file, 'cache one';
+isa_ok($file, 'Mojo::Asset::File');
 
 my $asset_checksum = checksum join ':',
   map { checksum(data_section __PACKAGE__, $_) } @assets;
@@ -21,6 +21,17 @@ $t->get_ok('/')->status_is(200)
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
+
+{
+  # do not remove assets
+  local $ENV{MOJO_ASSETPIPE_CLEANUP} = 0;
+  undef $t;
+}
+
+Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Nope!' });
+ok -e $file->path, 'cached file exists';
+$t = t::Helper->t;
+$t->app->asset->process('app.css' => @assets);
 
 done_testing;
 

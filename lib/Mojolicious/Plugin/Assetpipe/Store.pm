@@ -11,7 +11,7 @@ sub load {
   my @rel = $self->_cache_path($asset, $args || {});
   my $file = $self->file(join '/', @rel);
 
-  diag 'Load "%s": %s', eval { $file->path } || join('/', @rel), $file ? 1 : 0 if DEBUG;
+  diag 'Load "%s" = %s', eval { $file->path } || join('/', @rel), $file ? 1 : 0 if DEBUG;
   return 0 unless $file;
   $asset->$_($args->{$_}) for keys %$args;
   $asset->_asset($file);
@@ -24,7 +24,7 @@ sub save {
 
   # Do not care if this fail. Can fallback to temp files.
   mkdir $dir if !-d $dir and -w dirname $dir;
-  diag 'Save "%s": %s', $path, -d $dir ? 1 : 0 if DEBUG;
+  diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
   return 0 unless -w $dir;
   spurt $asset->content, $path;
   return $asset->_asset(Mojo::Asset::File->new(path => $path));
