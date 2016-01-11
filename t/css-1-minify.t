@@ -13,7 +13,7 @@ get '/' => 'index';
 plugin 'assetpipe';
 app->asset->process('app.css' => @assets);
 
-my $file = app->asset->static->file('cache/one-f956a3f925.min.css');
+my $file = app->asset->store->file('processed/one-f956a3f925.min.css');
 ok $file, 'cache one';
 
 my $t = Test::Mojo->new;

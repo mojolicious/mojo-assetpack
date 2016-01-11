@@ -9,13 +9,12 @@ sub _process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      return
-           if $asset->format ne 'css'
-        or $asset->minified
-        or $asset->cache_load({minified => 1});
+      return if $asset->format ne 'css' or $asset->minified;
+      return if $self->assetpipe->store->load($asset, {minified => 1});
       load_module 'CSS::Minifier::XS' or die qq(Could not load "CSS::Minifier::XS": $@);
-      diag 'Minify "%s" with checksum "%s".', $asset->url, $asset->checksum if DEBUG;
-      $asset->minified(1)->content(CSS::Minifier::XS::minify($asset->content));
+      diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
+      $asset->content(CSS::Minifier::XS::minify($asset->content))->minified(1);
+      $self->assetpipe->store->save($asset);
     }
   );
 }
