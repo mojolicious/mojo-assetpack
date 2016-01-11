@@ -1,11 +1,7 @@
 package Mojolicious::Plugin::Assetpipe::Asset;
 use Mojo::Base -base;
 use Mojo::Asset::Memory;
-use Mojo::Util 'spurt';
 use Mojolicious::Plugin::Assetpipe::Util qw(diag has_ro DEBUG);
-use File::Basename 'dirname';
-
-sub NO_CACHE () { $ENV{MOJO_ASSETPIPE_NO_CACHE} || 0 }
 
 has checksum => sub { Mojolicious::Plugin::Assetpipe::Util::checksum(shift->content) };
 has format   => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
@@ -18,43 +14,14 @@ has_ro 'url';
 
 has _asset => sub {
   my $self = shift;
-  return $self->assetpipe->static->file($self->url)
+  return $self->assetpipe->store->file($self->url)
     || die die qq(Cannot find asset for "@{[$self->url]}".);
 };
 
-sub cache_load {
-  my $self  = shift;
-  my @rel   = $self->_cache_path(shift || {});
-  my $asset = $self->assetpipe->static->file(join '/', @rel);
-
-  diag 'Load "%s": %s', eval { $asset->path } || $rel[1], $asset ? 1 : 0 if DEBUG;
-  return $self->_asset($asset) if $asset;
-  return undef;
-}
-
 sub content {
-  my ($self, $bytes) = @_;
-
-  # get
-  return $self->_asset->slurp unless defined $bytes;
-
-  # set+save
-  my $path
-    = File::Spec->catfile($self->assetpipe->static->paths->[0], $self->_cache_path);
-  my $dir = dirname $path;
-
-  # Do not care if this fail. Can fallback to temp files.
-  mkdir $dir if !-d $dir and -w dirname $dir;
-
-  if (NO_CACHE or !-w $dir) {
-    $self->assetpipe->app->log->warn(qq(Assetpipe cannot write assets to "$dir".))
-      unless $self->assetpipe->{read_only_mode_warning}++;
-    return $self->_asset(Mojo::Asset::Memory->new->add_chunk($bytes));
-  }
-
-  diag 'Save "%s".', $path if DEBUG;
-  spurt $bytes, $path;
-  return $self->_asset(Mojo::Asset::File->new(path => $path));
+  my $self = shift;
+  return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0])) if @_;
+  return $self->_asset->slurp;
 }
 
 sub get_chunk { shift->_asset->get_chunk(@_) }
@@ -66,15 +33,6 @@ sub new {
 }
 
 sub size { shift->_asset->size }
-
-sub _cache_path {
-  my ($self, $args) = @_;
-  return (
-    'cache', sprintf '%s-%s.%s%s',
-    $self->name, $self->checksum, $args->{minified} || $self->minified ? 'min.' : '',
-    $self->format
-  );
-}
 
 1;
 
@@ -146,12 +104,6 @@ Returns the last part of l</url> without extension.
 Returns the location of the asset.
 
 =head1 METHODS
-
-=head2 cache_load
-
-  $bool = $self->cache_load;
-
-Will try to get the processed version of the asset from cache.
 
 =head2 content
 

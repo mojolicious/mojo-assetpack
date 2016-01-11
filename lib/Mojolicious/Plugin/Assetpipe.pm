@@ -1,6 +1,7 @@
 package Mojolicious::Plugin::Assetpipe;
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::Assetpipe::Asset;
+use Mojolicious::Plugin::Assetpipe::Store;
 use Mojolicious::Plugin::Assetpipe::Util qw(diag has_ro load_module DEBUG);
 
 our $VERSION = '0.01';
@@ -14,10 +15,12 @@ has route => sub {
     ->name('assetpipe')->to(cb => sub { $self->_serve(@_) });
 };
 
-has static => sub {
+has store => sub {
   my $self = shift;
-  return Mojolicious::Static->new->classes([@{$self->_app->static->classes}])
-    ->paths([$self->_app->home->rel_dir('assets')]);
+  Mojolicious::Plugin::Assetpipe::Store->new(
+    classes => [@{$self->_app->static->classes}],
+    paths   => [$self->_app->home->rel_dir('assets')]
+  );
 };
 
 has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
@@ -93,7 +96,7 @@ sub _pipes {
 sub _serve {
   my ($self, $c) = @_;
   my $asset = $self->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
-  $self->static->serve_asset($c, $asset);
+  $self->store->serve_asset($c, $asset);
   $c->rendered;
 }
 
@@ -137,7 +140,7 @@ Mojolicious::Plugin::Assetpipe - EXPERIMENTAL alternative to AssetPack
   # define asset
   app->asset->process(
     "app.css" => (              # virtual name of the asset
-      "sass/bar.scss",          # relative to static()
+      "sass/bar.scss",          # relative to store()
       "/usr/share/vendor.css",  # absolute path
     )
   );
@@ -174,13 +177,14 @@ L<Mojolicious/mode> is "development".
 The route used to generate paths to assets and also dispatch to a callback
 which can serve the assets.
 
-=head2 static
+=head2 store
 
-  $static = $self->static;
-  $self = $self->static(Mojolicious::Static->new);
+  $obj = $self->store;
+  $self = $self->store(Mojolicious::Plugin::Assetpipe::Store->new);
 
-A L<Mojolicious::Static> object used to locate relative assets. Assets can
-be located on disk or in a L<DATA|Mojo::Util/data_section> section.
+Holds a L<Mojolicious::Plugin::Assetpipe::Store> object used to locate and
+store assets. Assets can be located on disk or in a L<DATA|Mojo::Util/data_section>
+section.
 
 =head2 ua
 
