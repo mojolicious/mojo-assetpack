@@ -2,16 +2,20 @@ package Mojolicious::Plugin::Assetpipe::Util;
 use Mojo::Base 'Exporter';
 use Mojo::Util ();
 
-use constant DEBUG   => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
-use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
+use constant DEBUG => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
+use constant SILENT => $ENV{HARNESS_ACTIVE}
+  && !$ENV{HARNESS_IS_VERBOSE}
+  && !$ENV{TEST_DIAG};
+use constant TESTING => $ENV{HARNESS_IS_VERBOSE} || 0;
 
-our @EXPORT  = qw(DEBUG diag checksum has_ro load_module);
+our @EXPORT  = qw(diag checksum has_ro load_module DEBUG);
 our $SUM_LEN = 10;
 our $TOPIC;
 
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
 sub diag {
+  return if SILENT;
   my $pkg = caller;
   my $f = @_ > 1 ? shift : '%s';
   $pkg = 'Assetpipe' unless $pkg =~ s!.*::Assetpipe::Pipe!Assetpipe!;

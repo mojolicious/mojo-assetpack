@@ -1,7 +1,7 @@
 package Mojolicious::Plugin::Assetpipe::Store;
 use Mojo::Base 'Mojolicious::Static';
 use Mojo::Util 'spurt';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag DEBUG);
+use Mojolicious::Plugin::Assetpipe::Util qw(diag checksum DEBUG);
 use File::Basename 'dirname';
 
 # TODO: Remove access to private attribute $asset->_asset()
@@ -12,8 +12,9 @@ sub load {
   my $file = $self->file(join '/', @rel);
 
   diag 'Load "%s": %s', eval { $file->path } || join('/', @rel), $file ? 1 : 0 if DEBUG;
-  return $asset->_asset($file) if $file;
-  return 0;
+  return 0 unless $file;
+  $asset->$_($args->{$_}) for keys %$args;
+  $asset->_asset($file);
 }
 
 sub save {
@@ -33,7 +34,9 @@ sub _cache_path {
   my ($self, $asset, $args) = @_;
   return (
     'processed', sprintf '%s-%s.%s%s',
-    $asset->name, $asset->checksum, $args->{minified} || $asset->minified ? 'min.' : '',
+    $asset->name,
+    checksum($asset->url),
+    $args->{minified} || $asset->minified ? 'min.' : '',
     $asset->format
   );
 }

@@ -51,11 +51,12 @@ sub process {
       next unless $pipe->can($method);
       diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
       $pipe->$method($assets);
+      $self->{by_checksum}{$_->checksum} = $_ for @$assets;
     }
   }
 
-  $self->{by_topic}{$topic} = $assets;
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
+  $self->{by_topic}{$topic} = $assets;
   $self;
 }
 
@@ -93,6 +94,24 @@ sub _pipes {
   ];
 }
 
+sub _reset {
+  my ($self, $args) = @_;
+
+  diag 'Reset assetpipe.' if DEBUG;
+
+  if ($args->{unlink}) {
+    for my $asset (sort values %{$self->{by_checksum} || {}}) {
+      next unless +(my $file = $asset->_asset)->isa('Mojo::Asset::File');
+      my $rel_path = File::Spec->catfile($self->store->_cache_path($asset));
+      next unless $file->path =~ /$rel_path$/;
+      unlink $file->path;
+      diag 'unlink %s: %s', $file->path, $! || 1;
+    }
+  }
+
+  delete $self->{$_} for qw(by_checksum by_topic);
+}
+
 sub _serve {
   my ($self, $c) = @_;
   my $asset = $self->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
@@ -114,6 +133,10 @@ sub _tag_helpers {
       $c->$tag_helper($url, @attrs);
     }
   )->join("\n");
+}
+
+sub DESTROY {
+  shift->_reset({unlink => 1}) if $ENV{MOJO_ASSETPIPE_CLEANUP};
 }
 
 1;
