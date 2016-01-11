@@ -1,13 +1,27 @@
 package t::Helper;
 use Mojo::Base -strict;
-use Mojolicious;
-use Test::Mojo;
-use Test::More;
 use Cwd ();
 use File::Basename 'dirname';
 use File::Spec;
+use Mojo::Loader;
+use Mojolicious::Plugin::Assetpipe::Util;
+use Mojolicious;
+use Test::Mojo;
+use Test::More;
+
+# remove generated assets
+$ENV{MOJO_ASSETPIPE_CLEANUP} //= 1;
 
 sub t {
+  my $class = shift;
+  my $app   = Mojolicious->new;
+  $app->home->parse(dirname __FILE__);
+  $app->routes->get('/' => 'index');
+  $app->plugin(assetpipe => @_);
+  return Test::Mojo->new($app);
+}
+
+sub t_old {
   my ($class, $args) = @_;
   my $static = delete $args->{static} || ['public'];
   my $t = Test::Mojo->new(Mojolicious->new(secrets => ['s3cret']));

@@ -1,27 +1,23 @@
 BEGIN { $ENV{MOJO_MODE} = 'not_development' }
-use Mojo::Base -strict;
+use t::Helper;
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::Assetpipe::Util 'checksum';
-use Test::Mojo;
-use Test::More;
 
-my @assets = qw( d/one.css d/two.css d/already-min.css );
-my $checksum = checksum join ':', map { checksum(data_section __PACKAGE__, $_) } @assets;
+my $t            = t::Helper->t;
+my @assets       = qw( d/one.css d/two.css d/already-min.css );
+my $url_checksum = checksum 'd/one.css';
 
-use Mojolicious::Lite;
-get '/' => 'index';
-plugin 'assetpipe';
-app->asset->process('app.css' => @assets);
+$t->app->asset->process('app.css' => @assets);
 
-my $file = app->asset->store->file('processed/one-f956a3f925.min.css');
+my $file = $t->app->asset->store->file('processed/one-ada9270f07.min.css');
 ok $file, 'cache one';
 
-my $t = Test::Mojo->new;
-
+my $asset_checksum = checksum join ':',
+  map { checksum(data_section __PACKAGE__, $_) } @assets;
 $t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/$checksum/app.css"]));
+  ->element_exists(qq(link[href="/asset/$asset_checksum/app.css"]));
 
-$t->get_ok("/asset/$checksum/app.css")->status_is(200)
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
 
 done_testing;
