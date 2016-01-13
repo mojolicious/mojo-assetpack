@@ -1,16 +1,16 @@
 package t::Helper;
 use Mojo::Base -strict;
 use Cwd ();
-use File::Basename 'dirname';
+use File::Basename qw(basename dirname);
 use File::Spec;
 use Mojo::Loader;
 use Mojolicious::Plugin::Assetpipe::Util;
-use Mojolicious;
 use Test::Mojo;
 use Test::More;
 
 # remove generated assets
 $ENV{MOJO_ASSETPIPE_CLEANUP} //= 1;
+$ENV{MOJO_ASSETPIPE_DB_FILE} = sprintf '%s.db', basename $0;
 
 sub t {
   my $class = shift;
