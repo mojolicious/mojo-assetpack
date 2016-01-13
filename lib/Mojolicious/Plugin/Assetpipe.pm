@@ -82,7 +82,7 @@ sub _app { shift->ua->server->app }
 
 sub _pipes {
   my $self = shift;
-  my $names = shift || [qw(Css JavaScript Combine)];
+  my $names = shift || [qw(Css Sass JavaScript Combine)];
 
   $self->{pipes} = [
     map {
@@ -194,21 +194,26 @@ L<Mojolicious::Plugin::Assetpipe> does not do any heavy lifting itself: All the
 processing is left to the L<pipe objects|Mojolicious::Plugin::Assetpipe::Pipe>.
 
 It is possible to specify L<custom pipes|/register>, but there are also some
-pipes bundled with this distribution which is loaded automatically:
+pipes bundled with this distribution which is loaded automatically in the
+order below:
 
 =over 4
-
-=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Combine>
-
-Combine multiple assets to one.
 
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::Css>
 
 Minify CSS.
 
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Sass>
+
+Process sass and scss files.
+
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>
 
 Minify JavaScript.
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Combine>
+
+Combine multiple assets to one.
 
 =back
 
@@ -272,7 +277,7 @@ Name of the helper to add to the application. Default is "asset".
 
 A list of pipe classes to load. The default is:
 
-  [qw( Css JavaScript Combine )];
+  [qw( Css Sass JavaScript Combine )];
 
 Note! The default will change when more pipe classes are added.
 

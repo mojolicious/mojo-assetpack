@@ -9,14 +9,15 @@ sub _process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
+      my $attrs = {minified => 1};
       return if $asset->format ne 'js' or $asset->minified;
-      return if $self->assetpipe->store->load($asset, {minified => 1});
+      return if $self->assetpipe->store->load($asset, $attrs);
       return unless length(my $c = $asset->content);
       load_module 'JavaScript::Minifier::XS'
         or die qq(Could not load "JavaScript::Minifier::XS": $@);
       diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
-      $asset->content(JavaScript::Minifier::XS::minify($c))->minified(1);
-      $self->assetpipe->store->save($asset);
+      $asset->content(JavaScript::Minifier::XS::minify($c));
+      $self->assetpipe->store->save($asset, $attrs);
     }
   );
 }
