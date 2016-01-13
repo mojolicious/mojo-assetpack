@@ -3,18 +3,18 @@ sudo: false
 addons:
   apt:
     packages:
-    - libpng12-dev
-    - node-less
-    - ruby-coffee-script
-    - ruby-sass
+      - libpng12-dev
+      - node-less
+      - ruby-coffee-script
+      - ruby-sass
 perl:
-- "5.20"
-- "5.16"
-- "5.10"
+  - "5.20"
+  - "5.16"
 env:
-- "HARNESS_OPTIONS=j1 TEST_ONLINE=1"
+  - "HARNESS_OPTIONS=j1 TEST_ONLINE=1"
 install:
-- "cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL Imager::File::PNG"
-- "cpanm -n --installdeps ."
+  - "cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL Imager::File::PNG"
+  - "cpanm -n Test::Pod Test::Pod::Coverage CSS::Minifier::XS JavaScript::Minifier::XS"
+  - "cpanm -n --installdeps ."
 notifications:
   email: false

@@ -3,6 +3,9 @@ use t::Helper;
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::Assetpipe::Util 'checksum';
 
+plan skip_all => 'cpanm JavaScript::Minifier::XS'
+  unless eval 'require JavaScript::Minifier::XS;1';
+
 my $t        = t::Helper->t;
 my $checksum = checksum join ':',
   map { checksum(data_section __PACKAGE__, $_) } 'd/one.js', 'd/two.js';

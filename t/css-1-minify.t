@@ -3,6 +3,8 @@ use t::Helper;
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::Assetpipe::Util 'checksum';
 
+plan skip_all => 'cpanm CSS::Minifier::XS' unless eval 'require CSS::Minifier::XS;1';
+
 my $t            = t::Helper->t;
 my @assets       = qw( d/one.css d/two.css d/already-min.css );
 my $url_checksum = checksum 'd/one.css';
