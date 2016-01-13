@@ -43,3 +43,5 @@ done_testing;
 __DATA__
 @@ index.html.ep
 %= asset 'app.css'
+@@ one.css
+.one { color: #aaa }

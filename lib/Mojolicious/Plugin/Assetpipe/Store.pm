@@ -81,6 +81,11 @@ Mojolicious::Plugin::Assetpipe::Store - Storage for assets
 L<Mojolicious::Plugin::Assetpipe::Store> is an object to manage cached
 assets on disk.
 
+The idea is that a L<Mojolicious::Plugin::Assetpipe::Pipe> object can store
+an asset after it is processed. This will speed up development, since only
+changed assets will be processed and it will also allow processing tools to
+be optional in production environment.
+
 =head1 ATTRIBUTES
 
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
@@ -93,11 +98,20 @@ L<Mojolicious::Static> implements the following new ones.
 
 =head2 load
 
-  $bool = $self->load($asset);
+  $bool = $self->load($asset, \%attr);
+
+Used to load an existing asset from disk. C<%attr> will override the
+way an asset is looked up. The example below will ignore
+L<minified|Mojolicious::Plugin::Assetpipe::Asset/minified> and rather use
+the value from C<%attr>:
+
+  $bool = $self->load($asset, {minified => $bool});
 
 =head2 save
 
   $bool = $self->save($asset);
+
+Used to save an asset to disk.
 
 =head1 SEE ALSO
 

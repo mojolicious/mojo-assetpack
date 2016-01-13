@@ -103,6 +103,7 @@ sub _reset {
     for my $asset (sort values %{$self->{by_checksum} || {}}) {
       next unless +(my $file = $asset->_asset)->isa('Mojo::Asset::File');
       my $rel_path = File::Spec->catfile($self->store->_cache_path($asset));
+      diag "unlink? %s =~ %s", $file->path, $rel_path if DEBUG == 10;
       next unless $file->path =~ /$rel_path$/;
       unlink $file->path;
       diag 'unlink %s: %s', $file->path, $! || 1;
@@ -179,8 +180,39 @@ Mojolicious::Plugin::Assetpipe - EXPERIMENTAL alternative to AssetPack
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe> is an re-implementation of
-L<Mojolicious::Plugin::AssetPack>.
+L<Mojolicious::Plugin::Assetpipe> is L<Mojolicious plugin|Mojolicious::Plugin>
+for processing static assets. The idea is that JavaScript and CSS files should
+be served as one minified file to save bandwidth and roundtrip time to the
+server.
+
+There are many external tools for doing this, but integrating the with
+L<Mojolicious> can be a struggle: You want to serve the source files directly
+while developing, but a minified version in production. This assetpipe plugin
+will handle all of that automatically for you.
+
+L<Mojolicious::Plugin::Assetpipe> does not do any heavy lifting itself: All the
+processing is left to the L<pipe objects|Mojolicious::Plugin::Assetpipe::Pipe>.
+
+It is possible to specify L<custom pipes|/register>, but there are also some
+pipes bundled with this distribution which is loaded automatically:
+
+=over 4
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Combine>
+
+Combine multiple assets to one.
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Css>
+
+Minify CSS.
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>
+
+Minify JavaScript.
+
+=back
+
+Future releases will have more pipes bundled.
 
 =head1 ATTRIBUTES
 
@@ -254,6 +286,15 @@ all requests to localhost.
 See L<Mojo::UserAgent::Proxy/detect> for more infomation.
 
 =back
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::Assetpipe::Asset>,
+L<Mojolicious::Plugin::Assetpipe::Pipe> and
+L<Mojolicious::Plugin::Assetpipe::Store>.
+
+L<Mojolicious::Plugin::Assetpipe> is a re-implementation of
+L<Mojolicious::Plugin::AssetPack>.
 
 =head1 COPYRIGHT AND LICENSE
 
