@@ -16,21 +16,24 @@ sub load {
   my $file = $self->file(join '/', @rel);
 
   return 0 unless $file;
-  return 0 unless $self->_db($asset, $attr)->{checksum} eq $asset->checksum;
+  return 0
+    unless $self->_db($asset, $attr)->{checksum} eq
+    ($attr->{checksum} || $asset->checksum);
   diag 'Load "%s" = 1', eval { $file->path } || join('/', @rel) if DEBUG;
   $asset->$_($attr->{$_}) for keys %$attr;
   $asset->_asset($file);
 }
 
 sub save {
-  my ($self, $asset) = @_;
-  my $path = File::Spec->catfile($self->paths->[0], $self->_cache_path($asset, {}));
+  my ($self, $asset, $attr) = @_;
+  my $path = File::Spec->catfile($self->paths->[0], $self->_cache_path($asset, $attr));
   my $dir = dirname $path;
 
   # Do not care if this fail. Can fallback to temp files.
   mkdir $dir if !-d $dir and -w dirname $dir;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
   return 0 unless -w $dir;
+  $asset->$_($attr->{$_}) for keys %$attr;
   $self->_db($asset, {}, 1);
   spurt $asset->content, $path;
   return $asset->_asset(Mojo::Asset::File->new(path => $path));
@@ -43,7 +46,7 @@ sub _cache_path {
     $asset->name,
     checksum($asset->url),
     $attr->{minified} || $asset->minified ? 'min.' : '',
-    $asset->format
+    $attr->{format} || $asset->format
   );
 }
 
@@ -107,11 +110,13 @@ the value from C<%attr>:
 
   $bool = $self->load($asset, {minified => $bool});
 
+C<%attr> will also be applied to C<$asset> if found.
+
 =head2 save
 
-  $bool = $self->save($asset);
+  $bool = $self->save($asset, \%attr);
 
-Used to save an asset to disk.
+Used to save an asset to disk. C<%attr> will be applied to C<$asset>.
 
 =head1 SEE ALSO
 

@@ -32,6 +32,7 @@ sub new {
   $self;
 }
 
+sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { shift->_asset->size }
 
 1;
@@ -119,6 +120,12 @@ See L<Mojo::Asset/get_chunk>.
 =head2 new
 
 Object constructor. Makes sure L</assetpipe> is weaken.
+
+=head2 path
+
+  $str = $self->path;
+
+Returns the path to the asset, if it exists on disk.
 
 =head2 size
 
