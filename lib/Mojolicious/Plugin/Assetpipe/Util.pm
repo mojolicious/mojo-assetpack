@@ -7,9 +7,11 @@ use constant SILENT => $ENV{HARNESS_ACTIVE}
   && !$ENV{HARNESS_IS_VERBOSE} ? !$ENV{TEST_DIAG} : 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE} || 0;
 
-our @EXPORT  = qw(diag checksum has_ro load_module DEBUG);
+our @EXPORT  = qw($CWD checksum diag has_ro load_module DEBUG);
 our $SUM_LEN = 10;
 our $TOPIC;
+
+tie our ($CWD), 'Mojolicious::Plugin::Assetpipe::Util::_chdir' or die q(Can't tie $CWD);
 
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
@@ -49,6 +51,21 @@ sub load_module {
   my $module = shift;
   eval "require $module;1";
   return $@ ? '' : $module;
+}
+
+package Mojolicious::Plugin::Assetpipe::Util::_chdir;
+use Cwd ();
+use File::Spec;
+sub TIESCALAR { bless [Cwd::getcwd], $_[0] }
+sub FETCH { $_[0]->[0] }
+
+sub STORE {
+  defined $_[1] or return;
+  my $dir = File::Spec->rel2abs($_[1]);
+  chdir $dir or die "chdir $dir: $!";
+  Mojolicious::Plugin::Assetpipe::Util::diag("chdir $dir")
+    if Mojolicious::Plugin::Assetpipe::Util::DEBUG >= 3;
+  $_[0]->[0] = $dir;
 }
 
 1;
