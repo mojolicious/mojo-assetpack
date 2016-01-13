@@ -62,3 +62,4 @@
 ^README\.pod
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
+t/assets/.*.db
