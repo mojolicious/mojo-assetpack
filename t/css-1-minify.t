@@ -11,7 +11,7 @@ my $url_checksum = checksum 'd/css-1-one.css';
 
 $t->app->asset->process('app.css' => @assets);
 
-my $file = $t->app->asset->store->file('processed/css-1-one-52be209045.min.css');
+my $file = $t->app->asset->store->file('cache/css-1-one-52be209045.min.css');
 isa_ok($file, 'Mojo::Asset::File');
 
 my $asset_checksum = checksum join ':',

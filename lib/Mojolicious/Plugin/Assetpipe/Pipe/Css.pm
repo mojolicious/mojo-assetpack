@@ -4,18 +4,21 @@ use Mojolicious::Plugin::Assetpipe::Util qw(diag load_module DEBUG);
 
 sub _process {
   my ($self, $assets) = @_;
+  my $store = $self->assetpipe->store;
+  my $file;
 
   return unless $self->assetpipe->minify;
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      my $attr = {minified => 1};
+      my $attr = $asset->TO_JSON;
+      $attr->{minified} = 1;
       return if $asset->format ne 'css' or $asset->minified;
-      return if $self->assetpipe->store->load($asset, $attr);
+      return $asset->content($file)->minified(1) if $file = $store->load($attr);
       load_module 'CSS::Minifier::XS' or die qq(Could not load "CSS::Minifier::XS": $@);
       diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
-      $asset->content(CSS::Minifier::XS::minify($asset->content));
-      $self->assetpipe->store->save($asset, $attr);
+      my $css = CSS::Minifier::XS::minify($asset->content);
+      $asset->content($store->save(\$css, $attr))->minified(1);
     }
   );
 }

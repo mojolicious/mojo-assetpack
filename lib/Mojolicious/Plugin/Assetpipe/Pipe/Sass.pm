@@ -57,34 +57,38 @@ SEARCH:
 
 sub _process {
   my ($self, $assets) = @_;
+  my $store = $self->assetpipe->store;
   my %opts = (include_paths => ['', @{$self->assetpipe->store->paths}]);
-  my %attr = (format => 'css', minified => $self->assetpipe->minify);
+  my $file;
 
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
+      my $attr    = $asset->TO_JSON;
       my $content = $asset->content;
       my $path    = dirname $asset->path;
 
       {
         local $CWD = $path if $path;
         local $self->{checksum_for_file} = {};
-        $attr{checksum} = $self->_checksum(\$content, $asset),
+        $attr->{format}   = 'css';
+        $attr->{checksum} = $self->_checksum(\$content, $asset);
+        $attr->{minified} = $self->assetpipe->minify;
       }
 
       return if $asset->format !~ $FORMAT_RE;
-      return if $self->assetpipe->store->load($asset, \%attr);
+      return $asset->content($file)->FROM_JSON($attr) if $file = $store->load($attr);
       load_module 'CSS::Sass' or die qq(Could not load "CSS::Sass": $@);
-      diag 'Minify "%s" with checksum %s.', $asset->url, $attr{checksum} if DEBUG;
+      diag 'Minify "%s" with checksum %s.', $asset->url, $attr->{checksum} if DEBUG;
       local $opts{include_paths}[0] = $path;
       local $opts{output_style}
-        = $attr{minified}
+        = $attr->{minified}
         ? CSS::Sass::SASS_STYLE_COMPACT()
         : CSS::Sass::SASS_STYLE_NESTED();
       $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
       my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
       die qq(Could not compile "@{[$asset->url]}": $err) if $err;
-      $self->assetpipe->store->save($asset->content($css), \%attr);
+      $asset->content($store->save(\$css, $attr))->FROM_JSON($attr);
     }
   );
 }

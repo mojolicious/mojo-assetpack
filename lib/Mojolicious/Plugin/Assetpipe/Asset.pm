@@ -20,6 +20,7 @@ has _asset => sub {
 
 sub content {
   my $self = shift;
+  return $self->_asset($_[0]) if @_ and UNIVERSAL::isa($_[0], 'Mojo::Asset');
   return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0])) if @_;
   return $self->_asset->slurp;
 }
@@ -34,6 +35,17 @@ sub new {
 
 sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { shift->_asset->size }
+
+sub FROM_JSON {
+  my ($self, $attr) = @_;
+  $self->$_($attr->{$_})
+    for grep { defined $attr->{$_} } qw(checksum format minified mtime);
+  $self;
+}
+
+sub TO_JSON {
+  return {map { ($_ => $_[0]->$_) } qw(checksum format minified name mtime url)};
+}
 
 1;
 
