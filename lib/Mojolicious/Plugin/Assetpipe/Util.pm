@@ -1,17 +1,25 @@
 package Mojolicious::Plugin::Assetpipe::Util;
 use Mojo::Base 'Exporter';
 use Mojo::Util ();
+use IPC::Run3  ();
 
 use constant DEBUG => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
 use constant SILENT => $ENV{HARNESS_ACTIVE}
   && !$ENV{HARNESS_IS_VERBOSE} ? !$ENV{TEST_DIAG} : 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE} || 0;
 
-our @EXPORT  = qw($CWD checksum diag has_ro load_module DEBUG);
+our @EXPORT  = qw(binpath checksum diag has_ro load_module run $CWD DEBUG);
 our $SUM_LEN = 10;
 our $TOPIC;
 
 tie our ($CWD), 'Mojolicious::Plugin::Assetpipe::Util::_chdir' or die q(Can't tie $CWD);
+
+sub binpath {
+  for my $n (@_) {
+    -e and return $_ for map { File::Spec->catfile($_, $n) } File::Spec->path;
+  }
+  return $_[0];
+}
 
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
@@ -53,6 +61,11 @@ sub load_module {
   return $@ ? '' : $module;
 }
 
+sub run {
+  diag join ' ', @{$_[0]} if DEBUG;
+  IPC::Run3::run3(@_);
+}
+
 package Mojolicious::Plugin::Assetpipe::Util::_chdir;
 use Cwd ();
 use File::Spec;
@@ -87,6 +100,12 @@ L<Mojolicious::Plugin::Assetpipe::Util> holds utility functions.
 
 =head1 FUNCTIONS
 
+=head2 binpath
+
+  $str = binpath qw(nodejs node);
+
+Finds the path to a binary.
+
 =head2 checksum
 
   $str = checksum $bytes;
@@ -111,6 +130,10 @@ Same as L<Mojo::Base/has>, but creates a read-only attribute.
 
 Used to load C<$module>. Echo back C<$module> on success and returns empty
 string on failure. C<$@> holds the error message on failure.
+
+=head2 run
+
+See L<IPC::Run3/run3>.
 
 =head1 SEE ALSO
 

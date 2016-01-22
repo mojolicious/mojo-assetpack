@@ -79,7 +79,7 @@ sub _process {
       return if $asset->format !~ $FORMAT_RE;
       return $asset->content($file)->FROM_JSON($attr) if $file = $store->load($attr);
       load_module 'CSS::Sass' or die qq(Could not load "CSS::Sass": $@);
-      diag 'Minify "%s" with checksum %s.', $asset->url, $attr->{checksum} if DEBUG;
+      diag 'Process "%s" with checksum %s.', $asset->url, $attr->{checksum} if DEBUG;
       local $opts{include_paths}[0] = $path;
       local $opts{output_style}
         = $attr->{minified}
