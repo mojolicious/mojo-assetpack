@@ -15,6 +15,7 @@ $ENV{MOJO_ASSETPIPE_DB_FILE} = sprintf '%s.db', basename $0;
 sub t {
   my $class = shift;
   my $app   = Mojolicious->new;
+  delete $app->log->{$_} for qw(path handle);
   $app->home->parse(dirname __FILE__);
   $app->routes->get('/' => 'index');
   $app->plugin(assetpipe => @_);

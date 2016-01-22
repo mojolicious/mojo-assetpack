@@ -63,3 +63,4 @@
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
 t/assets/.*.db
+node_modules

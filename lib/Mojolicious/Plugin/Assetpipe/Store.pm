@@ -27,7 +27,8 @@ sub save {
   # Do not care if this fail. Can fallback to temp files.
   mkdir $dir if !-d $dir and -w dirname $dir;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
-  return Mojo::Asset::Memory->new->content($$ref) unless -w $dir;
+
+  return Mojo::Asset::Memory->new->add_chunk($$ref) unless -w $dir;
   $self->_db($attr, 1);
   spurt $$ref, $path;
   return Mojo::Asset::File->new(path => $path);

@@ -6,6 +6,8 @@ use Mojolicious::Plugin::Assetpipe::Util 'has_ro';
 has topic => '';
 has_ro 'assetpipe';
 
+sub app { shift->assetpipe->ua->server->app }
+
 sub new {
   my $self = shift->SUPER::new(@_);
   Scalar::Util::weaken($self->{assetpipe});
@@ -40,6 +42,12 @@ Holds a L<Mojolicious::Plugin::Assetpipe> object.
 Returns the name of the current asset topic.
 
 =head1 METHODS
+
+=head2 app
+
+  $obh = $self->app;
+
+Returns the L<Mojolicious> application object.
 
 =head2 new
 
