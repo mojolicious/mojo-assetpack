@@ -11,12 +11,13 @@ use Test::More;
 # remove generated assets
 $ENV{MOJO_ASSETPIPE_CLEANUP} //= 1;
 $ENV{MOJO_ASSETPIPE_DB_FILE} = sprintf '%s.db', basename $0;
+$ENV{MOJO_LOG_LEVEL} = $ENV{HARNESS_IS_VERBOSE} ? 'debug' : 'error';
 
 sub t {
   my $class = shift;
   my $app   = Mojolicious->new;
-  delete $app->log->{$_} for qw(path handle);
-  $app->home->parse(dirname __FILE__);
+  delete $app->log->{$_} for qw(handle path);
+  $app->home->parse(Cwd::abs_path(dirname __FILE__));
   $app->routes->get('/' => 'index');
   $app->plugin(assetpipe => @_);
   return Test::Mojo->new($app);

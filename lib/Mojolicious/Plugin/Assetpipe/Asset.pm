@@ -122,8 +122,10 @@ Returns the location of the asset.
 
   $bytes = $self->content;
   $self = $self->content($bytes);
+  $self = $self->content(Mojo::Asset::Memory->new);
 
-Used to get or set the content of this asset.
+Used to get or set the content of this asset. The default will be built from
+passing L</url> to L<Mojolicious::Plugin::Assetpipe::Store/file>.
 
 =head2 get_chunk
 
