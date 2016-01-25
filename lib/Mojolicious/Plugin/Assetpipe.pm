@@ -26,6 +26,11 @@ has store => sub {
 
 has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
 
+sub pipe {
+  my ($self, $needle) = @_;
+  return +(grep { $_ =~ /::$needle\b/ } @{$self->{pipes}})[0];
+}
+
 sub process {
   my ($self, $topic) = (shift, shift);
 
@@ -251,6 +256,13 @@ Holds a L<Mojo::UserAgent> which can be used to fetch assets either from local
 application or from remote web servers.
 
 =head1 METHODS
+
+=head2 pipe
+
+  $obj = $self->pipe($name);
+  $obj = $self->pipe("Css");
+
+Will return a registered pipe by C<$name> or C<undef> if none could be found.
 
 =head2 process
 
