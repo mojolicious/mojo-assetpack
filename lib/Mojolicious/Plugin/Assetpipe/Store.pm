@@ -2,11 +2,34 @@ package Mojolicious::Plugin::Assetpipe::Store;
 use Mojo::Base 'Mojolicious::Static';
 use Mojo::JSON;
 use Mojo::Util qw(slurp spurt);
-use Mojolicious::Plugin::Assetpipe::Util qw(diag checksum DEBUG);
+use Mojo::URL;
+use Mojolicious::Plugin::Assetpipe::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
+use File::Path 'make_path';
 
 # MOJO_ASSETPIPE_DB_FILE is used in tests
 use constant DB_FILE => $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db';
+
+has_ro 'ua';
+
+sub file {
+  my ($self, $rel) = @_;
+  my $f;
+
+  return $self->_download(Mojo::URL->new($rel)) if $rel =~ m!^https?://!;
+
+  for my $p (@{ref $_[-1] eq 'ARRAY' ? pop : $self->paths}) {
+    if ($p =~ m!^https?://!) {
+      my $url = Mojo::URL->new($p);
+      $url->path->merge($rel);
+      return $f if $f = $self->_download($url);
+    }
+    else {
+      local $self->{paths} = [$p];
+      return $f if $f = $self->SUPER::file($rel);
+    }
+  }
+}
 
 sub load {
   my ($self, $attr) = @_;
@@ -66,6 +89,43 @@ sub _db {
   return $data;
 }
 
+sub _download {
+  my ($self, $url) = @_;
+  my $rel = $url->clone->to_abs;
+
+  $rel->port(undef)->scheme(undef);
+  $rel = $rel->to_string;
+  $rel =~ s!^\/+!!;
+  $rel =~ s!\/+$!!;
+  $rel = "cache/$rel";
+
+  if (my $file = $self->file($rel)) {
+    diag 'Already downloaded: %s', $url if DEBUG;
+    return $file;
+  }
+
+  my $app = $self->ua->server->app;
+  my $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
+  $app->log->info(qq(Downloading "$url".));
+  make_path(dirname $path) unless -d dirname $path;
+  my $tx = $self->ua->get($url);
+
+  if ($tx->error) {
+    $app->log->warn(qq(Could not download "$url": @{[$tx->error->{message}]}));
+    return;
+  }
+
+  spurt $tx->res->body, $path;
+
+  my $h = $tx->res->headers;
+  if ($h->last_modified) {
+    my $mtime = Mojo::Date->new($h->last_modified)->epoch;
+    utime $mtime, $mtime, $path;
+  }
+
+  return Mojo::Asset::File->new(path => $path);
+}
+
 1;
 
 =encoding utf8
@@ -89,10 +149,23 @@ be optional in production environment.
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
 
+=head2 ua
+
+  $ua = $self->ua;
+
+See L<Mojolicious::Plugin::Assetpipe/ua>.
+
 =head1 METHODS
 
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
+
+=head2 file
+
+  $asset = $self->file($url);
+
+Override L<Mojolicious::Static/file> with the possibility to download assets
+from web.
 
 =head2 load
 
