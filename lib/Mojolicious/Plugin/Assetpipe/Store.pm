@@ -106,15 +106,15 @@ sub _download {
 
   my $app = $self->ua->server->app;
   my $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
-  $app->log->info(qq(Downloading "$url".));
   make_path(dirname $path) unless -d dirname $path;
   my $tx = $self->ua->get($url);
 
   if ($tx->error) {
-    $app->log->warn(qq(Could not download "$url": @{[$tx->error->{message}]}));
+    diag 'Unable to download "%s".', $url if DEBUG;
     return;
   }
 
+  $app->log->info(qq(Caching "$url" to "$path".));
   spurt $tx->res->body, $path;
 
   my $h = $tx->res->headers;
