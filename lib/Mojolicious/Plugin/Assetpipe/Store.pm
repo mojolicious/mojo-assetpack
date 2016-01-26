@@ -109,6 +109,7 @@ sub _download {
 
   $rel->port(undef)->scheme(undef);
   $rel = $rel->to_string;
+  $rel =~ s![^\w\.\/-]!_!g;
   $rel =~ s!^\/+!!;
   $rel =~ s!\/+$!!;
   $rel = "cache/$rel";
