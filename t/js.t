@@ -16,6 +16,7 @@ $t->get_ok('/')->status_is(200)
   ->element_exists(qq(script[src="/asset/$checksum/app.js"]));
 
 $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)
+  ->header_is('Content-Type', 'application/javascript')
   ->content_like(qr/function\(\)\{console/s);
 
 done_testing;

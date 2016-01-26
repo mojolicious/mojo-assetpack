@@ -10,6 +10,8 @@ use File::Path 'make_path';
 # MOJO_ASSETPIPE_DB_FILE is used in tests
 use constant DB_FILE => $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db';
 
+has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
+
 has_ro 'ua';
 
 sub file {
@@ -57,6 +59,16 @@ sub save {
   $self->_db($attr, 1);
   spurt $$ref, $path;
   return Mojo::Asset::File->new(path => $path);
+}
+
+sub serve_asset {
+  my ($self, $c, $asset) = @_;
+  my $d  = $self->default_headers;
+  my $h  = $c->res->headers;
+  my $ct = $self->ua->server->app->types->type($asset->format);
+  $h->header($_ => $d->{$_}) for keys %$d;
+  $h->content_type($ct) if $ct;
+  return $self->SUPER::serve_asset($c, $asset);
 }
 
 sub _cache_path {
@@ -154,6 +166,13 @@ it can be looked up later as a unique item using L</load>.
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
 
+=head2 default_headers
+
+  $hash_ref = $self->default_headers;
+  $self = $self->default_headers({"Cache-Control" => "max-age=31536000"});
+
+Used to set default headers used by L</serve_asset>.
+
 =head2 ua
 
   $ua = $self->ua;
@@ -194,6 +213,11 @@ the value from C<%attr>:
 Used to save an asset to disk. C<%attr> are usually the same as
 L<Mojolicious::Plugin::Assetpipe::Asset/TO_JSON> and used to document metadata
 about the C<$asset> so it can be looked up using L</load>.
+
+=head2 serve_asset
+
+Override L<Mojolicious::Static/serve_asset> with the functionality to set
+response headers first, from L</default_headers>.
 
 =head1 SEE ALSO
 
