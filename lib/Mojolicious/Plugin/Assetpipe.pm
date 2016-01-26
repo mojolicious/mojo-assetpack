@@ -34,6 +34,8 @@ sub pipe {
 sub process {
   my ($self, $topic) = (shift, shift);
 
+  return $self->_process_from_def($topic) unless @_;
+
   # Used by diag()
   local $Mojolicious::Plugin::Assetpipe::Util::TOPIC = $topic;
 
@@ -99,6 +101,27 @@ sub _pipes {
       $class->new(assetpipe => $self);
     } @$names
   ];
+}
+
+sub _process_from_def {
+  my $self  = shift;
+  my $file  = shift || 'assetpipe.def';
+  my $asset = $self->store->file($file);
+  my $topic = '';
+  my %process;
+
+  die qq(Unable to load "$file".) unless $asset;
+  diag qq(Loading asset definitions from "$file".) if DEBUG;
+
+  for (split /\r?\n/, $asset->slurp) {
+    s/\s*\#.*//;
+    next if /^\s*$/;
+    $topic = $1 if s/^\!\s*(.+)//;
+    push @{$process{$topic}}, $1 if s/^\<\s*(.+)//;
+  }
+
+  $self->process($_ => @{$process{$_}}) for keys %process;
+  $self;
 }
 
 sub _reset {
@@ -167,9 +190,13 @@ Mojolicious::Plugin::Assetpipe - EXPERIMENTAL alternative to AssetPack
 
   # define asset
   app->asset->process(
-    "app.css" => (              # virtual name of the asset
-      "sass/bar.scss",          # relative to store()
-      "/usr/share/vendor.css",  # absolute path
+
+    # virtual name of the asset
+    "app.css" => (
+
+      # source files used to create the asset
+      "sass/bar.scss",
+      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss",
     )
   );
 
@@ -272,8 +299,20 @@ Will return a registered pipe by C<$name> or C<undef> if none could be found.
 =head2 process
 
   $self = $self->process($topic => @assets);
+  $self = $self->process($definition_file);
 
-Used to process assets.
+Used to process assets. A C<$definition_file> can be used to define C<$topic>
+and C<@assets> in a seperate file. Example file, with the same definitions in
+L</SYNOPSIS>:
+
+  ! app.css
+  < sass/bar.scss
+  < https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss
+
+Empty lines and lines starting with "#" will be skipped. Each line starting
+with "!" will be used to define a new C<$topic>.
+
+C<$definition_file> defaults to "assetpipe.def".
 
 =head2 register
 
