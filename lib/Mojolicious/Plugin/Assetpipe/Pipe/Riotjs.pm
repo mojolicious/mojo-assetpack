@@ -67,6 +67,16 @@ sub _make_sure_libraries_exists {
 
 Mojolicious::Plugin::Assetpipe::Pipe::Riotjs - Process Riotjs .tag files
 
+=head1 SYNOPSIS
+
+  use Mojolicious::Lite;
+  plugin assetpipe => {pipes => [qw(Riotjs JavaScript)]};
+
+  app->asset->pipe("Riotjs")->node_paths([...]);
+
+Note that the above will not load the other default pipes, such as
+L<Mojolicious::Plugin::Assetpipe::Pipe::Css>.
+
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::Assetpipe::Pipe::Riotjs> will process
@@ -82,6 +92,7 @@ This module require L<https://www.npmjs.com/> to compile Riotjs tag files.
   $self = $self->node_paths(["/path/to/node_modules"]);
 
 An array ref used to set C<NODE_PATH> before running th Riotjs compiler.
+The default is "node_modules" in L<Mojo/home>.
 
 =head1 SEE ALSO
 

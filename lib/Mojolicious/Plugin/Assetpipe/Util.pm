@@ -1,12 +1,11 @@
 package Mojolicious::Plugin::Assetpipe::Util;
 use Mojo::Base 'Exporter';
-use Mojo::Util ();
-use IPC::Run3  ();
+use Mojo::Util;
+use File::Spec;
+use IPC::Run3 ();
 
-use constant DEBUG => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
-use constant SILENT => $ENV{HARNESS_ACTIVE}
-  && !$ENV{HARNESS_IS_VERBOSE} ? !$ENV{TEST_DIAG} : 0;
-use constant TESTING => $ENV{HARNESS_IS_VERBOSE} || 0;
+use constant DEBUG   => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
+use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
 our @EXPORT  = qw(binpath checksum diag has_ro load_module run $CWD DEBUG);
 our $SUM_LEN = 10;
@@ -24,7 +23,6 @@ sub binpath {
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
 sub diag {
-  return if SILENT;
   my $f = @_ > 1 ? shift : '%s';
   my ($i, $pkg) = (0);
   while ($pkg = caller $i++) { $pkg =~ s!.*::(Assetpipe::)Pipe::!$1! and last }
@@ -36,23 +34,14 @@ sub has_ro {
   my ($name, $builder) = @_;
   my $caller = caller;
 
-  if ($builder) {
-    Mojo::Util::monkey_patch(
-      $caller => $name => sub {
-        Carp::confess(qq("$name" is read-only")) if @_ > 1;
-        $_[0]->{$name} //= $builder->($_[0]);
-      }
-    );
-  }
-  else {
-    Mojo::Util::monkey_patch(
-      $caller => $name => sub {
-        Carp::confess(qq("$name" is read-only")) if @_ > 1;
-        return $_[0]->{$name} if exists $_[0]->{$name};
-        Carp::confess(qq("$name" is required in constructor'));
-      }
-    );
-  }
+  $builder ||= sub { Carp::confess(qq("$name" is required in constructor')) };
+
+  Mojo::Util::monkey_patch(
+    $caller => $name => sub {
+      Carp::confess(qq("$name" is read-only")) if @_ > 1;
+      $_[0]->{$name} //= $_[0]->$builder();
+    }
+  );
 }
 
 sub load_module {

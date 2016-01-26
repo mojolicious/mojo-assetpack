@@ -9,7 +9,7 @@ has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
 has mtime    => sub { shift->_asset->mtime };
 
 has_ro 'assetpipe';
-has_ro name => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
+has_ro 'name' => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
 has_ro 'url';
 
 has _asset => sub {
@@ -144,6 +144,19 @@ Returns the path to the asset, if it exists on disk.
 =head2 size
 
 See L<Mojo::Asset/size>.
+
+=head2 FROM_JSON
+
+  $self = $self->FROM_JSON($hash_ref);
+
+The opposite of L</TO_JSON>. Will set the read/write L</ATTRIBUTES> from the
+values in C<$hash_ref>.
+
+=head2 TO_JSON
+
+  $hash_ref = $self->FROM_JSON;
+
+The opposite of L</FROM_JSON>. Will generate a hash ref from L</ATTRIBUTES>.
 
 =head1 SEE ALSO
 

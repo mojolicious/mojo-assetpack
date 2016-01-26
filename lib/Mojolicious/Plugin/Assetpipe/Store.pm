@@ -29,6 +29,8 @@ sub file {
       return $f if $f = $self->SUPER::file($rel);
     }
   }
+
+  return undef;
 }
 
 sub load {
@@ -110,8 +112,8 @@ sub _download {
   my $tx = $self->ua->get($url);
 
   if ($tx->error) {
-    diag 'Unable to download "%s".', $url if DEBUG;
-    return;
+    diag 'Unable to download "%s": %s', $url, $tx->error->{message} if DEBUG;
+    return undef;
   }
 
   $app->log->info(qq(Caching "$url" to "$path".));
@@ -144,6 +146,9 @@ an asset after it is processed. This will speed up development, since only
 changed assets will be processed and it will also allow processing tools to
 be optional in production environment.
 
+This module will document meta data about each asset which is saved to disk, so
+it can be looked up later as a unique item using L</load>.
+
 =head1 ATTRIBUTES
 
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
@@ -162,10 +167,14 @@ L<Mojolicious::Static> implements the following new ones.
 
 =head2 file
 
-  $asset = $self->file($url);
+  $asset = $self->file($rel);
 
 Override L<Mojolicious::Static/file> with the possibility to download assets
-from web.
+from web. L<Mojolicious::Static/paths> can therefor also contain URLs where
+the C<$rel> file can be downloaded from.
+
+Note that assets from web will be cached locally, which means that you need to
+delete the files on disk to download a new version.
 
 =head2 load
 
@@ -178,13 +187,13 @@ the value from C<%attr>:
 
   $bool = $self->load($asset, {minified => $bool});
 
-C<%attr> will also be applied to C<$asset> if found.
-
 =head2 save
 
   $bool = $self->save($asset, \%attr);
 
-Used to save an asset to disk. C<%attr> will be applied to C<$asset>.
+Used to save an asset to disk. C<%attr> are usually the same as
+L<Mojolicious::Plugin::Assetpipe::Asset/TO_JSON> and used to document metadata
+about the C<$asset> so it can be looked up using L</load>.
 
 =head1 SEE ALSO
 
