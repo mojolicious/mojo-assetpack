@@ -61,6 +61,7 @@ sub process {
     }
   }
 
+  $self->_app->log->debug(qq(Processed asset "$topic".));
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
   $self;
@@ -108,7 +109,8 @@ sub _reset {
   if ($args->{unlink}) {
     for (@{$self->{asset_paths} || []}) {
       next unless /\bcache\b/;
-      -e and unlink and diag 'unlink %s', $_;
+      -e and unlink;
+      diag 'unlink %s = %s', $_, $! if DEBUG;
     }
   }
 
@@ -196,26 +198,29 @@ L<Mojolicious::Plugin::Assetpipe> does not do any heavy lifting itself: All the
 processing is left to the L<pipe objects|Mojolicious::Plugin::Assetpipe::Pipe>.
 
 It is possible to specify L<custom pipes|/register>, but there are also some
-pipes bundled with this distribution which is loaded automatically in the
-order below:
+pipes bundled with this distribution:
 
-=over 4
-
-=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Css>
-
-Minify CSS.
-
-=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Sass>
-
-Process sass and scss files.
-
-=item * L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>
-
-Minify JavaScript.
+=over 2
 
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::Combine>
 
-Combine multiple assets to one.
+Combine multiple assets to one. (Loaded by default)
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Css>
+
+Minify CSS. (Loaded by default)
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>
+
+Minify JavaScript. (Loaded by default)
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Riotjs>
+
+Process L<http://riotjs.com/> tag files.
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Sass>
+
+Process sass and scss files. (Loaded by default)
 
 =back
 
