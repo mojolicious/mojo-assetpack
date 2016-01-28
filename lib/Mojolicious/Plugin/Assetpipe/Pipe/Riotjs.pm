@@ -43,15 +43,14 @@ sub _process {
   $assets->each(
     sub {
       my ($asset, $index) = @_;
-      my $attr = $asset->TO_JSON;
-      $attr->{minified} = $self->assetpipe->minify;
-      $attr->{format}   = 'js';
+      my $attrs = $asset->TO_JSON;
+      $attrs->{key}    = 'riot';
+      $attrs->{format} = 'js';
       return unless $asset->format eq 'tag';
-      return $asset->content($file)->FROM_JSON($attr) if $file = $store->load($attr);
+      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
       local $ENV{NODE_PATH} = join ':', @{$self->node_paths};
       run $self->_exe, \$asset->content, \my $js, undef;
-      delete $attr->{minified};    # not yet minifed
-      $asset->content($store->save(\$js, $attr))->FROM_JSON($attr);
+      $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
     }
   );
 }

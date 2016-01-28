@@ -27,7 +27,7 @@ Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
 =head2 Write a custom pipe
 
   package MyApp::MyCoolPipe;
-  use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
+  use Mojo::Base "Mojolicious::Plugin::Assetpipe::Pipe";
   use Mojolicious::Plugin::Assetpipe::Util qw(diag DEBUG);
 
   sub _process {
@@ -42,11 +42,14 @@ Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
         my ($asset, $index) = @_;
 
         # Skip every file that is not css
-        return if $asset->format ne 'css';
+        return if $asset->format ne "css";
 
         # Change $attr if this pipe will modify $asset attributes
         my $attr    = $asset->TO_JSON;
         my $content = $asset->content;
+
+        # Private name to load/save meta data under
+        $attr->{key} = "coolpipe";
 
         # Return asset if already processed
         if ($content !~ /white/ and $file = $store->load($attr)) {
@@ -54,7 +57,7 @@ Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
         }
 
         # Process asset content
-        diag 'Replace white with red in "%s".', $asset->url if DEBUG;
+        diag q(Replace white with red in "%s".), $asset->url if DEBUG;
         $content =~ s!white!red!g;
         $asset->content($store->save(\$content, $attr))->minified(1);
       }

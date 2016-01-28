@@ -7,16 +7,25 @@ use Mojolicious::Plugin::Assetpipe::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
 
-# MOJO_ASSETPIPE_DB_FILE is used in tests
-use constant DB_FILE => $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db';
-
 has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
+
+# MOJO_ASSETPIPE_DB_FILE is used in tests
+has _file => sub {
+  File::Spec->catfile(shift->paths->[0], $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db');
+};
 
 has _content_type => sub {
   return {css => 'text/css', js => 'application/javascript'};
 };
 
 has_ro 'ua';
+
+sub attrs {
+  my ($self, $attrs) = @_;
+  my $db = $self->_db('all');
+  return unless $db->{$attrs->{url}};
+  return $db->{$attrs->{url}}{$attrs->{key}};
+}
 
 sub file {
   my ($self, $rel) = @_;
@@ -40,19 +49,20 @@ sub file {
 }
 
 sub load {
-  my ($self, $attr) = @_;
-  my @rel = $self->_cache_path($attr);
-  my $file = $self->file(join '/', @rel);
+  my ($self, $attrs) = @_;
+  my $db_attr = $self->attrs($attrs) or return undef;
+  my @rel     = $self->_cache_path($attrs);
+  my $file    = $self->file(join '/', @rel);
 
-  return 0 unless $file;
-  return 0 unless $self->_db($attr)->{checksum} eq $attr->{checksum};
+  return undef unless $file;
+  return undef unless $db_attr->{checksum} eq $attrs->{checksum};
   diag 'Load "%s" = 1', eval { $file->path } || join('/', @rel) if DEBUG;
   return $file;
 }
 
 sub save {
-  my ($self, $ref, $attr) = @_;
-  my $path = File::Spec->catfile($self->paths->[0], $self->_cache_path($attr));
+  my ($self, $ref, $attrs) = @_;
+  my $path = File::Spec->catfile($self->paths->[0], $self->_cache_path($attrs));
   my $dir = dirname $path;
 
   # Do not care if this fail. Can fallback to temp files.
@@ -60,7 +70,7 @@ sub save {
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
   return Mojo::Asset::Memory->new->add_chunk($$ref) unless -w $dir;
-  $self->_db($attr, 1);
+  $self->_db(save => $attrs);
   spurt $$ref, $path;
   return Mojo::Asset::File->new(path => $path);
 }
@@ -85,32 +95,32 @@ sub serve_asset {
 }
 
 sub _cache_path {
-  my ($self, $attr) = @_;
+  my ($self, $attrs) = @_;
   return (
     'cache', sprintf '%s-%s.%s%s',
-    $attr->{name},
-    checksum($attr->{url}),
-    $attr->{minified} ? 'min.' : '',
-    $attr->{format}
+    $attrs->{name},
+    checksum($attrs->{url}),
+    $attrs->{minified} ? 'min.' : '',
+    $attrs->{format}
   );
 }
 
 sub _db {
-  my ($self, $attr, $save) = @_;
-  my $db_file = File::Spec->catfile($self->paths->[0], DB_FILE);
+  my ($self, $action, $attrs) = @_;
+  my ($data, $db);
 
-  my $db = $self->{_db} ||= do {
-    -r $db_file ? Mojo::JSON::decode_json(slurp $db_file) : {};
-  };
+  $db = $self->{_db}
+    ||= -r $self->_file ? Mojo::JSON::decode_json(slurp $self->_file) : {};
+  return $db if $action eq 'all';
 
-  my $data = $db->{$attr->{url}} ||= {};
-  my $key = sprintf 'minified:%s', $attr->{minified} ? 1 : 0;
-  $data = $data->{$key} ||= {checksum => '', format => '', mtime => 0};
+  $data = $db->{$attrs->{url}}   ||= {};
+  $data = $data->{$attrs->{key}} ||= {};
 
-  if ($save) {
-    $data->{$_} = $attr->{$_} for qw(checksum format mtime);
-    diag 'Save "%s" = %s', $db_file, -w $self->paths->[0] ? 1 : 0 if DEBUG;
-    spurt Mojo::JSON::encode_json($db), $db_file if -w $self->paths->[0];
+  if ($action eq 'save') {
+    %$data = %$attrs;
+    delete $data->{$_} for qw(key name url);
+    diag 'Save "%s" = %s', $self->_file, -w $self->paths->[0] ? 1 : 0 if DEBUG;
+    spurt Mojo::JSON::encode_json($db), $self->_file if -w $self->paths->[0];
   }
 
   return $data;
@@ -119,6 +129,7 @@ sub _db {
 sub _download {
   my ($self, $url) = @_;
   my $rel = $url->clone->to_abs;
+  my %attrs = (mtime => time);
 
   $rel->port(undef)->scheme(undef);
   $rel = $rel->to_string;
@@ -147,11 +158,23 @@ sub _download {
 
   my $h = $tx->res->headers;
   if ($h->last_modified) {
-    my $mtime = Mojo::Date->new($h->last_modified)->epoch;
-    utime $mtime, $mtime, $path;
+    $attrs{mtime} = Mojo::Date->new($h->last_modified)->epoch;
+  }
+  if (my $ct = $h->content_type) {
+    $attrs{format} = 'css' if $ct =~ /css/;
+    $attrs{format} = 'js'  if $ct =~ /javascript/;
   }
 
+  $attrs{key} = 'original';
+  $attrs{url} = $url->to_string;
+  $self->_db(save => \%attrs);
   return Mojo::Asset::File->new(path => $path);
+}
+
+sub _reset {
+
+  #system sprintf "cat %s | json_xs", $_[0]->_file;
+  unlink $_[0]->_file;
 }
 
 1;
@@ -197,6 +220,14 @@ See L<Mojolicious::Plugin::Assetpipe/ua>.
 
 L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
+
+=head2 attrs
+
+  $hash_ref = $self->attrs({key => $key, url => $url});
+
+Will lookup L<attributes|Mojolicious::Plugin::Assetpipe::Asset/ATTRIBUTES> for
+a file in the database by "url" and "key". Returns "undef" if no attributes
+has been documented.
 
 =head2 file
 
