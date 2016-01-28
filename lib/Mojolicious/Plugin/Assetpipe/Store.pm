@@ -12,6 +12,10 @@ use constant DB_FILE => $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db';
 
 has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
 
+has _content_type => sub {
+  return {css => 'text/css', js => 'application/javascript'};
+};
+
 has_ro 'ua';
 
 sub file {
@@ -65,10 +69,19 @@ sub serve_asset {
   my ($self, $c, $asset) = @_;
   my $d  = $self->default_headers;
   my $h  = $c->res->headers;
-  my $ct = $self->ua->server->app->types->type($asset->format);
+  my $ct = $self->_content_type->{$asset->format};
+
+  unless ($ct) {
+    $h->content_type('text/css');
+    $c->render(text =>
+        qq(body:before{content:'"@{[$asset->url]}" is not processed.';font-size:32px;position:absolute;top:0;left:0;background:red;color:white;}\n)
+    );
+    return $self;
+  }
+
   $h->header($_ => $d->{$_}) for keys %$d;
-  $h->content_type($ct) if $ct;
-  return $self->SUPER::serve_asset($c, $asset);
+  $h->content_type($ct);
+  $self->SUPER::serve_asset($c, $asset);
 }
 
 sub _cache_path {

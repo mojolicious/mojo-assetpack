@@ -25,6 +25,16 @@ has _exe => sub {
   ];
 };
 
+sub _install_riot {
+  my $self = shift;
+  my $path = $self->app->home->rel_file('node_modules/.bin/riot');
+  return $path if -e $path;
+  local $CWD = $self->app->home->to_string;
+  $self->app->log->warn('Installing riot... Please wait. (npm install riot)');
+  $self->run([qw(npm install riot)]);
+  return $path;
+}
+
 sub _process {
   my ($self, $assets) = @_;
   my $store = $self->assetpipe->store;
