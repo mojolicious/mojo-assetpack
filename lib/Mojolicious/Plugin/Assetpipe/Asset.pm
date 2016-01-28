@@ -13,9 +13,12 @@ has_ro 'name' => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!;
 has_ro 'url';
 
 has _asset => sub {
-  my $self = shift;
-  return $self->assetpipe->store->file($self->url)
-    || die die qq(Cannot find asset for "@{[$self->url]}".);
+  my $self  = shift;
+  my $store = $self->assetpipe->store;
+  my $asset = $store->file($self->url) || die qq(Cannot find asset "@{[$self->url]}".);
+  my $attrs = $store->attrs({key => 'original', url => $self->url});
+  $self->{$_} ||= $attrs->{$_} for keys %$attrs;
+  return $asset;
 };
 
 sub content {
@@ -37,9 +40,9 @@ sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { shift->_asset->size }
 
 sub FROM_JSON {
-  my ($self, $attr) = @_;
-  $self->$_($attr->{$_})
-    for grep { defined $attr->{$_} } qw(checksum format minified mtime);
+  my ($self, $attrs) = @_;
+  $self->$_($attrs->{$_})
+    for grep { defined $attrs->{$_} } qw(checksum format minified mtime);
   $self;
 }
 

@@ -130,6 +130,7 @@ sub _reset {
   diag 'Reset assetpipe.' if DEBUG;
 
   if ($args->{unlink}) {
+    $self->store->_reset;
     for (@{$self->{asset_paths} || []}) {
       next unless /\bcache\b/;
       -e and unlink;

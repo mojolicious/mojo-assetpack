@@ -81,34 +81,35 @@ sub _process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      my ($attr, $content);
+      my ($attrs, $content);
 
       return if $asset->format !~ $FORMAT_RE;
-      ($attr, $content) = ($asset->TO_JSON, $asset->content);
+      ($attrs, $content) = ($asset->TO_JSON, $asset->content);
       local $self->{checksum_for_file} = {};
       local $opts{include_paths}[0]
         = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
 
-      $attr->{format}   = 'css';
-      $attr->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
-      $attr->{minified} = $self->assetpipe->minify;
+      $attrs->{minified} = $self->assetpipe->minify;
+      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? ':min' : '';
+      $attrs->{format}   = 'css';
+      $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
-      return $asset->content($file)->FROM_JSON($attr) if $file = $store->load($attr);
+      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
       $opts{include_paths}[0] = dirname $asset->path;
-      diag 'Process "%s" with checksum %s.', $asset->url, $attr->{checksum} if DEBUG;
+      diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
       if ($self->{has_module} //= !$self->{_exe} && load_module 'CSS::Sass') {
-        $opts{output_style} = _output_style($attr->{minified});
+        $opts{output_style} = _output_style($attrs->{minified});
         $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
         my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
-        die qq([Pipe::Sass] Could not compile "@{[$asset->url]}": $err) if $err;
-        $asset->content($store->save(\$css, $attr))->FROM_JSON($attr);
+        die qq([Pipe::Sass] Could not compile "$attrs->{url}": $err) if $err;
+        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
       else {
         my @args = (@{$self->_exe}, '-s', map { ('-I', $_) } @{$opts{include_paths}});
         push @args, '--scss' if $asset->format eq 'scss';
         run \@args, \$content, \my $css, undef;
-        $asset->content($store->save(\$css, $attr))->FROM_JSON($attr);
+        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
     }
   );
