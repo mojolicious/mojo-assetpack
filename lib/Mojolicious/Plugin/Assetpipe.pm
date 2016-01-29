@@ -91,7 +91,7 @@ sub _app { shift->ua->server->app }
 
 sub _pipes {
   my $self = shift;
-  my $names = shift || [qw(Css Sass JavaScript Combine)];
+  my $names = shift || [qw(Css Sass CoffeeScript JavaScript Combine)];
 
   $self->{pipes} = [
     map {
@@ -229,6 +229,10 @@ It is possible to specify L<custom pipes|/register>, but there are also some
 pipes bundled with this distribution:
 
 =over 2
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::CoffeeScript>
+
+Process CoffeeScript coffee files. (Loaded by default)
 
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::Combine>
 
