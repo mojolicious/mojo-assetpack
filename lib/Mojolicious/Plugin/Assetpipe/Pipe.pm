@@ -1,7 +1,10 @@
 package Mojolicious::Plugin::Assetpipe::Pipe;
 use Mojo::Base -base;
 use Mojolicious::Plugin::Assetpipe::Asset;
-use Mojolicious::Plugin::Assetpipe::Util 'has_ro';
+use Mojolicious::Plugin::Assetpipe::Util qw(diag has_ro DEBUG);
+use File::Basename ();
+use IPC::Run3      ();
+use List::Util 'first';
 
 has topic => '';
 has_ro 'assetpipe';
@@ -13,6 +16,39 @@ sub new {
   Scalar::Util::weaken($self->{assetpipe});
   $self;
 }
+
+sub run {
+  my ($self, $cmd, @args) = @_;
+  my $name = File::Basename::basename($cmd->[0]);
+  local $cmd->[0] = $self->_find_app($name, $cmd->[0]);
+  die qq(@{[ref $self]} was unable to locate the "$name" application.) unless $cmd->[0];
+  $self->app->log->debug(join ' ', '[Assetpipe]', @$cmd);
+  IPC::Run3::run3($cmd, @args);
+}
+
+sub _find_app {
+  my ($self, $name, $path) = @_;
+  return $path if $path and File::Spec->file_name_is_absolute($path);
+
+  my $key = uc "MOJO_ASSETPIPE_${name}_APP";
+  diag 'Looking for "%s" in %s', $name, $key if DEBUG > 1;
+  return $ENV{$key} if $ENV{$key};
+
+  return $self->{apps}{$name} if $self->{apps}{$name};
+  diag 'Looking for "%s" in PATH.', $name if DEBUG > 1;
+  $path = first {-e} map { File::Spec->catfile($_, $name) } File::Spec->path;
+  return $self->{apps}{$name} = $path if $path;
+
+  my $code = $self->can(lc sprintf '_install_%s', $name);
+  diag 'Calling %s->_install_%s() ...', ref $self, $name if DEBUG > 1;
+  return $self->{apps}{$name} = $self->$code if $code;
+  return '';
+}
+
+sub _install_gem  { shift->_i('https://rubygems.org/pages/download') }
+sub _install_node { shift->_i('https://nodejs.org/en/download') }
+sub _install_ruby { shift->_i('https://ruby-lang.org/en/documentation/installation') }
+sub _i            { die "@{[ref $_[0]]} requires @{[$_[1]=~/\/(\w+)/?$1:1]}. $_[1]\n" }
 
 1;
 
@@ -102,6 +138,15 @@ Returns the L<Mojolicious> application object.
 =head2 new
 
 Object constructor. Makes sure L</assetpipe> is weaken.
+
+=head2 run
+
+  $self->run([som_app => @args], \$stdin, \$stdout, ...);
+
+See L<IPC::Run3/run3> for details about the arguments. This method will try to
+call C<_install_some_app()> unless "som_app" was found in
+L<PATH|File::Spec/path>. This method could then try to install the application
+and must return the path to the installed application.
 
 =head1 SEE ALSO
 

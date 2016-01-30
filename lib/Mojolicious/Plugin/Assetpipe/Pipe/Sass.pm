@@ -1,13 +1,11 @@
 package Mojolicious::Plugin::Assetpipe::Pipe::Sass;
 use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(binpath checksum diag load_module run DEBUG);
+use Mojolicious::Plugin::Assetpipe::Util qw(checksum diag load_module DEBUG);
 use File::Basename 'dirname';
 use Mojo::Util;
 
 my $FORMAT_RE = qr{^s[ac]ss$};
 my $IMPORT_RE = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
-
-has _exe => sub { [shift->_make_sure_sass_is_installed] };
 
 sub _checksum {
   my ($self, $ref, $asset, $paths) = @_;
@@ -52,20 +50,16 @@ SEARCH:
   return checksum join ':', @c;
 }
 
-sub _make_sure_sass_is_installed {
-  my ($self, $path) = @_;
-  my $exe = $ENV{MOJO_ASSETPIPE_SASS_BIN} // binpath 'sass';
-  return $exe if $exe;
-
-  my $base = qx{ruby -rubygems -e 'puts Gem.user_dir'} || '';
+sub _install_sass {
+  my $self = shift;
+  $self->run([qw(ruby -rubygems -e), 'puts Gem.user_dir'], undef, \my $base);
   chomp $base;
-  $exe = File::Spec->catfile($base, qw(bin sass));
-  return $exe if -e $exe;
-
+  my $path = File::Spec->catfile($base, qw(bin sass));
+  return $path if -e $path;
   $self->app->log->warn(
     'Installing sass... Please wait. (gem install --user-install sass)');
-  run [qw(gem install --user-install sass)];
-  return $exe;
+  $self->run([qw(gem install --user-install sass)]);
+  return $path;
 }
 
 sub _output_style {
@@ -98,7 +92,7 @@ sub _process {
       $opts{include_paths}[0] = dirname $asset->path;
       diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
-      if ($self->{has_module} //= !$self->{_exe} && load_module 'CSS::Sass') {
+      if ($self->{has_module} //= load_module 'CSS::Sass') {
         $opts{output_style} = _output_style($attrs->{minified});
         $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
         my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
@@ -106,9 +100,9 @@ sub _process {
         $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
       else {
-        my @args = (@{$self->_exe}, '-s', map { ('-I', $_) } @{$opts{include_paths}});
+        my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
         push @args, '--scss' if $asset->format eq 'scss';
-        run \@args, \$content, \my $css, undef;
+        $self->run(\@args, \$content, \my $css, undef);
         $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
     }
@@ -127,9 +121,9 @@ Mojolicious::Plugin::Assetpipe::Pipe::Sass - Process sass and scss files
 
 L<Mojolicious::Plugin::Assetpipe::Pipe::Sass> will process sass and scss files.
 
-This module require either the optional module L<CSS::Sass> to minify or
-the C<sass> executable to be installed. C<sass> will be automatically installed
-using L<https://rubygems.org/> unless already installed.
+This module require either the optional module L<CSS::Sass> or the C<sass>
+program to be installed. C<sass> will be automatically installed using
+L<https://rubygems.org/> unless already available.
 
 =head1 SEE ALSO
 

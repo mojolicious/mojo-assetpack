@@ -1,14 +1,12 @@
 use t::Helper;
-plan skip_all => 'TEST_SASS_BIN=1' unless $ENV{TEST_SASS_BIN} or -e '.test-everything';
+plan skip_all => 'TEST_SASS_APP=1' unless $ENV{TEST_SASS_APP} or -e '.test-everything';
 
 my $t    = t::Helper->t;
 my $sass = $t->app->asset->pipe('Sass');
 
 isa_ok($sass, 'Mojolicious::Plugin::Assetpipe::Pipe::Sass');
 
-local $ENV{MOJO_ASSETPIPE_SASS_BIN} = '';    # skip global sass
-$sass->_exe;                                 # make sure CSS::Sass is not used
-
+$sass->{has_module} = '';    # make sure CSS::Sass is not used
 $t->app->asset->process('app.css' => ('sass.sass', 'sass/sass-1.scss'));
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/8d347a7a6f/sass.css"]))
