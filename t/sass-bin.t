@@ -1,5 +1,5 @@
 use t::Helper;
-plan skip_all => 'TEST_SASS_APP=1' unless $ENV{TEST_SASS_APP} or -e '.test-everything';
+plan skip_all => 'TEST_SASS=1' unless $ENV{TEST_SASS} or -e '.test-everything';
 
 my $t    = t::Helper->t;
 my $sass = $t->app->asset->pipe('Sass');
