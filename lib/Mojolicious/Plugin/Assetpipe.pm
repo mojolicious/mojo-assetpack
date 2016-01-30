@@ -91,7 +91,7 @@ sub _app { shift->ua->server->app }
 
 sub _pipes {
   my $self = shift;
-  my $names = shift || [qw(Css Sass CoffeeScript JavaScript Combine)];
+  my $names = shift || [qw(Css Less Sass CoffeeScript JavaScript Combine)];
 
   $self->{pipes} = [
     map {
@@ -245,6 +245,10 @@ Minify CSS. (Loaded by default)
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>
 
 Minify JavaScript. (Loaded by default)
+
+=item * L<Mojolicious::Plugin::Assetpipe::Pipe::Less>
+
+Process Less CSS files.
 
 =item * L<Mojolicious::Plugin::Assetpipe::Pipe::Riotjs>
 

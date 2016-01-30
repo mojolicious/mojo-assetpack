@@ -1,11 +1,12 @@
 package Mojolicious::Plugin::Assetpipe::Pipe::CoffeeScript;
 use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag DEBUG);
+use Mojolicious::Plugin::Assetpipe::Util qw(diag $CWD DEBUG);
 
 sub _install_coffee {
   my $self = shift;
-  my $path = $self->app->home->rel_file(qw(node_modules .bin coffee));
+  my $path = $self->app->home->rel_file('node_modules/.bin/coffee');
   return $path if -e $path;
+  local $CWD = $self->app->home->to_string;
   $self->app->log->warn('Installing coffee... Please wait. (npm install coffee)');
   $self->run([qw(npm install coffee)]);
   return $path;
