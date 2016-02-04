@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
   ok $t->app->asset->preprocessors->can_process('js'), 'found preprocessor for js';
   $t->app->asset('app.js' => '/js/a.js', '/js/b.js');
 
@@ -16,7 +16,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
   $t->app->asset('app.js' => '/js/a.js', '/js/b.js');
 
   $t->get_ok('/test1');    # trigger pack_javascripts() twice for coverage
@@ -34,7 +34,7 @@ use t::Helper;
     $minify->(@_);
   };
 
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->defaults(inline_ap => 0);
   $t->app->asset('app.js' => '/js/a.js', '/js/https___patform_twitter_com_widgets.js');

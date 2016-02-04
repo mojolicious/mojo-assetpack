@@ -6,7 +6,7 @@ my $md5         = '278ce8b881b15d1972024a8e9ece6799';
 my ($embedded, $main);
 
 {
-  $embedded = t::Helper->t({minify => 1});
+  $embedded = t::Helper->t_old({minify => 1});
   $embedded->app->asset->preprocessors->remove('js');
   $embedded->app->asset->preprocessors->add(
     js => sub {
@@ -20,7 +20,7 @@ my ($embedded, $main);
 }
 
 {
-  $main = t::Helper->t({minify => 1});
+  $main = t::Helper->t_old({minify => 1});
   $main->app->routes->route('/embed')->detour(app => $embedded->app);
   $main->app->routes->get('/main', sub { shift->render(text => 'main') });
 }

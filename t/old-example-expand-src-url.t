@@ -2,7 +2,7 @@ use t::Helper;
 
 plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
 
-my $t            = t::Helper->t;
+my $t            = t::Helper->t_old;
 my $cdn_base_url = 'http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0';
 
 # preprocessors to expand the url() definitions in the css file downloaded from the CDN

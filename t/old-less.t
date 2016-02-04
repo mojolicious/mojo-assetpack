@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
 
   plan skip_all => 'Could not find preprocessors for less' unless $t->app->asset->preprocessors->can_process('less');
 
@@ -12,7 +12,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->asset('less.css' => '/css/a.less', '/css/b.less');
 

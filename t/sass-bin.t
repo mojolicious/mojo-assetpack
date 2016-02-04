@@ -1,10 +1,10 @@
 use t::Helper;
 plan skip_all => 'TEST_SASS=1' unless $ENV{TEST_SASS} or -e '.test-everything';
 
-my $t    = t::Helper->t;
+my $t = t::Helper->t(pipes => [qw(Sass Css)]);
 my $sass = $t->app->asset->pipe('Sass');
 
-isa_ok($sass, 'Mojolicious::Plugin::Assetpipe::Pipe::Sass');
+isa_ok($sass, 'Mojolicious::Plugin::AssetPack::Pipe::Sass');
 
 $sass->{has_module} = '';    # make sure CSS::Sass is not used
 $t->app->asset->process('app.css' => ('sass.sass', 'sass/sass-1.scss'));

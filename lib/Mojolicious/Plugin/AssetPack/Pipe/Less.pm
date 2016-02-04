@@ -1,6 +1,6 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::Less;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag $CWD DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::Less;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 sub _install_lessc {
   my $self = shift;
@@ -14,7 +14,7 @@ sub _install_lessc {
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my $file;
 
   $assets->each(
@@ -42,11 +42,11 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Less - Process Less CSS files
+Mojolicious::Plugin::AssetPack::Pipe::Less - Process Less CSS files
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Less> will process
+L<Mojolicious::Plugin::AssetPack::Pipe::Less> will process
 L<http://lesscss.org/> files into JavaScript.
 
 This module require the C<less> executable to be installed. C<less> will be
@@ -55,6 +55,6 @@ installed.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

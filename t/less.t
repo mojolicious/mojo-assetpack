@@ -1,7 +1,7 @@
 use t::Helper;
 plan skip_all => 'TEST_LESS=1' unless $ENV{TEST_LESS} or -e '.test-everything';
 
-my $t = t::Helper->t;
+my $t = t::Helper->t(pipes => [qw(Less Css Combine)]);
 
 $t->app->asset->process('app.css' => 'foo.less');
 $t->get_ok('/')->status_is(200)

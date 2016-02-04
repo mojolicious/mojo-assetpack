@@ -2,7 +2,7 @@ use t::Helper;
 
 plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 $t->app->asset('app.js' => 'http://code.jquery.com/jquery-1.11.0.min.js');
 
 $t->get_ok('/test1')->status_is(200)->content_like(qr{<script src="/packed/app-\w+\.min\.js"}m);

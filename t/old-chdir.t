@@ -4,7 +4,7 @@ use Mojolicious::Plugin::AssetPack::Preprocessors;
 ok -e 'cpanfile', 'root dir';
 
 my $cwd = Mojolicious::Plugin::AssetPack::Preprocessors::CWD->new('t');
-ok -e 'chdir.t', 'chdir to t';
+ok -e 'old-chdir.t', 'chdir to t';
 
 undef $cwd;
 ok -e 'cpanfile', 'chdir back';

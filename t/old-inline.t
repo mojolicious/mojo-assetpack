@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
 
   $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
 
@@ -13,7 +13,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
 
@@ -22,7 +22,7 @@ use t::Helper;
 }
 
 SKIP: {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
   skip 'sass required', 3 unless $t->app->asset->preprocessors->can_process('scss');
 
   $t->app->routes->get('/inline-sass')->to(template => 'inline_sass');

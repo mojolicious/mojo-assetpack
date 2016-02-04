@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
 
   plan skip_all => 'Could not find preprocessors for scss' unless $t->app->asset->preprocessors->can_process('scss');
 
@@ -27,7 +27,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->asset('scss.css' => '/css/a.scss', '/css/b.scss');
 
@@ -42,12 +42,12 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
 {
   # https://github.com/jhthorsen/mojolicious-plugin-bootstrap3/issues/5
   my $scss_file = File::Spec->catfile(qw( t public sass subdir _issue-5.scss ));
-  my $app       = t::Helper->t->app;
+  my $app       = t::Helper->t_old->app;
   $app->asset('change.css' => '/sass/bs-issue-5.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#b00}, 'original';
 
   modify($scss_file, sub {s!b00!00b!});
-  $app = t::Helper->t->app;
+  $app = t::Helper->t_old->app;
   $app->asset('change.css' => '/sass/bs-issue-5.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#00b}, 'updated';
 
@@ -63,7 +63,7 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
     '/other/directory');
 
   # SASS_PATH
-  my $app       = t::Helper->t->app;
+  my $app       = t::Helper->t_old->app;
   my $scss_file = File::Spec->catfile(qw( t public anotherdir subdir _issue-60.scss ));
   modify($scss_file, sub {s!ccc!ddd!});
   $app->asset('change.css' => '/sass/issue-60.scss');
@@ -72,7 +72,7 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
   is int(split ':', $ENV{SASS_PATH}), 3, 'SASS_PATH was localized';
 
   # include_paths()
-  $app = t::Helper->t->app;
+  $app = t::Helper->t_old->app;
   modify($scss_file, sub {s!ddd!333!});
   $app->asset->preprocessors->add(scss => Scss => {include_paths => [split /:/, $ENV{SASS_PATH}]});
   local $ENV{SASS_PATH} = '';
@@ -89,12 +89,12 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
   # https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/62
 
   my $scss_file = File::Spec->catfile(qw( t public sass issue-62-import.scss ));
-  my $app       = t::Helper->t->app;
+  my $app       = t::Helper->t_old->app;
   $app->asset('change.css' => '/sass/issue-62.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ccc}, 'original';
 
   modify($scss_file, sub {s!ccc!ddd!});
-  $app = t::Helper->t->app;
+  $app = t::Helper->t_old->app;
   $app->asset('change.css' => '/sass/issue-62.scss');
   like + ($app->asset->get('change.css', {assets => 1}))[0]->slurp, qr{\#ddd}, 'updated';
 

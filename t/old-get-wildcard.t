@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 0});
+my $t = t::Helper->t_old({minify => 0});
 my $assetpack = $t->app->asset;
 my @data;
 

@@ -3,7 +3,7 @@ use t::Helper;
 use Mojo::Util 'spurt';
 
 my $file;
-my $t = t::Helper->t({minify => 0});
+my $t = t::Helper->t_old({minify => 0});
 
 plan skip_all => 'Could not find preprocessors for scss' unless $t->app->asset->preprocessors->can_process('scss');
 

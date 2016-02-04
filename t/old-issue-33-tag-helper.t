@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 
 $t->app->asset('style.css' => '/css/a.css', '/css/b.css');
 $t->app->asset('script.js' => '/js/a.js',   '/js/b.js');
