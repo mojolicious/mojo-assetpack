@@ -1,49 +1,51 @@
 use t::Helper;
+use Mojo::Loader 'data_section';
+use Mojolicious::Plugin::Assetpipe::Util 'checksum';
 
-{
-  my $t = t::Helper->t({minify => 0, headers => {'Cache-Control' => 'max-age=31536000'}});
+plan skip_all => 'cpanm CSS::Minifier::XS' unless eval 'require CSS::Minifier::XS;1';
 
-  ok $t->app->asset->preprocessors->can_process('css'), 'found preprocessor for css';
+my $t = t::Helper->t;
+$t->app->asset->process('app.css' => ('css-0-one.css', 'css-0-two.css'));
+$t->get_ok('/')->status_is(200)
+  ->element_exists(qq(link[href="/asset/d508287fc7/css-0-one.css"]))
+  ->element_exists(qq(link[href="/asset/ec4c05a328/css-0-two.css"]));
 
-  $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
+$t->get_ok('/asset/d508287fc7/css-0-one.css')->status_is(200);
 
-  $t->get_ok('/test1')->status_is(200)
-    ->content_like(
-    qr{<link href="/packed/a-09a653553edca03ad3308a868e5a06ac\.css".*<link href="/packed/b-89dbc5a64c4e7e64a3d1ce177b740a7e\.css"}s
-    );
+$ENV{MOJO_MODE} = 'Test_minify_from_here';
 
-  $t->get_ok('/packed/a-09a653553edca03ad3308a868e5a06ac.css')->content_like(qr{a1a1a1;})
-    ->header_is('Cache-Control', 'max-age=31536000');
-  $t->get_ok('/packed/b-89dbc5a64c4e7e64a3d1ce177b740a7e.css')->content_like(qr{b1b1b1;});
+my @assets       = qw( d/css-1-one.css d/css-1-two.css d/css-1-already-min.css );
+my $url_checksum = checksum 'd/css-1-one.css';
 
-  $t->get_ok('/packed/a-not-found.css')->status_is(404)->header_is('Cache-Control', undef);
-}
+$t = t::Helper->t;
+$t->app->asset->process('app.css' => @assets);
 
-{
-  # check that headers are added when not building assets
-  my $t = t::Helper->t({minify => 0, headers => {'Cache-Control' => 'max-age=31536000'}});
-  $t->app->asset('app.css' => '/css/a.css', '/css/b.css');
-  $t->get_ok('/packed/a-09a653553edca03ad3308a868e5a06ac.css')->header_is('Cache-Control', 'max-age=31536000');
-}
+my $file = $t->app->asset->store->file('cache/css-1-one-52be209045.min.css');
+isa_ok($file, 'Mojo::Asset::File');
 
-{
-  my $t = t::Helper->t({minify => 1});
+my $asset_checksum = checksum join ':',
+  map { checksum(data_section __PACKAGE__, $_) } @assets;
+$t->get_ok('/')->status_is(200)
+  ->element_exists(qq(link[href="/asset/$asset_checksum/app.css"]));
 
-  $t->app->asset('app.css' => '/css/c.css', '/css/d.css');
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
+  ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
 
-  $t->get_ok('/test1')->status_is(200)
-    ->content_like(qr{<link href="/packed/app-3659f2c6b80de93f8373568a1ddeffaa\.min\.css"}m);
+Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Nope!' });
+ok -e $file->path, 'cached file exists';
+$ENV{MOJO_ASSETPIPE_CLEANUP} = 0;
+$t = t::Helper->t;
+$t->app->asset->process('app.css' => @assets);
 
-  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{c1c1c1.*d1d1d1});
-}
-
-{
-  my $t = t::Helper->t({minify => 1});
-  $t->app->asset('app.css' => '/css/c.css', '/css/d.css');
-}
-
+$ENV{MOJO_ASSETPIPE_CLEANUP} = 1;
 done_testing;
 
 __DATA__
-@@ test1.html.ep
+@@ index.html.ep
 %= asset 'app.css'
+@@ d/css-1-one.css
+.one { color: #111; }
+@@ d/css-1-two.css
+.two { color: #222; }
+@@ d/css-1-already-min.css
+.skipped { color: #222; }

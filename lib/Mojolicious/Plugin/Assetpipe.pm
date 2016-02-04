@@ -51,7 +51,7 @@ sub process {
       next unless $pipe->can($method);
       diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
       $pipe->$method($assets);
-      $self->{by_checksum}{$_->checksum} = $_ for @$assets;
+      push @{$self->{asset_paths}}, $_->path for @$assets;
     }
   }
 
@@ -100,13 +100,9 @@ sub _reset {
   diag 'Reset assetpipe.' if DEBUG;
 
   if ($args->{unlink}) {
-    for my $asset (sort values %{$self->{by_checksum} || {}}) {
-      next unless +(my $file = $asset->_asset)->isa('Mojo::Asset::File');
-      my $rel_path = File::Spec->catfile($self->store->_cache_path($asset));
-      diag "unlink? %s =~ %s", $file->path, $rel_path if DEBUG >= 5;
-      next unless $file->path =~ /$rel_path$/;
-      unlink $file->path;
-      diag 'unlink %s: %s', $file->path, $! || 1;
+    for (@{$self->{asset_paths} || []}) {
+      next unless /\bcache\b/;
+      -e and unlink and diag 'unlink %s', $_;
     }
   }
 

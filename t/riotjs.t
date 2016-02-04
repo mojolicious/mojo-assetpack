@@ -1,5 +1,5 @@
 use t::Helper;
-plan skip_all => 'TEST_RIOTJS=1' unless $ENV{TEST_RIOTJS};
+plan skip_all => 'TEST_RIOTJS=1' unless $ENV{TEST_RIOTJS} or -e '.test-everything';
 
 my $t = t::Helper->t(pipes => [qw(Riotjs JavaScript)]);
 $t->app->asset->process('app.js' => ('r1.tag'));

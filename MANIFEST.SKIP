@@ -64,3 +64,4 @@
 .sass-cache
 t/assets/.*.db
 node_modules
+.test-everything
