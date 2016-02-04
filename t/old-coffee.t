@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
 
   plan skip_all => 'Could not find preprocessors for coffee'
     unless $t->app->asset->preprocessors->can_process('coffee');
@@ -15,7 +15,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->asset('coffee.js' => '/js/c.coffee', '/js/d.coffee');
   $t->get_ok('/test1')->status_is(200)->content_like(qr{<script src="/packed/coffee-\w+\.min\.js"}m);

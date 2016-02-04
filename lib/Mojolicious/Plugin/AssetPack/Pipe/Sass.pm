@@ -1,6 +1,6 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::Sass;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(checksum diag load_module DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::Sass;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(checksum diag load_module DEBUG);
 use File::Basename 'dirname';
 use Mojo::Util;
 
@@ -10,7 +10,7 @@ my $IMPORT_RE = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
 sub _checksum {
   my ($self, $ref, $asset, $paths) = @_;
   my $ext   = $asset->format;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my @c     = (checksum $$ref);
 
 SEARCH:
@@ -68,8 +68,8 @@ sub _output_style {
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
-  my %opts = (include_paths => [undef, @{$self->assetpipe->store->paths}]);
+  my $store = $self->assetpack->store;
+  my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
   my $file;
 
   return $assets->each(
@@ -83,7 +83,7 @@ sub _process {
       local $opts{include_paths}[0]
         = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
 
-      $attrs->{minified} = $self->assetpipe->minify;
+      $attrs->{minified} = $self->assetpack->minify;
       $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? ':min' : '';
       $attrs->{format}   = 'css';
       $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
@@ -115,11 +115,11 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Sass - Process sass and scss files
+Mojolicious::Plugin::AssetPack::Pipe::Sass - Process sass and scss files
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Sass> will process sass and scss files.
+L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will process sass and scss files.
 
 This module require either the optional module L<CSS::Sass> or the C<sass>
 program to be installed. C<sass> will be automatically installed using
@@ -127,6 +127,6 @@ L<https://rubygems.org/> unless already available.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

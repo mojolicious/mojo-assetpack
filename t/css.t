@@ -1,10 +1,10 @@
 use t::Helper;
 use Mojo::Loader 'data_section';
-use Mojolicious::Plugin::Assetpipe::Util 'checksum';
+use Mojolicious::Plugin::AssetPack::Util 'checksum';
 
 plan skip_all => 'cpanm CSS::Minifier::XS' unless eval 'require CSS::Minifier::XS;1';
 
-my $t = t::Helper->t;
+my $t = t::Helper->t(pipes => [qw(Css Combine)]);
 $t->app->asset->process;
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/d508287fc7/css-0-one.css"]))
@@ -13,13 +13,11 @@ $t->get_ok('/')->status_is(200)
 $t->get_ok('/asset/d508287fc7/css-0-one.css')->status_is(200);
 
 $ENV{MOJO_MODE} = 'Test_minify_from_here';
-
-my @assets       = qw( d/css-1-one.css d/css-1-two.css d/css-1-already-min.css );
+my @assets       = qw(d/css-1-one.css d/css-1-two.css d/css-1-already-min.css);
 my $url_checksum = checksum 'd/css-1-one.css';
 
-$t = t::Helper->t;
+$t = t::Helper->t(pipes => [qw(Css Combine)]);
 $t->app->asset->process('app.css' => @assets);
-
 my $file = $t->app->asset->store->file('cache/css-1-one-52be209045.min.css');
 isa_ok($file, 'Mojo::Asset::File');
 
@@ -34,17 +32,17 @@ $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
 
 Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Nope!' });
 ok -e $file->path, 'cached file exists';
-$ENV{MOJO_ASSETPIPE_CLEANUP} = 0;
-$t = t::Helper->t;
+$ENV{MOJO_ASSETPACK_CLEANUP} = 0;
+$t = t::Helper->t(pipes => [qw(Css Combine)]);
 $t->app->asset->process('app.css' => @assets);
 
-$ENV{MOJO_ASSETPIPE_CLEANUP} = 1;
+$ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 done_testing;
 
 __DATA__
 @@ index.html.ep
 %= asset 'app.css'
-@@ assetpipe.def
+@@ assetpack.def
 ! app.css
 # some comment
 <css-0-one.css       #some inline comment

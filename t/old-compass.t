@@ -2,7 +2,7 @@ BEGIN { $ENV{ENABLE_LIBSASS_BINDINGS} = 0 }
 use t::Helper;
 use File::Which;
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 
 plan skip_all => 'Need to install sass+compass'          unless which 'compass';
 plan skip_all => 'Could not find preprocessors for scss' unless $t->app->asset->preprocessors->can_process('scss');

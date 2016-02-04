@@ -36,7 +36,7 @@ sub asset_for {
   # already downloaded
   return $asset if $asset = $assetpack->_packed(qr{^$name\.\w+$});
 
-  $tx = $assetpack->_ua->get($url);
+  $tx = $assetpack->ua->get($url);
   $ext = Mojolicious::Types->new->detect($tx->res->headers->content_type // 'text/plain');
   die "Asset $url could not be fetched: $e->{message}" if $e = $tx->error;
 

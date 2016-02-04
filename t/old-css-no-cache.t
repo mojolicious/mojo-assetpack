@@ -5,7 +5,7 @@ use Mojo::Util 'spurt';
 my $file;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
   my @files;
 
   $file = File::Spec->catfile($t->app->static->paths->[0], 'css', 'no-cache.css');
@@ -26,7 +26,7 @@ my $file;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
   my @files;
 
   $t->app->asset('no-cache.css' => '/css/no-cache.css', '/css/b.css');

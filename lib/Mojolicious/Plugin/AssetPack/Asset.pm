@@ -1,136 +1,168 @@
 package Mojolicious::Plugin::AssetPack::Asset;
-
 use Mojo::Base -base;
-use File::Basename 'dirname';
-use Fcntl qw( O_CREAT O_EXCL O_RDONLY O_RDWR );
-use IO::File;
+use Mojo::Asset::Memory;
+use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
-has handle => sub {
-  my $self   = shift;
-  my $path   = $self->path;
-  my $handle = IO::File->new;
+has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
+has format   => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
+has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
+has mtime    => sub { shift->_asset->mtime };
 
-  if (-w $path) {
-    $handle->open($path, O_RDWR) or die "Can't open $path (O_RDWR): $!";
-  }
-  elsif (!-r _ and -w dirname($path)) {
-    $handle->open($path, O_CREAT | O_EXCL | O_RDWR) or die "Can't open $path (O_CREAT|O_EXCL|O_RDWR): $!";
-  }
-  else {
-    $handle->open($path, O_RDONLY) or die "Can't open $path (O_RDONLY): $!";
-  }
+has_ro 'assetpack';
+has_ro 'name' => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
+has_ro 'url';
 
-  return $handle;
+has _asset => sub {
+  my $self  = shift;
+  my $store = $self->assetpack->store;
+  my $asset = $store->file($self->url) || die qq(Cannot find asset "@{[$self->url]}".);
+  my $attrs = $store->attrs({key => 'original', url => $self->url});
+  $self->{$_} ||= $attrs->{$_} for keys %$attrs;
+  return $asset;
 };
 
-has path => undef;
-
-sub add_chunk {
+sub content {
   my $self = shift;
-  defined $self->handle->syswrite($_[0]) or die "Can't write to @{[$self->path]}: $!";
-  return $self;
+  return $self->_asset($_[0]) if @_ and UNIVERSAL::isa($_[0], 'Mojo::Asset');
+  return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0])) if @_;
+  return $self->_asset->slurp;
 }
 
-sub slurp {
-  my $self   = shift;
-  my $handle = $self->handle;
-  $handle->sysseek(0, 0);
-  defined $handle->sysread(my $content, -s $handle, 0) or die "Can't read from @{[$self->path]}: $!";
-  return $content;
+sub get_chunk { shift->_asset->get_chunk(@_) }
+
+sub new {
+  my $self = shift->SUPER::new(@_);
+  Scalar::Util::weaken($self->{assetpack});
+  $self;
 }
 
-sub spurt {
-  my $self   = shift;
-  my $handle = $self->handle;
-  $handle->truncate(0);
-  $handle->sysseek(0, 0);
-  defined $handle->syswrite($_[0]) or die "Can't write to @{[$self->path]}: $!";
-  return $self;
+sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
+sub size { shift->_asset->size }
+
+sub FROM_JSON {
+  my ($self, $attrs) = @_;
+  $self->$_($attrs->{$_})
+    for grep { defined $attrs->{$_} } qw(checksum format minified mtime);
+  $self;
 }
 
-sub _spurt_error_message_for {
-  my ($self, $ext, $err) = @_;
-
-  $err =~ s!\r!!g;
-  $err =~ s!\n+$!!;
-
-  if ($ext eq 'js') {
-    $err =~ s!'!"!g;
-    $err =~ s!\n!\\n!g;
-    $err =~ s!\s! !g;
-    $err = "alert('$err');console.log('$err');";
-  }
-  else {
-    $err =~ s!"!'!g;
-    $err =~ s!\n!\\A!g;
-    $err =~ s!\s! !g;
-    $err
-      = qq(html:before{background:#f00;color:#fff;font-size:14pt;position:fixed;padding:20px;z-index:9999;content:"$err";});
-  }
-
-  $self->spurt($err);
+sub TO_JSON {
+  return {map { ($_ => $_[0]->$_) } qw(checksum format minified name mtime url)};
 }
 
 1;
-__END__
+
+=encoding utf8
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Asset - Represents an asset file
+Mojolicious::Plugin::AssetPack::Asset - An asset
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack::Asset> is class that can represent a file
-on disk.
+L<Mojolicious::Plugin::AssetPack::Asset> represents an asset.
 
-This class is EXPERIMENTAL.
+=head1 SYNOPSIS
+
+  use Mojolicious::Plugin::AssetPack::Asset;
+  my $asset = Mojolicious::Plugin::AssetPack::Asset->new(
+                assetpack => Mojolicious::Plugin::AssetPack->new,
+                url       => "...",
+              );
 
 =head1 ATTRIBUTES
 
-=head2 handle
+=head2 assetpack
 
-  $fh = $self->handle;
-  $self = $self->handle($fh);
+  $obj = $self->assetpack;
 
-Returns a filehandle to L</path> with the correct read/write mode,
-dependent on the file system permissions.
+Holds a L<Mojolicious::Plugin::AssetPack> object.
+
+=head2 checksum
+
+  $str = $self->checksum;
+  $self = $self->checksum($str);
+
+The L<checksum|Mojolicious::Plugin::AssetPack::Util/checksum> of L</content>.
+
+=head2 format
+
+  $str = $self->format;
+  $self = $self->format($str);
+
+The format of L</content>. Defaults to the extension of L</url> or empty string.
+
+=head2 minified
+
+  $bool = $self->minified;
+  $self = $self->minified($bool);
+
+Will be set to true if either L</url> contains "min" or if a pipe has
+minified L</content>.
+
+=head2 mtime
+
+  $epoch = $self->mtime;
+  $self = $self->mtime($epoch);
+
+Holds the modification time of L</content>.
+
+=head2 name
+
+  $str = $self->name;
+
+Returns the last part of l</url> without extension.
+
+=head2 url
+
+  $str = $self->url;
+
+Returns the location of the asset.
+
+=head1 METHODS
+
+=head2 content
+
+  $bytes = $self->content;
+  $self = $self->content($bytes);
+  $self = $self->content(Mojo::Asset::Memory->new);
+
+Used to get or set the content of this asset. The default will be built from
+passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
+
+=head2 get_chunk
+
+See L<Mojo::Asset/get_chunk>.
+
+=head2 new
+
+Object constructor. Makes sure L</assetpack> is weaken.
 
 =head2 path
 
   $str = $self->path;
-  $self = $self->path($str);
 
-Holds the location of the file.
+Returns the path to the asset, if it exists on disk.
 
-=head1 METHODS
+=head2 size
 
-=head2 add_chunk
+See L<Mojo::Asset/size>.
 
-  $self = $self->add_chunk($chunk);
+=head2 FROM_JSON
 
-Will append a C<$chunk> to the L</path>.
+  $self = $self->FROM_JSON($hash_ref);
 
-=head2 slurp
+The opposite of L</TO_JSON>. Will set the read/write L</ATTRIBUTES> from the
+values in C<$hash_ref>.
 
-  $content = $self->slurp;
+=head2 TO_JSON
 
-Will return the contents of L</path>.
+  $hash_ref = $self->FROM_JSON;
 
-=head2 spurt
+The opposite of L</FROM_JSON>. Will generate a hash ref from L</ATTRIBUTES>.
 
-  $self = $self->spurt($content);
+=head1 SEE ALSO
 
-Used to truncate and write C<$content> to L</path>.
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2015, Jan Henning Thorsen
-
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
-
-=head1 AUTHOR
-
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

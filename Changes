@@ -29,7 +29,8 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 0.64 2015-09-20T11:44:26+0200
  - Add "SHIPPING" section to Cookbook
  - Fix adding custom response headers when assets are already built #55
- - Fix always add newline to JavaScript assets to prevent issues with comments
+ - Fix always add newline to JavaScript assets to prevent issues with
+   comments
  - Improved logging for in-memory assets
  - Improved error reporting when unable to build assets
 
@@ -43,10 +44,12 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 0.61 2015-08-23T13:34:34+0200
  - Add include_paths() to Scss preprocessor
  - Fix using SASS_PATH environment variable when calculating checksum #60
- - Deprecating asset->preprocessor() in favor of asset->preprocessors->add()
+ - Deprecating asset->preprocessor() in favor of
+   asset->preprocessors->add()
 
 0.60 2015-08-20T17:21:54+0200
- - Fix detecting changed sass/scss files in sub directories, with leading underscore
+ - Fix detecting changed sass/scss files in sub directories, with leading
+   underscore
 
 0.59 2015-08-20T14:42:25+0200
  - Cannot look for packed files in "source_paths"
@@ -66,8 +69,8 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.55 2015-05-25T12:58:04+0200
  - Will not add memory asset route if not needed #56
- - Make error visible regardless of page scroll position #57
-   Contributor: Zoffix Znet
+ - Make error visible regardless of page scroll position #57 Contributor:
+   Zoffix Znet
 
 0.54 2015-04-23T17:37:01+0200
  - Fix saving unchanged assets on disk
@@ -81,7 +84,8 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.52 2015-04-18T12:54:40+0200
  - Add support for generating image sprites and css
- - Add EXPERIMENTAL ::Handlers::Sprites, ::Handlers::Http and ::Handlers::Https
+ - Add EXPERIMENTAL ::Handlers::Sprites, ::Handlers::Http and
+   ::Handlers::Https
  - Add ::Asset::content()
  - Rename ::Asset::url() to path().
  - Remove ::Asset::add_chunk()
@@ -89,7 +93,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 0.51 2015-04-16T08:15:50+0200
  - Can reload assets on server reload (EXPERIMENTAL)
 
-0.50 2015-04-13T11:37:08Z +0200
+0.50 2015-04-13T11:37:08+0200
  - Need to start with a fresh asset to avoid adding duplicate processed
    data to the same asset.
 

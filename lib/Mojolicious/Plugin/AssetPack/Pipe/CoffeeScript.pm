@@ -1,6 +1,6 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::CoffeeScript;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag $CWD DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 sub _install_coffee {
   my $self = shift;
@@ -14,7 +14,7 @@ sub _install_coffee {
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my $file;
 
   $assets->each(
@@ -37,11 +37,11 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::CoffeeScript - Process CoffeeScript
+Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript - Process CoffeeScript
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::CoffeeScript> will process
+L<Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript> will process
 L<http://coffeescript.org/> files into JavaScript.
 
 This module require the C<coffee> program to be installed. C<coffee> will be
@@ -50,6 +50,6 @@ installed.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

@@ -1,13 +1,13 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::JavaScript;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag load_module DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::JavaScript;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my $file;
 
-  return unless $self->assetpipe->minify;
+  return unless $self->assetpack->minify;
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
@@ -32,16 +32,16 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::JavaScript - Minify JavaScript
+Mojolicious::Plugin::AssetPack::Pipe::JavaScript - Minify JavaScript
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript> will minify your "js"
-assets if L<Mojolicious::Plugin::Assetpipe/minify> is true and the asset is
+L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript> will minify your "js"
+assets if L<Mojolicious::Plugin::AssetPack/minify> is true and the asset is
 not already minified.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

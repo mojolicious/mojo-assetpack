@@ -1,8 +1,7 @@
 use t::Helper;
-my $t = t::Helper->t;
-
 plan skip_all => 'TEST_ONLINE=1' unless $ENV{TEST_ONLINE} or -e '.test-everything';
 
+my $t = t::Helper->t(pipes => ['Css']);
 $t->app->asset->process(
   'app.css' => 'https://fonts.googleapis.com/css?family=Roboto:400,700');
 $t->get_ok('/')->status_is(200);

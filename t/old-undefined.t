@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 0});
+my $t = t::Helper->t_old({minify => 0});
 
 $t->get_ok('/test1')->status_is(200)->content_like(qr{<!-- Asset 'undefined\.css' is not defined\. -->});
 

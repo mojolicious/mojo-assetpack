@@ -1,6 +1,6 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::Riotjs;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag $CWD DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::Riotjs;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 use File::Basename 'dirname';
 use Cwd ();
 
@@ -25,7 +25,7 @@ sub _install_riot {
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my $file;
 
   $assets->each(
@@ -51,25 +51,25 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Riotjs - Process Riotjs .tag files
+Mojolicious::Plugin::AssetPack::Pipe::Riotjs - Process Riotjs .tag files
 
 =head1 SYNOPSIS
 
   use Mojolicious::Lite;
-  plugin assetpipe => {pipes => [qw(Riotjs JavaScript)]};
+  plugin AssetPack => {pipes => [qw(Riotjs JavaScript)]};
 
 Note that the above will not load the other default pipes, such as
-L<Mojolicious::Plugin::Assetpipe::Pipe::Css>.
+L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Riotjs> will process
+L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs> will process
 L<http://riotjs.com/> ".tag" files.
 
 This module require L<https://www.npmjs.com/> to compile Riotjs tag files.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

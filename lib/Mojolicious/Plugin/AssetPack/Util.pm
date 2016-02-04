@@ -1,24 +1,24 @@
-package Mojolicious::Plugin::Assetpipe::Util;
+package Mojolicious::Plugin::AssetPack::Util;
 use Mojo::Base 'Exporter';
 use Mojo::Util;
 use File::Spec;
 
-use constant DEBUG   => $ENV{MOJO_ASSETPIPE_DEBUG} || 0;
+use constant DEBUG   => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
 our @EXPORT  = qw(checksum diag has_ro load_module $CWD DEBUG);
 our $SUM_LEN = 10;
 our $TOPIC;
 
-tie our ($CWD), 'Mojolicious::Plugin::Assetpipe::Util::_chdir' or die q(Can't tie $CWD);
+tie our ($CWD), 'Mojolicious::Plugin::AssetPack::Util::_chdir' or die q(Can't tie $CWD);
 
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
 
 sub diag {
   my $f = @_ > 1 ? shift : '%s';
   my ($i, $pkg) = (0);
-  while ($pkg = caller $i++) { $pkg =~ s!.*::(Assetpipe::)Pipe::!$1! and last }
-  $pkg = 'Assetpipe' unless $pkg;
+  while ($pkg = caller $i++) { $pkg =~ s!.*::(AssetPack::)Pipe::!$1! and last }
+  $pkg = 'AssetPack' unless $pkg;
   warn sprintf "%s[%s%s] $f\n", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
 }
 
@@ -42,7 +42,7 @@ sub load_module {
   return $@ ? '' : $module;
 }
 
-package Mojolicious::Plugin::Assetpipe::Util::_chdir;
+package Mojolicious::Plugin::AssetPack::Util::_chdir;
 use Cwd ();
 use File::Spec;
 sub TIESCALAR { bless [Cwd::getcwd], $_[0] }
@@ -52,8 +52,8 @@ sub STORE {
   defined $_[1] or return;
   my $dir = File::Spec->rel2abs($_[1]);
   chdir $dir or die "chdir $dir: $!";
-  Mojolicious::Plugin::Assetpipe::Util::diag("chdir $dir")
-    if Mojolicious::Plugin::Assetpipe::Util::DEBUG >= 3;
+  Mojolicious::Plugin::AssetPack::Util::diag("chdir $dir")
+    if Mojolicious::Plugin::AssetPack::Util::DEBUG >= 3;
   $_[0]->[0] = $dir;
 }
 
@@ -63,16 +63,16 @@ sub STORE {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Util - Utility functions for pipes
+Mojolicious::Plugin::AssetPack::Util - Utility functions for pipes
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Util> holds utility functions.
+L<Mojolicious::Plugin::AssetPack::Util> holds utility functions.
 
 =head1 SYNOPSIS
 
-  use Mojolicious::Plugin::Assetpipe::Util;
-  use Mojolicious::Plugin::Assetpipe::Util qw(checksum diag DEBUG)
+  use Mojolicious::Plugin::AssetPack::Util;
+  use Mojolicious::Plugin::AssetPack::Util qw(checksum diag DEBUG)
 
 =head1 FUNCTIONS
 
@@ -103,6 +103,6 @@ string on failure. C<$@> holds the error message on failure.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

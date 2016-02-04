@@ -1,13 +1,13 @@
-package Mojolicious::Plugin::Assetpipe::Pipe::Css;
-use Mojo::Base 'Mojolicious::Plugin::Assetpipe::Pipe';
-use Mojolicious::Plugin::Assetpipe::Util qw(diag load_module DEBUG);
+package Mojolicious::Plugin::AssetPack::Pipe::Css;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 
 sub _process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpipe->store;
+  my $store = $self->assetpack->store;
   my $file;
 
-  return unless $self->assetpipe->minify;
+  return unless $self->assetpack->minify;
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
@@ -30,18 +30,18 @@ sub _process {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe::Css - Minify CSS
+Mojolicious::Plugin::AssetPack::Pipe::Css - Minify CSS
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Pipe::Css> will minify your "css" assets
-if L<Mojolicious::Plugin::Assetpipe/minify> is true and the asset is not
+L<Mojolicious::Plugin::AssetPack::Pipe::Css> will minify your "css" assets
+if L<Mojolicious::Plugin::AssetPack/minify> is true and the asset is not
 already minified.
 
 This module require the optional module L<CSS::Minifier::XS> to minify.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

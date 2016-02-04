@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 0});
+my $t = t::Helper->t_old({minify => 0});
 
 plan skip_all => $@ unless eval 'require Imager::File::PNG;1';
 

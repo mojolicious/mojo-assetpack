@@ -1,17 +1,17 @@
-package Mojolicious::Plugin::Assetpipe::Store;
+package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
 use Mojo::JSON;
 use Mojo::Util qw(slurp spurt);
 use Mojo::URL;
-use Mojolicious::Plugin::Assetpipe::Util qw(diag checksum has_ro DEBUG);
+use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
 
 has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
 
-# MOJO_ASSETPIPE_DB_FILE is used in tests
+# MOJO_ASSETPACK_DB_FILE is used in tests
 has _file => sub {
-  File::Spec->catfile(shift->paths->[0], $ENV{MOJO_ASSETPIPE_DB_FILE} || 'assetpipe.db');
+  File::Spec->catfile(shift->paths->[0], $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db');
 };
 
 has _content_type => sub {
@@ -183,14 +183,14 @@ sub _reset {
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Store - Storage for assets
+Mojolicious::Plugin::AssetPack::Store - Storage for assets
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::Assetpipe::Store> is an object to manage cached
+L<Mojolicious::Plugin::AssetPack::Store> is an object to manage cached
 assets on disk.
 
-The idea is that a L<Mojolicious::Plugin::Assetpipe::Pipe> object can store
+The idea is that a L<Mojolicious::Plugin::AssetPack::Pipe> object can store
 an asset after it is processed. This will speed up development, since only
 changed assets will be processed and it will also allow processing tools to
 be optional in production environment.
@@ -200,7 +200,7 @@ it can be looked up later as a unique item using L</load>.
 
 =head1 ATTRIBUTES
 
-L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
+L<Mojolicious::Plugin::AssetPack::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
 
 =head2 default_headers
@@ -214,18 +214,18 @@ Used to set default headers used by L</serve_asset>.
 
   $ua = $self->ua;
 
-See L<Mojolicious::Plugin::Assetpipe/ua>.
+See L<Mojolicious::Plugin::AssetPack/ua>.
 
 =head1 METHODS
 
-L<Mojolicious::Plugin::Assetpipe::Store> inherits all attributes from
+L<Mojolicious::Plugin::AssetPack::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
 
 =head2 attrs
 
   $hash_ref = $self->attrs({key => $key, url => $url});
 
-Will lookup L<attributes|Mojolicious::Plugin::Assetpipe::Asset/ATTRIBUTES> for
+Will lookup L<attributes|Mojolicious::Plugin::AssetPack::Asset/ATTRIBUTES> for
 a file in the database by "url" and "key". Returns "undef" if no attributes
 has been documented.
 
@@ -246,7 +246,7 @@ delete the files on disk to download a new version.
 
 Used to load an existing asset from disk. C<%attr> will override the
 way an asset is looked up. The example below will ignore
-L<minified|Mojolicious::Plugin::Assetpipe::Asset/minified> and rather use
+L<minified|Mojolicious::Plugin::AssetPack::Asset/minified> and rather use
 the value from C<%attr>:
 
   $bool = $self->load($asset, {minified => $bool});
@@ -256,7 +256,7 @@ the value from C<%attr>:
   $bool = $self->save($asset, \%attr);
 
 Used to save an asset to disk. C<%attr> are usually the same as
-L<Mojolicious::Plugin::Assetpipe::Asset/TO_JSON> and used to document metadata
+L<Mojolicious::Plugin::AssetPack::Asset/TO_JSON> and used to document metadata
 about the C<$asset> so it can be looked up using L</load>.
 
 =head2 serve_asset
@@ -266,6 +266,6 @@ response headers first, from L</default_headers>.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::Assetpipe>.
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut

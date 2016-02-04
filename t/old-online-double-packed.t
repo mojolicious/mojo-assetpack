@@ -4,9 +4,10 @@ use File::Spec::Functions 'catdir';
 plan skip_all => 'TEST_ONLINE=1 required' unless $ENV{TEST_ONLINE};
 
 for my $m (0, 1) {
-  my $t = t::Helper->t({minify => $m});
+  my $t = t::Helper->t_old({minify => $m});
   my $n = 0;
-  $t->app->asset('shim.js' => ('http://cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.min.js',));
+  $t->app->asset(
+    'shim.js' => ('http://cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.min.js',));
   my $processed = $t->app->asset->{processed} or next;
   for my $asset (map {@$_} values %$processed) {
     $t->get_ok("/packed/$asset")->status_is(200);
@@ -21,7 +22,6 @@ is_deeply(
   \@assets,
   [
     qw(
-      _assetpack.map
       http___cdnjs_cloudflare_com_ajax_libs_html5shiv_r29_html5_min_js-720189c61acaa42010a07a70541c04b1.js
       http___cdnjs_cloudflare_com_ajax_libs_html5shiv_r29_html5_min_js.js
       shim-720189c61acaa42010a07a70541c04b1.min.js

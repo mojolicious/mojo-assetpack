@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 0});
+my $t = t::Helper->t_old({minify => 0});
 
 $t->app->asset('app.css' => '/from/data/section.css', '/css/c.css');
 $t->get_ok('/test1')->status_is(200)->content_like(qr{div\.data-section})->content_like(qr{c1c1c1});

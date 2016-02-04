@@ -1,7 +1,7 @@
 use t::Helper;
 
 {
-  my $t = t::Helper->t({minify => 0});
+  my $t = t::Helper->t_old({minify => 0});
 
   plan skip_all => 'Could not find preprocessors for sass' unless $t->app->asset->preprocessors->can_process('sass');
 
@@ -11,7 +11,7 @@ use t::Helper;
 }
 
 {
-  my $t = t::Helper->t({minify => 1});
+  my $t = t::Helper->t_old({minify => 1});
 
   $t->app->asset('sass.css' => '/sass/a.sass');
   $t->get_ok('/test1')->status_is(200)

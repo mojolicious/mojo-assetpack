@@ -6,7 +6,7 @@ use t::Helper;
 my ($file, @warn);
 $SIG{__WARN__} = sub { push @warn, $_[0]; warn $_[0]; };
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 
 $t->app->asset('e.js' => '/js/empty.js');
 ($file) = $t->app->asset->get('e.js');

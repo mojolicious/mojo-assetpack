@@ -1,6 +1,6 @@
 use t::Helper;
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 my $cwd = 'UNDEFINED';
 
 $t->app->asset->preprocessors->remove('js');

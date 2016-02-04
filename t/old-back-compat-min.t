@@ -3,7 +3,7 @@ use t::Helper;
 my $src = File::Spec->catfile(qw( t public css bootstrap-0cbacb97f7b3f70fb6d39926d48dba68.css ));
 my $dst = File::Spec->catfile(qw( t public packed bootstrap-0cbacb97f7b3f70fb6d39926d48dba68.css ));
 
-my $t = t::Helper->t({minify => 1});
+my $t = t::Helper->t_old({minify => 1});
 
 if ($ENV{TEST_BOOTSTRAP3} and eval { $t->app->plugin('Bootstrap3') }) {
   $t->get_ok('/test1')->status_is(200)->content_like(qr{<link href="/packed/bootstrap-\w+\.css"}m);

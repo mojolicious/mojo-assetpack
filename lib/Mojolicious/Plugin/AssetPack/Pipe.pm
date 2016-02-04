@@ -1,19 +1,19 @@
-package Mojolicious::Plugin::Assetpipe::Pipe;
+package Mojolicious::Plugin::AssetPack::Pipe;
 use Mojo::Base -base;
-use Mojolicious::Plugin::Assetpipe::Asset;
-use Mojolicious::Plugin::Assetpipe::Util qw(diag has_ro DEBUG);
+use Mojolicious::Plugin::AssetPack::Asset;
+use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 use File::Basename ();
 use IPC::Run3      ();
 use List::Util 'first';
 
 has topic => '';
-has_ro 'assetpipe';
+has_ro 'assetpack';
 
-sub app { shift->assetpipe->ua->server->app }
+sub app { shift->assetpack->ua->server->app }
 
 sub new {
   my $self = shift->SUPER::new(@_);
-  Scalar::Util::weaken($self->{assetpipe});
+  Scalar::Util::weaken($self->{assetpack});
   $self;
 }
 
@@ -22,7 +22,7 @@ sub run {
   my $name = File::Basename::basename($cmd->[0]);
   local $cmd->[0] = $self->_find_app($name, $cmd->[0]);
   die qq(@{[ref $self]} was unable to locate the "$name" application.) unless $cmd->[0];
-  $self->app->log->debug(join ' ', '[Assetpipe]', @$cmd);
+  $self->app->log->debug(join ' ', '[AssetPack]', @$cmd);
   IPC::Run3::run3($cmd, @args);
 }
 
@@ -30,7 +30,7 @@ sub _find_app {
   my ($self, $name, $path) = @_;
   return $path if $path and File::Spec->file_name_is_absolute($path);
 
-  my $key = uc "MOJO_ASSETPIPE_${name}_APP";
+  my $key = uc "MOJO_ASSETPACK_${name}_APP";
   diag 'Looking for "%s" in %s', $name, $key if DEBUG > 1;
   return $ENV{$key} if $ENV{$key};
 
@@ -56,23 +56,23 @@ sub _i            { die "@{[ref $_[0]]} requires @{[$_[1]=~/\/(\w+)/?$1:1]}. $_[
 
 =head1 NAME
 
-Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
+Mojolicious::Plugin::AssetPack::Pipe - Base class for a pipe
 
 =head1 SYNOPSIS
 
 =head2 Write a custom pipe
 
   package MyApp::MyCoolPipe;
-  use Mojo::Base "Mojolicious::Plugin::Assetpipe::Pipe";
-  use Mojolicious::Plugin::Assetpipe::Util qw(diag DEBUG);
+  use Mojo::Base "Mojolicious::Plugin::AssetPack::Pipe";
+  use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 
   sub _process {
     my ($self, $assets) = @_;
 
-    # Normally a Mojolicious::Plugin::Assetpipe::Store object
-    my $store = $self->assetpipe->store;
+    # Normally a Mojolicious::Plugin::AssetPack::Store object
+    my $store = $self->assetpack->store;
 
-    # Loop over Mojolicious::Plugin::Assetpipe::Asset objects
+    # Loop over Mojolicious::Plugin::AssetPack::Asset objects
     $assets->each(
       sub {
         my ($asset, $index) = @_;
@@ -103,10 +103,10 @@ Mojolicious::Plugin::Assetpipe::Pipe - Base class for a pipe
 =head2 Use the custom pipe
 
   use Mojolicious::Lite;
-  plugin assetpipe => {pipes => [qw(MyApp::MyCoolPipe Css)]};
+  plugin AssetPack => {pipes => [qw(MyApp::MyCoolPipe Css)]};
 
 Note that the above will not load the other default pipes, such as
-L<Mojolicious::Plugin::Assetpipe::Pipe::JavaScript>.
+L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
 
 =head1 DESCRIPTION
 
@@ -114,11 +114,11 @@ This is the base class for all pipe classes.
 
 =head1 ATTRIBUTES
 
-=head2 assetpipe
+=head2 assetpack
 
-  $obj = $self->assetpipe;
+  $obj = $self->assetpack;
 
-Holds a L<Mojolicious::Plugin::Assetpipe> object.
+Holds a L<Mojolicious::Plugin::AssetPack> object.
 
 =head2 topic
 
@@ -137,7 +137,7 @@ Returns the L<Mojolicious> application object.
 
 =head2 new
 
-Object constructor. Makes sure L</assetpipe> is weaken.
+Object constructor. Makes sure L</assetpack> is weaken.
 
 =head2 run
 
@@ -152,13 +152,13 @@ and must return the path to the installed application.
 
 =over 2
 
-=item * L<Mojolicious::Plugin::Assetpipe>
+=item * L<Mojolicious::Plugin::AssetPack>
 
-=item * L<Mojolicious::Plugin::Assetpipe::Asset>
+=item * L<Mojolicious::Plugin::AssetPack::Asset>
 
-=item * L<Mojolicious::Plugin::Assetpipe::Store>
+=item * L<Mojolicious::Plugin::AssetPack::Store>
 
-=item * L<Mojolicious::Plugin::Assetpipe::Util>
+=item * L<Mojolicious::Plugin::AssetPack::Util>
 
 =back
 

@@ -1,9 +1,8 @@
 use t::Helper;
-my $t = t::Helper->t;
-
 plan skip_all => 'TEST_ONLINE=1' unless $ENV{TEST_ONLINE} or -e '.test-everything';
 plan skip_all => 'cpanm CSS::Sass' unless eval 'require CSS::Sass;1';
 
+my $t = t::Helper->t(pipes => [qw(Sass Css)]);
 $t->app->asset->process(
   'app.css' => (
     'https://raw.githubusercontent.com/hugeinc/flexboxgrid-sass/master/demo/sass/demo.scss'
@@ -17,9 +16,12 @@ $t->get_ok('/')->status_is(200)
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr{Tomorrow Theme}s);
 
-unlink File::Spec->catfile(
-  qw(t assets cache raw.githubusercontent.com hugeinc flexboxgrid-sass master demo sass _code.scss)
-);
+unlink File::Spec->catfile(split '/')
+  for (
+  't/assets/cache/raw.githubusercontent.com/hugeinc/flexboxgrid-sass/master/demo/sass/demo.scss',
+  't/assets/cache/raw.githubusercontent.com/hugeinc/flexboxgrid-sass/master/demo/sass/_code.scss',
+  );
+
 done_testing;
 
 __DATA__
