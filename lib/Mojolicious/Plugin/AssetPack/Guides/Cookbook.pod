@@ -1,0 +1,137 @@
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Guides::Cookbook - AssetPack recipes
+
+=head1 OVERVIEW
+
+This guide will provide recipes for cooking with
+L<Mojolicious::Plugin::AssetPack>.
+
+=head1 ASSETS FROM CUSTOM DOMAIN
+
+You might want to serve the assets from a domain different from where the main
+app is running. The reasons for that might be:
+
+=over 2
+
+=item *
+
+No cookies send on each request. This is especially useful when you use
+L<Mojolicious> sessions as they are stored in cookies and clients send whole
+session with every request.
+
+=item *
+
+More requests done in parallel. Browsers have limits for sending parallel
+request to one domain. With separate domain static files can be loaded in
+parallel.
+
+=item *
+
+Serve files directly (by absolute url) from CDN (or Amazon S3).
+
+=back
+
+=head2 Synopsis
+
+You need to customize L<Mojolicious::Plugin::AssetPack/route> to accomplish
+this:
+
+  $app->asset->route->to(base_url => "http://cdn.example.com/my-assets/");
+
+=head2 Caveat
+
+Many recent browsers blocks mixed content, meaning if your HTML is served over
+HTTPS, then you can't serve the assets over HTTP. One way to fix this is by
+using "//" instead of a scheme specific URL. Example:
+
+  base_url => "//cdn.example.com/my-assets/"
+
+This will tell the browser to use the same scheme for fetching assets, as it
+did fetching the web page.
+
+=head2 See also
+
+L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
+
+=head1 ONLINE ASSETS
+
+Instead of making custom AssetPack plugins, it is possible to simply include
+projects such as Bootstrap, FontAwesome or jQuery directly from the web
+instead.
+
+=head2 Bootstrap
+
+The SASS version of L<http://getbootstrap.com> can easily be included:
+
+  $app->asset->process(
+    "app.css" => (
+      "https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss"
+    )
+  );
+
+=head2 Font awesome
+
+L<https://fortawesome.github.io/Font-Awesome/> can be included with the snippet
+below:
+
+  $app->asset->process(
+    "app.css" => (
+      "https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css",
+      "your-app.css",
+    )
+  );
+
+=head2 Google fonts
+
+L<https://www.google.com/fonts> can be included with this snippet:
+
+  $app->asset->process(
+    "app.css" => (
+      "https://fonts.googleapis.com/css?family=Roboto:400,700",
+      "your-app.css",
+    )
+  );
+
+=head2 JavaScript polyfills
+
+L<https://github.com/Modernizr/Modernizr> contains a list of many shims which
+can be included. Here is just one example:
+
+  $app->asset->process(
+    "app.js" => (
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js",
+      "http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-sham.js",
+      "your-app.js",
+    )
+  );
+
+=head2 jQuery
+
+L<http://jquery.com> can easily be included by refering to a CDN:
+
+  $app->asset->process(
+    "app.js" => (
+      "http://code.jquery.com/jquery-1.12.0.js",
+      "your-app.js",
+    )
+  );
+
+=head2 Materialize CSS
+
+L<http://materializecss.com/> can be included with the same code below.
+L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will also discover all the
+"@import" files and download those recusively as well.
+
+  $app->asset->process(
+    "app.css" => (
+      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss"
+    )
+  );
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack> and
+L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>.
+
+=cut
