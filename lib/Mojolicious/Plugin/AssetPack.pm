@@ -214,7 +214,6 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
   # define asset
   app->asset->process(
-
     # virtual name of the asset
     "app.css" => (
 
@@ -233,6 +232,17 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
     <body><%= content %></body>
   </html>
 
+=head1 FOR EXISTING USERS
+
+Are you already using AssetPack? You can still do so without any change. This
+new version was written to make it easier to maintain and also easier to
+extend. The new code will be "activated" by loadind this plugin with a list of
+pipes:
+
+  $app->plugin(AssetPack => {pipes => [...]});
+
+The old API will not be maintained and slowly deprecated.
+
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack> is L<Mojolicious plugin|Mojolicious::Plugin>
@@ -240,54 +250,57 @@ for processing static assets. The idea is that JavaScript and CSS files should
 be served as one minified file to save bandwidth and roundtrip time to the
 server.
 
-There are many external tools for doing this, but integrating the with
+There are many external tools for doing this, but integrating them with
 L<Mojolicious> can be a struggle: You want to serve the source files directly
 while developing, but a minified version in production. This assetpack plugin
 will handle all of that automatically for you.
 
-L<Mojolicious::Plugin::AssetPack> does not do any heavy lifting itself: All the
-processing is left to the L<pipe objects|Mojolicious::Plugin::AssetPack::Pipe>.
+The actual processing is delegated to "pipe objects". Please see
+L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
 
-It is possible to specify L<custom pipes|/register>, but there are also some
-pipes bundled with this distribution:
+=head1 GUIDES
 
 =over 2
 
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript>
+=item * L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>
 
-Process CoffeeScript coffee files. Should be loaded before
-L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
+The tutorial will give an introduction to how AssetPack can be used.
 
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Combine>
+=item * L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>
 
-Combine multiple assets to one. Should be loaded last.
-
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Css>
-
-Minify CSS.
-
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>
-
-Minify JavaScript.
-
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Less>
-
-Process Less CSS files. Should be loaded before
-L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
-
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs>
-
-Process L<http://riotjs.com/> tag files. Should be loaded before
-L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
-
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Sass>
-
-Process sass and scss files. Should be loaded before
-L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
+The cookbook has various receipes on how to cook with AssetPack.
 
 =back
 
-Future releases will have more pipes bundled.
+=head1 ENVIRONNMENT
+
+It is possible to set environment variables to change the behavior of AssetPack:
+
+=over 2
+
+=item * MOJO_ASSETPACK_DEBUG
+
+Set this environment variable to get more debug to STDERR. Currently you can
+set it to a value between 0 and 3, where 3 provides the most debug.
+
+=back
+
+=head1 HELPERS
+
+=head1 asset
+
+  $self = $app->asset;
+  $self = $c->asset;
+  $bytestream = $c->asset($topic, @args);
+  $bytestream = $c->asset("app.css", media => "print");
+
+C<asset()> is the main entry point to this plugin. It can either be used to
+access the L<Mojolicious::Plugin::AssetPack> instance or as a tag helper.
+
+The helper name "asset" can be customized by specifying "helper" when
+L<registering|/register> the plugin.
+
+See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial> for more details.
 
 =head1 ATTRIBUTES
 
@@ -296,16 +309,21 @@ Future releases will have more pipes bundled.
   $bool = $self->minify;
   $self = $self->minify($bool);
 
-Set this to true to combine and minify the assets. Will be true unless
-L<Mojolicious/mode> is "development".
+Set this to true to combine and minify the assets. Defaults to false if
+L<Mojolicious/mode> is "development" and true otherwise.
+
+See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Application mode>
+for more details.
 
 =head2 route
 
   $route = $self->route;
   $self = $self->route($route);
 
-The route used to generate paths to assets and also dispatch to a callback
-which can serve the assets.
+A L<Mojolicious::Routes::Route> object used to serve assets. The default route
+responds to HEAD and GET requests and calls
+L<serve_asset()|Mojolicious::Plugin::AssetPack::Store/serve_asset> on L</store>
+to serve the asset.
 
 See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
 for an example on how to customize this route.
@@ -315,9 +333,8 @@ for an example on how to customize this route.
   $obj = $self->store;
   $self = $self->store(Mojolicious::Plugin::AssetPack::Store->new);
 
-Holds a L<Mojolicious::Plugin::AssetPack::Store> object used to locate and
-store assets. Assets can be located on disk or in a L<DATA|Mojo::Util/data_section>
-section.
+Holds a L<Mojolicious::Plugin::AssetPack::Store> object used to locate, store
+and serve assets.
 
 =head2 ua
 
@@ -341,19 +358,13 @@ Will return a registered pipe by C<$name> or C<undef> if none could be found.
   $self = $self->process($definition_file);
 
 Used to process assets. A C<$definition_file> can be used to define C<$topic>
-and C<@assets> in a seperate file. Example file, with the same definitions in
-L</SYNOPSIS>:
-
-  ! app.css
-  < sass/bar.scss
-  < https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss
-
-Empty lines and lines starting with "#" will be skipped. Each line starting
-with "!" will be used to define a new C<$topic>.
+and C<@assets> in a seperate file. See
+L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Process assets> for more
+details.
 
 C<$definition_file> defaults to "assetpack.def".
 
-=haed2 processed
+=head2 processed
 
   $collection = $self->processed($topic);
 
@@ -385,10 +396,10 @@ list of available pipes.
 
 =item * proxy
 
-A hash of proxy settings. Set this to C<undef> to disable proxy detection.
+A hash of proxy settings. Set this to C<0> to disable proxy detection.
 Currently only "no_proxy" is supported, which will set which requests that
-should bypass the proxy (if any proxy is detected). Default is to bypass
-all requests to localhost.
+should bypass the proxy (if any proxy is detected). Default is to bypass all
+requests to localhost.
 
 See L<Mojo::UserAgent::Proxy/detect> for more infomation.
 
@@ -396,12 +407,10 @@ See L<Mojo::UserAgent::Proxy/detect> for more infomation.
 
 =head1 SEE ALSO
 
+L</GUIDES>,
 L<Mojolicious::Plugin::AssetPack::Asset>,
 L<Mojolicious::Plugin::AssetPack::Pipe> and
 L<Mojolicious::Plugin::AssetPack::Store>.
-
-L<Mojolicious::Plugin::AssetPack> is a re-implementation of
-L<Mojolicious::Plugin::AssetPack>.
 
 =head1 COPYRIGHT AND LICENSE
 
