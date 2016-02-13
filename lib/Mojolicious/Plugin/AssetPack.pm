@@ -160,14 +160,19 @@ sub _serve {
 
 sub _tag_helpers {
   my ($self, $c, $topic, @attrs) = @_;
-  my $route  = $self->route;
-  my $assets = $self->{by_topic}{$topic}
+  my $route    = $self->route;
+  my $base_url = $route->pattern->defaults->{base_url} || '';
+  my $assets   = $self->{by_topic}{$topic}
     or die qq(No assets registered by topic "$topic".);
+
+  $base_url =~ s!/+$!!;
 
   return $assets->map(
     sub {
       my $tag_helper = $_->format eq 'js' ? 'javascript' : 'stylesheet';
-      my $url = $route->render(
+      my $url
+        = $base_url
+        . $route->render(
         {checksum => $_->checksum, format => $_->format, name => $_->name});
       $c->$tag_helper($url, @attrs);
     }
