@@ -6,6 +6,8 @@ use File::Basename ();
 use IPC::Run3      ();
 use List::Util 'first';
 
+$ENV{PATH} ||= '';
+
 has topic => '';
 has_ro 'assetpack';
 
@@ -23,7 +25,11 @@ sub run {
   local $cmd->[0] = $self->_find_app($name, $cmd->[0]);
   die qq(@{[ref $self]} was unable to locate the "$name" application.) unless $cmd->[0];
   $self->app->log->debug(join ' ', '[AssetPack]', @$cmd);
-  IPC::Run3::run3($cmd, @args);
+  eval { IPC::Run3::run3($cmd, @args) } or do {
+    my $exit = $? > 0 ? $? >> 8 : $?;
+    my $bang = int $!;
+    die "run($cmd->[0]) failed: $@ (\$?=$exit, \$!=$bang, PATH=$ENV{PATH})";
+  };
 }
 
 sub _find_app {
