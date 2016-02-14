@@ -69,6 +69,11 @@ sub process {
   $self;
 }
 
+sub processed {
+  my ($self, $topic) = @_;
+  return $self->{by_topic}{$topic};
+}
+
 sub register {
   my ($self, $app, $config) = @_;
   my $helper = $config->{helper} || 'asset';
@@ -302,6 +307,9 @@ L<Mojolicious/mode> is "development".
 The route used to generate paths to assets and also dispatch to a callback
 which can serve the assets.
 
+See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
+for an example on how to customize this route.
+
 =head2 store
 
   $obj = $self->store;
@@ -345,6 +353,14 @@ with "!" will be used to define a new C<$topic>.
 
 C<$definition_file> defaults to "assetpack.def".
 
+=haed2 processed
+
+  $collection = $self->processed($topic);
+
+Can be used to retrieve a L<Mojo::Collection> object, with zero or more
+L<Mojolicious::Plugin::AssetPack::Asset> objects. Returns undef if C<$topic> is
+not defined with L</process>.
+
 =head2 register
 
   $self->register($app, \%config);
@@ -359,7 +375,13 @@ Name of the helper to add to the application. Default is "asset".
 
 =item * pipes
 
-A list of pipe classes to load.
+This argument is mandatory and need to contain a complete list of pipes that is
+needed. Example:
+
+  $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
+
+See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete
+list of available pipes.
 
 =item * proxy
 

@@ -36,12 +36,18 @@ $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 $t = t::Helper->t(pipes => [qw(Css Combine)]);
 $t->app->asset->process('app.css' => @assets);
 
+$t->app->routes->get('/inline' => 'inline');
+$t->get_ok('/inline')->status_is(200)
+  ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
+
 $ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 done_testing;
 
 __DATA__
 @@ index.html.ep
 %= asset 'app.css'
+@@ inline.html.ep
+%= stylesheet sub { asset->processed('app.css')->map('content')->join }
 @@ assetpack.def
 ! app.css
 # some comment
