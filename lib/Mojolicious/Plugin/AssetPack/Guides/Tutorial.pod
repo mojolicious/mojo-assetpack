@@ -28,6 +28,33 @@ you need to process your assets. Example:
 Loading the plugin with the list above will enable AssetPack to process Sass
 and Css files, minify them and combine them into a aingle asset in production.
 
+=head2 Optional dependencies
+
+AssetPack only has optional dependencies. The reason for that is that the
+dependencies should only be required while developing, and not for running
+the application. See L<https://github.com/jhthorsen/mojolicious-plugin-assetpack/blob/v2/cpanfile>
+for a complete list, but here are the current list:
+
+=over 2
+
+=item * L<CSS::Minifier::XS> 0.09
+
+Used to minify CSS.
+
+=item * L<CSS::Sass> 3.3.0
+
+Used to process and minify CSS.
+
+=item * L<Imager::File::PNG> 0.90
+
+TODO: Used to generate CSS sprites.
+
+=item * L<JavaScript::Minifier::XS> 0.11
+
+Used to minify JavaScript.
+
+=back
+
 =head2 Pipes
 
 AssetPack does not do any heavy lifting itself: All the processing is left to
