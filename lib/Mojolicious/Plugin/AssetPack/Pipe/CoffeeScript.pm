@@ -2,17 +2,7 @@ package Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
-sub _install_coffee {
-  my $self = shift;
-  my $path = $self->app->home->rel_file('node_modules/.bin/coffee');
-  return $path if -e $path;
-  local $CWD = $self->app->home->to_string;
-  $self->app->log->warn('Installing coffee... Please wait. (npm install coffee)');
-  $self->run([qw(npm install coffee)]);
-  return $path;
-}
-
-sub _process {
+sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $file;
@@ -31,6 +21,16 @@ sub _process {
   );
 }
 
+sub _install_coffee {
+  my $self = shift;
+  my $path = $self->app->home->rel_file('node_modules/.bin/coffee');
+  return $path if -e $path;
+  local $CWD = $self->app->home->to_string;
+  $self->app->log->warn('Installing coffee... Please wait. (npm install coffee)');
+  $self->run([qw(npm install coffee)]);
+  return $path;
+}
+
 1;
 
 =encoding utf8
@@ -47,6 +47,12 @@ L<http://coffeescript.org/> files into JavaScript.
 This module require the C<coffee> program to be installed. C<coffee> will be
 automatically installed using L<https://www.npmjs.com/> unless already
 installed.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 

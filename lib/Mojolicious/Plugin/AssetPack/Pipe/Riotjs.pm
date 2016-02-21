@@ -13,17 +13,7 @@ has _riotjs => sub {
   ];
 };
 
-sub _install_riot {
-  my $self = shift;
-  my $path = $self->app->home->rel_file('node_modules/.bin/riot');
-  return $path if -e $path;
-  local $CWD = $self->app->home->to_string;
-  $self->app->log->warn('Installing riot... Please wait. (npm install riot)');
-  $self->run([qw(npm install riot)]);
-  return $path;
-}
-
-sub _process {
+sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $file;
@@ -43,6 +33,16 @@ sub _process {
       $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
     }
   );
+}
+
+sub _install_riot {
+  my $self = shift;
+  my $path = $self->app->home->rel_file('node_modules/.bin/riot');
+  return $path if -e $path;
+  local $CWD = $self->app->home->to_string;
+  $self->app->log->warn('Installing riot... Please wait. (npm install riot)');
+  $self->run([qw(npm install riot)]);
+  return $path;
 }
 
 1;
@@ -67,6 +67,12 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs> will process
 L<http://riotjs.com/> ".tag" files.
 
 This module require L<https://www.npmjs.com/> to compile Riotjs tag files.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 

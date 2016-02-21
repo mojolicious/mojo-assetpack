@@ -2,7 +2,7 @@ package Mojolicious::Plugin::AssetPack::Pipe::JavaScript;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 
-sub _process {
+sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $file;
@@ -39,6 +39,12 @@ Mojolicious::Plugin::AssetPack::Pipe::JavaScript - Minify JavaScript
 L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript> will minify your "js"
 assets if L<Mojolicious::Plugin::AssetPack/minify> is true and the asset is
 not already minified.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 

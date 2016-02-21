@@ -54,13 +54,11 @@ sub process {
   $assets->map($_) for qw(checksum mtime);
 
   for my $pipe (@{$self->{pipes}}) {
-    $pipe->topic($topic);
-    for my $method (qw( _process _combine )) {
-      next unless $pipe->can($method);
-      diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
-      $pipe->$method($assets);
-      push @{$self->{asset_paths}}, $_->path for @$assets;
-    }
+    next unless $pipe->can('process');
+    local $pipe->{topic} = $topic;
+    diag '%s->process($assets)', ref $pipe if DEBUG;
+    $pipe->process($assets);
+    push @{$self->{asset_paths}}, $_->path for @$assets;
   }
 
   $self->_app->log->debug(qq(Processed asset "$topic".));

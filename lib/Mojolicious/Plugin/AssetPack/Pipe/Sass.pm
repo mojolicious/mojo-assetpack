@@ -7,6 +7,49 @@ use Mojo::Util;
 my $FORMAT_RE = qr{^s[ac]ss$};
 my $IMPORT_RE = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
 
+sub process {
+  my ($self, $assets) = @_;
+  my $store = $self->assetpack->store;
+  my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
+  my $file;
+
+  return $assets->each(
+    sub {
+      my ($asset, $index) = @_;
+      my ($attrs, $content);
+
+      return if $asset->format !~ $FORMAT_RE;
+      ($attrs, $content) = ($asset->TO_JSON, $asset->content);
+      local $self->{checksum_for_file} = {};
+      local $opts{include_paths}[0]
+        = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
+
+      $attrs->{minified} = $self->assetpack->minify;
+      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? ':min' : '';
+      $attrs->{format}   = 'css';
+      $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
+
+      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+      $opts{include_paths}[0] = dirname $asset->path;
+      diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+
+      if ($self->{has_module} //= load_module 'CSS::Sass') {
+        $opts{output_style} = _output_style($attrs->{minified});
+        $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
+        my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
+        die qq([Pipe::Sass] Could not compile "$attrs->{url}": $err) if $err;
+        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
+      }
+      else {
+        my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
+        push @args, '--scss' if $asset->format eq 'scss';
+        $self->run(\@args, \$content, \my $css, undef);
+        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
+      }
+    }
+  );
+}
+
 sub _checksum {
   my ($self, $ref, $asset, $paths) = @_;
   my $ext   = $asset->format;
@@ -66,49 +109,6 @@ sub _output_style {
   return $_[0] ? CSS::Sass::SASS_STYLE_COMPACT() : CSS::Sass::SASS_STYLE_NESTED();
 }
 
-sub _process {
-  my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
-  my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
-  my $file;
-
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      my ($attrs, $content);
-
-      return if $asset->format !~ $FORMAT_RE;
-      ($attrs, $content) = ($asset->TO_JSON, $asset->content);
-      local $self->{checksum_for_file} = {};
-      local $opts{include_paths}[0]
-        = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
-
-      $attrs->{minified} = $self->assetpack->minify;
-      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? ':min' : '';
-      $attrs->{format}   = 'css';
-      $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
-
-      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-      $opts{include_paths}[0] = dirname $asset->path;
-      diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-
-      if ($self->{has_module} //= load_module 'CSS::Sass') {
-        $opts{output_style} = _output_style($attrs->{minified});
-        $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
-        my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
-        die qq([Pipe::Sass] Could not compile "$attrs->{url}": $err) if $err;
-        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
-      }
-      else {
-        my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
-        push @args, '--scss' if $asset->format eq 'scss';
-        $self->run(\@args, \$content, \my $css, undef);
-        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
-      }
-    }
-  );
-}
-
 1;
 
 =encoding utf8
@@ -124,6 +124,12 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will process sass and scss files.
 This module require either the optional module L<CSS::Sass> or the C<sass>
 program to be installed. C<sass> will be automatically installed using
 L<https://rubygems.org/> unless already available.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 
