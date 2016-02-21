@@ -1,7 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
-use Mojo::JSON;
-use Mojo::Util qw(slurp spurt);
+use Mojo::Util 'spurt';
 use Mojo::URL;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
@@ -109,18 +108,42 @@ sub _db {
   my ($self, $action, $attrs) = @_;
   my ($data, $db);
 
-  $db = $self->{_db}
-    ||= -r $self->_file ? Mojo::JSON::decode_json(slurp $self->_file) : {};
+  unless ($db = $self->{_db}) {
+    my ($key, $url);
+    $db = $self->{_db} = {};
+    if (open my $DB, '<', $self->_file) {
+      while (my $line = <$DB>) {
+        chomp;
+        ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
+        $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
+      }
+    }
+  }
+
   return $db if $action eq 'all';
 
-  $data = $db->{$attrs->{url}}   ||= {};
-  $data = $data->{$attrs->{key}} ||= {};
+  $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
 
   if ($action eq 'save') {
     %$data = %$attrs;
     delete $data->{$_} for qw(key name url);
-    diag 'Save "%s" = %s', $self->_file, -w $self->paths->[0] ? 1 : 0 if DEBUG;
-    spurt Mojo::JSON::encode_json($db), $self->_file if -w $self->paths->[0];
+
+    if (open my $DB, '>', $self->_file) {
+      diag 'Save "%s" = 1', $self->_file if DEBUG;
+      for my $url (sort keys %$db) {
+        for my $key (sort keys %{$db->{$url}}) {
+          Carp::confess("Invalid key '$key'. Need to be [a-z-].")
+            unless $key =~ /^[\w-]+$/;
+          printf $DB "[%s:%s]\n", $key, $url;
+          for my $attr (sort keys %{$db->{$url}{$key}}) {
+            printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
+          }
+        }
+      }
+    }
+    else {
+      diag 'Save "%s" = 0', $self->_file if DEBUG;
+    }
   }
 
   return $data;
@@ -171,11 +194,7 @@ sub _download {
   return Mojo::Asset::File->new(path => $path);
 }
 
-sub _reset {
-
-  #system sprintf "cat %s | json_xs", $_[0]->_file;
-  unlink $_[0]->_file;
-}
+sub _reset { unlink $_[0]->_file; }
 
 1;
 

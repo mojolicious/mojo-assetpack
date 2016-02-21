@@ -12,7 +12,7 @@ sub process {
     sub {
       my ($asset, $index) = @_;
       my $attrs = $asset->TO_JSON;
-      $attrs->{key}      = 'js:min';
+      $attrs->{key}      = 'js-min';
       $attrs->{minified} = 1;
       return if $asset->format ne 'js' or $asset->minified;
       return $asset->content($file)->minified(1) if $file = $store->load($attrs);
