@@ -7,9 +7,16 @@ sub process {
 
   return unless $self->assetpack->minify;
   my $checksum = checksum $assets->map('checksum')->join(':');
+  my $content
+    = $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
+    ->map('content')->join("\n");
   diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
-  @$assets = ($assets->first->new(assetpack => $self->assetpack, url => $self->topic)
-      ->checksum($checksum)->minified(1)->content($assets->map('content')->join("\n")));
+  @$assets = (
+    Mojolicious::Plugin::AssetPack::Asset->new(
+      assetpack => $self->assetpack,
+      url       => $self->topic
+    )->checksum($checksum)->minified(1)->content($content)
+  );
 }
 
 1;
