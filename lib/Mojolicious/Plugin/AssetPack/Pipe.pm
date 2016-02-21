@@ -24,7 +24,7 @@ sub run {
   my $name = File::Basename::basename($cmd->[0]);
   local $cmd->[0] = $self->_find_app($name, $cmd->[0]);
   die qq(@{[ref $self]} was unable to locate the "$name" application.) unless $cmd->[0];
-  $self->app->log->debug(join ' ', '[AssetPack]', @$cmd);
+  diag '$ %s', join ' ', @$cmd if DEBUG > 1;
   eval { IPC::Run3::run3($cmd, @args) } or do {
     my $exit = $? > 0 ? $? >> 8 : $?;
     my $bang = int $!;

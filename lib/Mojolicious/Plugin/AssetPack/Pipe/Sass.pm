@@ -87,7 +87,7 @@ SEARCH:
       next SEARCH;
     }
 
-    die qq/[Pipe::Sass] \@import "$3" failed. (@{[$asset->url]})/;
+    die qq/[Pipe::Sass] Could not find "$3" file in "@{[$asset->url]}"./;
   }
 
   return checksum join ':', @c;
