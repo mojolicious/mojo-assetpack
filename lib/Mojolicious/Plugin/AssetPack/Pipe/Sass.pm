@@ -25,7 +25,7 @@ sub process {
         = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
 
       $attrs->{minified} = $self->assetpack->minify;
-      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? ':min' : '';
+      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
       $attrs->{format}   = 'css';
       $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
