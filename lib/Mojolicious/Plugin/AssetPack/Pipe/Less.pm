@@ -2,17 +2,7 @@ package Mojolicious::Plugin::AssetPack::Pipe::Less;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
-sub _install_lessc {
-  my $self = shift;
-  my $bin  = $self->app->home->rel_file('node_modules/.bin/lessc');
-  return $bin if -e $bin;
-  local $CWD = $self->app->home->to_string;
-  $self->app->log->warn('Installing lessc... Please wait. (npm install less)');
-  $self->run([qw(npm install less)]);
-  return $bin;
-}
-
-sub _process {
+sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $file;
@@ -36,6 +26,16 @@ sub _process {
   );
 }
 
+sub _install_lessc {
+  my $self = shift;
+  my $bin  = $self->app->home->rel_file('node_modules/.bin/lessc');
+  return $bin if -e $bin;
+  local $CWD = $self->app->home->to_string;
+  $self->app->log->warn('Installing lessc... Please wait. (npm install less)');
+  $self->run([qw(npm install less)]);
+  return $bin;
+}
+
 1;
 
 =encoding utf8
@@ -52,6 +52,12 @@ L<http://lesscss.org/> files into JavaScript.
 This module require the C<less> executable to be installed. C<less> will be
 automatically installed using L<https://www.npmjs.com/> unless already
 installed.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 

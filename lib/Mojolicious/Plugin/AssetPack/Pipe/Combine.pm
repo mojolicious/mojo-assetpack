@@ -2,7 +2,7 @@ package Mojolicious::Plugin::AssetPack::Pipe::Combine;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(checksum diag DEBUG);
 
-sub _combine {
+sub process {
   my ($self, $assets) = @_;
 
   return unless $self->assetpack->minify;
@@ -24,6 +24,12 @@ Mojolicious::Plugin::AssetPack::Pipe::Combine - Combine multiple assets to one
 
 L<Mojolicious::Plugin::AssetPack::Pipe::Combine> will take a list of
 assets and turn them into a single asset.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
 
 =head1 SEE ALSO
 

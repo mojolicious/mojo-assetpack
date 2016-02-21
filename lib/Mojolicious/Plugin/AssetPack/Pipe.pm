@@ -32,6 +32,8 @@ sub run {
   };
 }
 
+sub process { Carp::confess('Method "process" not implemented by subclass') }
+
 sub _find_app {
   my ($self, $name, $path) = @_;
   return $path if $path and File::Spec->file_name_is_absolute($path);
@@ -72,7 +74,7 @@ Mojolicious::Plugin::AssetPack::Pipe - Base class for a pipe
   use Mojo::Base "Mojolicious::Plugin::AssetPack::Pipe";
   use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 
-  sub _process {
+  sub process {
     my ($self, $assets) = @_;
 
     # Normally a Mojolicious::Plugin::AssetPack::Store object
@@ -144,6 +146,17 @@ Returns the L<Mojolicious> application object.
 =head2 new
 
 Object constructor. Makes sure L</assetpack> is weaken.
+
+=head2 process
+
+  $self->process(Mojo::Collection->new);
+
+A method used to process the assets.
+Each of the element in the collection will be a
+L<Mojolicious::Plugin::AssetPack::Asset> object or an object with the same
+API.
+
+This method need to be defined in the subclass.
 
 =head2 run
 
