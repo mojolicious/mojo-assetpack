@@ -4,7 +4,7 @@ use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '0.01';
+our $VERSION = '0.70';
 
 has minify => sub { shift->_app->mode ne 'development' };
 
@@ -197,7 +197,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-0.69
+0.70
 
 =head1 SYNOPSIS
 
