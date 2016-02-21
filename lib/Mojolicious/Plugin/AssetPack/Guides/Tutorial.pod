@@ -98,7 +98,8 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
 
 =head2 Where to place source files
 
-The source/input files that make up a virtual asset can come from either...
+The source/input files that make up a virtual asset (topic) can come from
+either...
 
 =head3 On disk
 
@@ -155,7 +156,7 @@ method:
     )
   );
 
-In the example above we have defined a virtual asset named "app.css" which
+In the example above we have defined a topic named "app.css" which
 later can be included in L<templates|/Using assets>. The list of files
 following are the source files which will make up the final asset.
 
@@ -178,7 +179,7 @@ in the L<example above|/Defining assets in the application>.
 
 =head2 Using assets
 
-Any processed asset can be accessed by refering to the virtual name.
+Any processed asset can be accessed by refering to a topic.
 
 =head3 Template
 
