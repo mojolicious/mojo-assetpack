@@ -13,12 +13,6 @@ has_ro 'assetpack';
 
 sub app { shift->assetpack->ua->server->app }
 
-sub new {
-  my $self = shift->SUPER::new(@_);
-  Scalar::Util::weaken($self->{assetpack});
-  $self;
-}
-
 sub run {
   my ($self, $cmd, @args) = @_;
   my $name = File::Basename::basename($cmd->[0]);
@@ -142,10 +136,6 @@ Returns the name of the current asset topic.
   $obh = $self->app;
 
 Returns the L<Mojolicious> application object.
-
-=head2 new
-
-Object constructor. Makes sure L</assetpack> is weaken.
 
 =head2 process
 

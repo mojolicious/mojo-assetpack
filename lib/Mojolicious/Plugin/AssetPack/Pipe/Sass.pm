@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Sass;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
-use Mojolicious::Plugin::AssetPack::Util qw(checksum diag load_module DEBUG);
+use Mojolicious::Plugin::AssetPack::Util qw(checksum diag dumper load_module DEBUG);
 use File::Basename 'dirname';
 use Mojo::Util;
 
@@ -16,28 +16,29 @@ sub process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      my ($attrs, $content);
 
       return if $asset->format !~ $FORMAT_RE;
-      ($attrs, $content) = ($asset->TO_JSON, $asset->content);
+      my ($attrs, $content) = ($asset->TO_JSON, $asset->content);
       local $self->{checksum_for_file} = {};
-      local $opts{include_paths}[0]
-        = $asset->url =~ m!^https?://! ? $asset->url : dirname $asset->path;
-
+      local $opts{include_paths}[0] = _include_path($asset);
       $attrs->{minified} = $self->assetpack->minify;
       $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
       $attrs->{format}   = 'css';
       $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
       return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-      $opts{include_paths}[0] = dirname $asset->path;
+      $opts{include_paths}[0] = $asset->path ? dirname $asset->path : undef;
+      $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
       diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
       if ($self->{has_module} //= load_module 'CSS::Sass') {
         $opts{output_style} = _output_style($attrs->{minified});
         $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
         my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
-        die qq([Pipe::Sass] Could not compile "$attrs->{url}": $err) if $err;
+        if ($err) {
+          die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s',
+            $asset->url, dumper(\%opts), $err;
+        }
         $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
       else {
@@ -69,29 +70,32 @@ SEARCH:
     for (@basename) {
       my $path = join '/', @rel, $_;
       $self->{checksum_for_file}{$path}++ and next;
-      my $file = $store->file($path, $paths) or next;
-      my $next = $file->slurp;
+      my $imported = $store->asset($path, $paths) or next;
 
-      if ($file->isa('Mojo::Asset::Memory')) {
-        diag '@import "%s" (memory)', $path if DEBUG >= 2;
-        pos($$ref) = $start;
-        substr $$ref, $start, $mlen, $next;  # replace "@import ..." with content of asset
-        push @c, checksum $next;
+      if ($imported->path) {
+        diag '@import "%s" (%s)', $path, $imported->path if DEBUG >= 2;
+        local $paths->[0] = _include_path($imported);
+        push @c, $self->_checksum(\$imported->content, $imported, $paths);
       }
       else {
-        diag '@import "%s" (%s)', $path, $file->path if DEBUG >= 2;
-        local $paths->[0] = dirname $file->path;
-        push @c, $self->_checksum(\$next, $asset, $paths);
+        diag '@import "%s" (memory)', $path if DEBUG >= 2;
+        pos($$ref) = $start;
+        substr $$ref, $start, $mlen,
+          $imported->content;    # replace "@import ..." with content of asset
+        push @c, $imported->checksum;
       }
 
       next SEARCH;
     }
 
-    die qq/[Pipe::Sass] Could not find "$3" file in "@{[$asset->url]}"./;
+    local $" = ', ';
+    die qq/[Pipe::Sass] Could not find "$3" file in "@{[$asset->url]}". (@$paths)/;
   }
 
   return checksum join ':', @c;
 }
+
+sub _include_path { $_[0]->url =~ m!^https?://! ? $_[0]->url : dirname $_[0]->path }
 
 sub _install_sass {
   my $self = shift;

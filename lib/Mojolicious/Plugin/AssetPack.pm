@@ -9,10 +9,8 @@ our $VERSION = '0.70';
 has minify => sub { shift->_app->mode ne 'development' };
 
 has route => sub {
-  my $self = shift;
-  Scalar::Util::weaken($self);
-  $self->_app->routes->route('/asset/:checksum/:name')->via(qw( HEAD GET ))
-    ->name('assetpack')->to(cb => sub { $self->_serve(@_) });
+  shift->_app->routes->route('/asset/:checksum/:name')->via(qw( HEAD GET ))
+    ->name('assetpack')->to(cb => \&_serve);
 };
 
 has store => sub {
@@ -43,12 +41,7 @@ sub process {
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
   my $assets = Mojo::Collection->new(
-    map {
-      Scalar::Util::blessed($_)
-        ? $_
-        : Mojolicious::Plugin::AssetPack::Asset->new(assetpack => $self, url => $_)
-    } @_
-  );
+    map { Scalar::Util::blessed($_) ? $_ : $self->store->asset($_) } @_);
 
   # Prepare asset attributes
   $assets->map($_) for qw(checksum mtime);
@@ -103,15 +96,6 @@ sub register {
 
 sub _app { shift->ua->server->app }
 
-sub _new_asset {
-  my ($self, $type, $url) = @_;
-  my %args = (assetpack => $self, url => $url);
-
-  return Mojolicious::Plugin::AssetPack::Asset->new(%args) unless $type;
-  return Mojolicious::Plugin::AssetPack::Asset::Null->new(%args) if $type eq '<';
-  die sprintf q(Invalid definition type "%s" for "%s"), $type, $url;
-}
-
 sub _pipes {
   my ($self, $names) = @_;
 
@@ -120,7 +104,9 @@ sub _pipes {
       my $class = load_module /::/ ? $_ : "Mojolicious::Plugin::AssetPack::Pipe::$_";
       diag 'Loading pipe "%s".', $class if DEBUG;
       die qq(Unable to load "$_": $@) unless $class;
-      $class->new(assetpack => $self);
+      my $pipe = $class->new(assetpack => $self);
+      Scalar::Util::weaken($pipe->{assetpack});
+      $pipe;
     } @$names
   ];
 }
@@ -137,9 +123,12 @@ sub _process_from_def {
 
   for (split /\r?\n/, $asset->slurp) {
     s/\s*\#.*//;
-    next if /^\s*$/;
-    $topic = $1 if s/^\!\s*(.+)//;
-    push @{$process{$topic}}, $self->_new_asset($1, $2) if s/^\<(\S*)\s+(.+)//;
+    if (/^\<(\S*)\s+(.+)/) {
+      my $asset = $self->store->asset($2);
+      bless $asset, 'Mojolicious::Plugin::AssetPack::Asset::Null' if $1 eq '<';
+      push @{$process{$topic}}, $asset;
+    }
+    elsif (/^\!\s*(.+)/) { $topic = $1; }
   }
 
   $self->process($_ => @{$process{$_}}) for keys %process;
@@ -149,24 +138,26 @@ sub _process_from_def {
 sub _reset {
   my ($self, $args) = @_;
 
-  diag 'Reset assetpack.' if DEBUG;
+  diag "Reset $self." if DEBUG;
 
   if ($args->{unlink}) {
-    $self->store->_reset;
     for (@{$self->{asset_paths} || []}) {
       next unless /\bcache\b/;
-      -e and unlink;
-      diag 'unlink %s = %s', $_, $! if DEBUG;
+      next unless -e;
+      local $! = 0;
+      unlink;
+      diag 'unlink %s = %s', $_, $! || '1' if DEBUG;
     }
   }
 
+  $self->store->_reset($args);
   delete $self->{$_} for qw(by_checksum by_topic);
 }
 
 sub _serve {
-  my ($self, $c) = @_;
-  my $asset = $self->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
-  $self->store->serve_asset($c, $asset);
+  my $c = shift;
+  my $f = $c->asset->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
+  $c->asset->store->serve_asset($c, $f);
   $c->rendered;
 }
 

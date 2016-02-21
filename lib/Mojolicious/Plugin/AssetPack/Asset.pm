@@ -8,36 +8,28 @@ has format   => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
 has mtime    => sub { shift->_asset->mtime };
 
-has_ro 'assetpack';
+has _asset => sub {
+  my $self = shift;
+  return $self->content(delete $self->{content})->_asset if $self->{content};
+  return Mojo::Asset::File->new(path => delete $self->{path}) if $self->{path};
+  return Mojo::Asset::Memory->new;
+};
+
 has_ro 'name' => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
 has_ro 'url';
 
-has _asset => sub {
-  my $self  = shift;
-  my $store = $self->assetpack->store;
-  my $asset = $store->file($self->url) || die qq(Cannot find asset "@{[$self->url]}".);
-  my $attrs = $store->attrs({key => 'original', url => $self->url});
-  $self->{$_} ||= $attrs->{$_} for keys %$attrs;
-  return $asset;
-};
-
 sub content {
   my $self = shift;
-  return $self->_asset($_[0]) if @_ and UNIVERSAL::isa($_[0], 'Mojo::Asset');
-  return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0])) if @_;
-  return $self->_asset->slurp;
+  return $self->_asset->slurp unless @_;
+  return $self->_asset($_[0]->_asset) if UNIVERSAL::isa($_[0], __PACKAGE__);
+  return $self->_asset($_[0])         if UNIVERSAL::isa($_[0], 'Mojo::Asset');
+  return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0]));
 }
 
 sub get_chunk { shift->_asset->get_chunk(@_) }
 
-sub new {
-  my $self = shift->SUPER::new(@_);
-  Scalar::Util::weaken($self->{assetpack});
-  $self;
-}
-
 sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
-sub size { shift->_asset->size }
+sub size { $_[0]->_asset->size }
 
 sub FROM_JSON {
   my ($self, $attrs) = @_;
@@ -65,18 +57,9 @@ L<Mojolicious::Plugin::AssetPack::Asset> represents an asset.
 =head1 SYNOPSIS
 
   use Mojolicious::Plugin::AssetPack::Asset;
-  my $asset = Mojolicious::Plugin::AssetPack::Asset->new(
-                assetpack => Mojolicious::Plugin::AssetPack->new,
-                url       => "...",
-              );
+  my $asset = Mojolicious::Plugin::AssetPack::Asset->new(url => "...");
 
 =head1 ATTRIBUTES
-
-=head2 assetpack
-
-  $obj = $self->assetpack;
-
-Holds a L<Mojolicious::Plugin::AssetPack> object.
 
 =head2 checksum
 
@@ -133,10 +116,6 @@ passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
 =head2 get_chunk
 
 See L<Mojo::Asset/get_chunk>.
-
-=head2 new
-
-Object constructor. Makes sure L</assetpack> is weaken.
 
 =head2 path
 
