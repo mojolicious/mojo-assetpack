@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::AssetPack;
 use Mojo::Base 'Mojolicious::Plugin';
-use Mojolicious::Plugin::AssetPack::Asset;
+use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
@@ -103,6 +103,15 @@ sub register {
 
 sub _app { shift->ua->server->app }
 
+sub _new_asset {
+  my ($self, $type, $url) = @_;
+  my %args = (assetpack => $self, url => $url);
+
+  return Mojolicious::Plugin::AssetPack::Asset->new(%args) unless $type;
+  return Mojolicious::Plugin::AssetPack::Asset::Null->new(%args) if $type eq '<';
+  die sprintf q(Invalid definition type "%s" for "%s"), $type, $url;
+}
+
 sub _pipes {
   my ($self, $names) = @_;
 
@@ -130,7 +139,7 @@ sub _process_from_def {
     s/\s*\#.*//;
     next if /^\s*$/;
     $topic = $1 if s/^\!\s*(.+)//;
-    push @{$process{$topic}}, $1 if s/^\<\s*(.+)//;
+    push @{$process{$topic}}, $self->_new_asset($1, $2) if s/^\<(\S*)\s+(.+)//;
   }
 
   $self->process($_ => @{$process{$_}}) for keys %process;
@@ -170,7 +179,8 @@ sub _tag_helpers {
 
   $base_url =~ s!/+$!!;
 
-  return $assets->map(
+  return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
+    ->map(
     sub {
       my $tag_helper = $_->format eq 'js' ? 'javascript' : 'stylesheet';
       my $url
@@ -179,7 +189,7 @@ sub _tag_helpers {
         {checksum => $_->checksum, format => $_->format, name => $_->name});
       $c->$tag_helper($url, @attrs);
     }
-  )->join("\n");
+    )->join("\n");
 }
 
 sub DESTROY {

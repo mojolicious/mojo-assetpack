@@ -51,7 +51,7 @@ __DATA__
 @@ assetpack.def
 ! app.css
 # some comment
-<css-0-one.css       #some inline comment
+< css-0-one.css       #some inline comment
 <   css-0-two.css # other comment
 @@ d/css-1-one.css
 .one { color: #111; }

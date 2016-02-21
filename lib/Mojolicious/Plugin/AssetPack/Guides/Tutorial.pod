@@ -170,12 +170,18 @@ file:
 
   ! app.css
   < sass/bar.scss
-  < https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss
+  << https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss
+  < sass/main.scss
 
 Empty lines and lines starting with "#" will be skipped. Each line starting
 with "!" will be used to define a topic (virtual asset name), and "E<lt>" will
-define a source file. This means that the file above will result in the same as
-in the L<example above|/Defining assets in the application>.
+define a source file. This means that the file above will result in (almost)
+the same as in the L<example above|/Defining assets in the application>.
+
+The difference can be found on the line with a double "E<lt>": This results in
+the asset to be downloaded, but not included in the output asset. This is
+useful when you have something like "sass/main.scss" that depend on
+"materialize.scss", but "materialize.scss" itself should not be compiled.
 
 =head2 Using assets
 
