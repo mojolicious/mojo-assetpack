@@ -11,12 +11,10 @@ sub process {
     = $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
     ->map('content')->join("\n");
   diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
-  @$assets = (
-    Mojolicious::Plugin::AssetPack::Asset->new(
-      assetpack => $self->assetpack,
-      url       => $self->topic
-    )->checksum($checksum)->minified(1)->content($content)
-  );
+  @$assets
+    = (
+    Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)
+      ->minified(1)->content($content));
 }
 
 1;

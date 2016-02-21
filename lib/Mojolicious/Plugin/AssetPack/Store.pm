@@ -2,6 +2,7 @@ package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
 use Mojo::Util 'spurt';
 use Mojo::URL;
+use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
@@ -19,44 +20,47 @@ has _content_type => sub {
 
 has_ro 'ua';
 
-sub attrs {
-  my ($self, $attrs) = @_;
-  my $db = $self->_db('all');
-  return unless $db->{$attrs->{url}};
-  return $db->{$attrs->{url}}{$attrs->{key}};
-}
-
-sub file {
-  my ($self, $rel) = @_;
+sub asset {
+  my ($self, $url, $paths) = @_;
   my $f;
 
-  return $self->_download(Mojo::URL->new($rel)) if $rel =~ m!^https?://!;
+  return $self->_download(Mojo::URL->new($url)) if $url =~ m!^https?://!;
 
-  for my $p (@{ref $_[-1] eq 'ARRAY' ? pop : $self->paths}) {
+  for my $p (@{$paths || $self->paths}) {
     if ($p =~ m!^https?://!) {
-      my $url = Mojo::URL->new($p);
-      $url->path->merge($rel);
-      return $f if $f = $self->_download($url);
+      my $abs = Mojo::URL->new($p);
+      $abs->path->merge($url);
+      return $f if $f = $self->_download($abs);
     }
     else {
       local $self->{paths} = [$p];
-      return $f if $f = $self->SUPER::file($rel);
+      next unless $f = $self->file($url);
+      my $attrs = $self->attrs({key => 'original', url => $url}) || {};
+      return Mojolicious::Plugin::AssetPack::Asset->new(url => $url, %$attrs,
+        content => $f);
     }
   }
 
   return undef;
 }
 
+sub attrs {
+  my ($self, $attrs) = @_;
+  my $db = $self->_db('all');
+  return undef unless $db->{$attrs->{url}};
+  return $db->{$attrs->{url}}{$attrs->{key}};
+}
+
 sub load {
   my ($self, $attrs) = @_;
   my $db_attr = $self->attrs($attrs) or return undef;
   my @rel     = $self->_cache_path($attrs);
-  my $file    = $self->file(join '/', @rel);
+  my $asset   = $self->asset(join '/', @rel);
 
-  return undef unless $file;
+  return undef unless $asset;
   return undef unless $db_attr->{checksum} eq $attrs->{checksum};
-  diag 'Load "%s" = 1', eval { $file->path } || join('/', @rel) if DEBUG;
-  return $file;
+  diag 'Load "%s" = 1', $asset->path || $asset->url if DEBUG;
+  return $asset;
 }
 
 sub save {
@@ -68,10 +72,10 @@ sub save {
   mkdir $dir if !-d $dir and -w dirname $dir;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
-  return Mojo::Asset::Memory->new->add_chunk($$ref) unless -w $dir;
+  return Mojolicious::Plugin::AssetPack::Asset->new(content => $$ref) unless -w $dir;
   $self->_db(save => $attrs);
   spurt $$ref, $path;
-  return Mojo::Asset::File->new(path => $path);
+  return Mojolicious::Plugin::AssetPack::Asset->new(path => $path);
 }
 
 sub serve_asset {
@@ -113,20 +117,19 @@ sub _db {
     $db = $self->{_db} = {};
     if (open my $DB, '<', $self->_file) {
       while (my $line = <$DB>) {
-        chomp;
-        ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
+        chomp $line;
+        $db->{$2}{$1}{url} = $2 and ($key, $url) = ($1, $2)
+          if $line =~ /^\[([\w-]+):(.+)\]$/;
         $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
       }
     }
   }
 
   return $db if $action eq 'all';
-
   $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
 
   if ($action eq 'save') {
     %$data = %$attrs;
-    delete $data->{$_} for qw(key name url);
 
     if (open my $DB, '>', $self->_file) {
       diag 'Save "%s" = 1', $self->_file if DEBUG;
@@ -136,6 +139,7 @@ sub _db {
             unless $key =~ /^[\w-]+$/;
           printf $DB "[%s:%s]\n", $key, $url;
           for my $attr (sort keys %{$db->{$url}{$key}}) {
+            next if grep { $attr eq $_ } qw(key name url);
             printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
           }
         }
@@ -151,50 +155,65 @@ sub _db {
 
 sub _download {
   my ($self, $url) = @_;
-  my $rel = $url->clone->to_abs;
-  my %attrs = (mtime => time);
+  my $req_url = $url;
+  my $asset;
 
-  $rel->port(undef)->scheme(undef);
-  $rel = $rel->to_string;
-  $rel =~ s![^\w\.\/-]!_!g;
-  $rel =~ s!^\/+!!;
-  $rel =~ s!\/+$!!;
-  $rel = "cache/$rel";
-
-  if (my $file = $self->file($rel)) {
-    diag 'Already downloaded: %s', $url if DEBUG;
-    return $file;
+  if ($req_url->host eq 'local') {
+    my $base = $self->ua->server->url;
+    $req_url = $url->clone->scheme($base->scheme)->authority($base->authority);
   }
 
-  my $app = $self->ua->server->app;
+  my $attrs = $self->attrs({key => original => url => $url}) || {mtime => $^T};
+  if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
+    $asset->{$_} = $attrs->{$_} for qw(mtime url);
+    diag 'Already downloaded: %s', $req_url if DEBUG;
+    return $asset;
+  }
+
+  my $rel = _rel($url);
   my $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
   make_path(dirname $path) unless -d dirname $path;
-  my $tx = $self->ua->get($url);
+  my $tx = $self->ua->get($req_url);
 
   if ($tx->error) {
-    diag 'Unable to download "%s": %s', $url, $tx->error->{message} if DEBUG;
+    diag 'Unable to download "%s": %s', $req_url, $tx->error->{message} if DEBUG;
     return undef;
   }
 
-  $app->log->info(qq(Caching "$url" to "$path".));
+  $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
   spurt $tx->res->body, $path;
-
-  my $h = $tx->res->headers;
-  if ($h->last_modified) {
-    $attrs{mtime} = Mojo::Date->new($h->last_modified)->epoch;
-  }
-  if (my $ct = $h->content_type) {
-    $attrs{format} = 'css' if $ct =~ /css/;
-    $attrs{format} = 'js'  if $ct =~ /javascript/;
-  }
-
-  $attrs{key} = 'original';
-  $attrs{url} = $url->to_string;
-  $self->_db(save => \%attrs);
-  return Mojo::Asset::File->new(path => $path);
+  _headers_to_attrs($tx->res->headers, $attrs);
+  @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
+  $self->_db(save => $attrs);
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
-sub _reset { unlink $_[0]->_file; }
+sub _headers_to_attrs {
+  my ($h, $attrs) = @_;
+  if (my $lm = $h->last_modified) {
+    $attrs->{mtime} = Mojo::Date->new($lm)->epoch;
+  }
+  if (my $ct = $h->content_type) {
+    $attrs->{format} = 'css' if $ct =~ /css/;
+    $attrs->{format} = 'js'  if $ct =~ /javascript/;
+  }
+}
+
+sub _rel {
+  local $_ = shift->clone->scheme(undef)->to_string;
+  s![^\w\.\/-]!_!g;
+  s!^\/+!!;
+  s!\/+$!!;
+  "cache/$_";
+}
+
+sub _reset {
+  my ($self, $args) = @_;
+  return unless $args->{unlink} and $self->{_file};
+  local $! = 0;
+  unlink $self->_file;
+  diag 'unlink %s = %s', $self->_file, $! || '1' if DEBUG;
+}
 
 1;
 
@@ -240,6 +259,31 @@ See L<Mojolicious::Plugin::AssetPack/ua>.
 L<Mojolicious::Plugin::AssetPack::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
 
+=head2 asset
+
+  $asset = $self->asset($url, $paths);
+
+Retuns a L<Mojolicious::Plugin::AssetPack::Asset> object or undef unless
+C<$url> can be found in C<$paths>. C<$paths> default to
+L<Mojolicious::Static/paths>. C<$paths> and C<$url> can be...
+
+=over 2
+
+=item * http://example.com/foo/bar
+
+An absolute URL will be downloaded from web, unless the host is "local":
+"local" is a special host which will run the request through the current
+L<Mojolicious> application.
+
+=item * foo/bar
+
+An relative URL will be looked up using L<Mojolicious::Static/file>.
+
+=back
+
+Note that assets from web will be cached locally, which means that you need to
+delete the files on disk to download a new version.
+
 =head2 attrs
 
   $hash_ref = $self->attrs({key => $key, url => $url});
@@ -247,17 +291,6 @@ L<Mojolicious::Static> implements the following new ones.
 Will lookup L<attributes|Mojolicious::Plugin::AssetPack::Asset/ATTRIBUTES> for
 a file in the database by "url" and "key". Returns "undef" if no attributes
 has been documented.
-
-=head2 file
-
-  $asset = $self->file($rel);
-
-Override L<Mojolicious::Static/file> with the possibility to download assets
-from web. L<Mojolicious::Static/paths> can therefor also contain URLs where
-the C<$rel> file can be downloaded from.
-
-Note that assets from web will be cached locally, which means that you need to
-delete the files on disk to download a new version.
 
 =head2 load
 

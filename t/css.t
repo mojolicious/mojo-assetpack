@@ -10,7 +10,7 @@ $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/d508287fc7/css-0-one.css"]))
   ->element_exists(qq(link[href="/asset/ec4c05a328/css-0-two.css"]));
 
-$t->get_ok('/asset/d508287fc7/css-0-one.css')->status_is(200);
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{aaa});
 
 $ENV{MOJO_MODE} = 'Test_minify_from_here';
 my @assets       = qw(d/css-1-one.css d/css-1-two.css d/css-1-already-min.css);

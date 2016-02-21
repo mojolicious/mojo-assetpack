@@ -6,7 +6,7 @@ use File::Spec;
 use constant DEBUG   => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
-our @EXPORT  = qw(checksum diag has_ro load_module $CWD DEBUG);
+our @EXPORT  = qw(checksum diag dumper has_ro load_module $CWD DEBUG);
 our $SUM_LEN = 10;
 our $TOPIC;
 
@@ -20,6 +20,10 @@ sub diag {
   while ($pkg = caller $i++) { $pkg =~ s!.*::(AssetPack::)Pipe::!$1! and last }
   $pkg = 'AssetPack' unless $pkg;
   warn sprintf "%s[%s%s] $f\n", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
+}
+
+sub dumper {
+  Data::Dumper->new([@_])->Indent(0)->Sortkeys(1)->Terse(1)->Useqq(1)->Dump;
 }
 
 sub has_ro {
@@ -89,6 +93,12 @@ Used to calculate checksum of C<$bytes>.
 
 Same as C<warn()>, but with a prefix. It will also use C<sprintf()> if
 more than one argument is given.
+
+=head2 dumper
+
+  $str = dumper $any;
+
+Dump a Perl data structure into a single line with L<Data::Dumper>.
 
 =head2 has_ro
 
