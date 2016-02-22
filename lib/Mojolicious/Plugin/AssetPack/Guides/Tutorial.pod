@@ -134,8 +134,11 @@ assets on each application startup.
 
 =head3 Current Mojolicious application
 
-TODO. (It should be possible to load dynamic source assets from the current
-application)
+Any L</Web> asset with the hostname "local" will be routed to the current
+L<Mojolicious> application. Example:
+
+  http://local/some/resource
+         ^^^^^
 
 =head2 Process assets
 
