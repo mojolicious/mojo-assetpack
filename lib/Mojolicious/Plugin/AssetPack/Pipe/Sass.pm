@@ -27,6 +27,7 @@ sub process {
       $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
       return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+      return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
       $opts{include_paths}[0] = $asset->path ? dirname $asset->path : undef;
       $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
       diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
