@@ -50,6 +50,12 @@ The final list of directories to search will be:
   3. $self->include_paths()
   2. split /:/, $ENV{SASS_PATH}
 
+=head2 sass_functions
+
+It possible to set the L</sass_functions> attribute to L<CSS::Sass>:
+
+  $app->asset->preprocessors->add(scss => Scss => {sass_functions=> [...]});
+
 =head2 COMPASS
 
 Compass is an open-source CSS Authoring Framework built on top of L</sass>.
@@ -102,10 +108,18 @@ Holds the path to the "sass" executable. Default to just "sass".
 
 Holds optional paths to search for where to find C<@import> files.
 
+=head2 sass_functions
+
+  $self->sass_functions( { 'foo($arg)' => sub { $_[0] } } );
+  $functions = $self->sass_functions;
+
+Holds optional functions for libsass's use. Must use L<CSS::Sass> 
+
 =cut
 
 has executable => sub { File::Which::which('sass') || 'sass' };
 has include_paths => sub { [] };
+has sass_functions => sub { {} };
 
 =head1 METHODS
 
@@ -161,7 +175,7 @@ sub process {
 
   if (LIBSASS_BINDINGS) {
     local $ENV{SASS_PATH} = '';
-    my %args = (include_paths => [@include_paths]);
+    my %args = (include_paths => [@include_paths], sass_functions => $self->sass_functions);
     $args{output_style} = CSS::Sass::SASS_STYLE_COMPRESSED() if $assetpack->minify;
     $$text = CSS::Sass::sass2scss($$text) if $self->_extension eq 'sass';
     ($$text, $err, my $srcmap) = CSS::Sass::sass_compile($$text, %args);

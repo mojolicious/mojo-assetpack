@@ -102,6 +102,25 @@ is(Mojolicious::Plugin::AssetPack::Preprocessor::Scss->_url, 'http://sass-lang.c
 }
 
 {
+  # https://github.com/jhthorsen/mojolicious-plugin-assetpack/pull/68
+
+  my $t = t::Helper->t({minify => 0});
+
+  $t->app->asset->preprocessors->add(
+    scss => Scss => {
+      sass_functions => {
+        'image-url($arg)' => sub { return sprintf "url(/assets/%s)", $_[0] }}});
+
+  $t->app->asset('scss.css' => '/css/c.scss');
+
+  $t->get_ok('/test1')->status_is(200)
+    ->content_like(qr{<link href="/packed/c-e513c674bc9ed5530ed5b7019a871afb\.css"}m);
+
+  $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
+    ->content_like(qr{\Qbackground: #fff url(/assets/img.png) top left;\E}s);
+}
+
+{
   my @warn;
   local $ENV{SASS_PATH} = undef;
   local $SIG{__WARN__} = sub { push @warn, $_[0] };
