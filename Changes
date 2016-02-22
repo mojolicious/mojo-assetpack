@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.03 Not Released
+ - Add Pipe::Reloader for instant refresh in browser on asset change #72
  - Marked old modules as deprecated
 
 1.02 2016-04-08T14:30:19+0200

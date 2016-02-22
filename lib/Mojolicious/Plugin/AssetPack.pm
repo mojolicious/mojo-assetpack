@@ -30,9 +30,12 @@ sub pipe {
 }
 
 sub process {
-  my ($self, $topic) = (shift, shift);
+  my ($self, $topic, @input) = @_;
 
-  return $self->_process_from_def($topic) unless @_;
+  # hack to enable Reloader to work
+  $self->{input}{$topic} = [@input] if @input;
+
+  return $self->_process_from_def($topic) unless @input;
 
   # Used by diag()
   local $Mojolicious::Plugin::AssetPack::Util::TOPIC = $topic;
@@ -41,7 +44,7 @@ sub process {
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
   my $assets = Mojo::Collection->new(
-    map { Scalar::Util::blessed($_) ? $_ : $self->store->asset($_) } @_);
+    map { Scalar::Util::blessed($_) ? $_ : $self->store->asset($_) } @input);
 
   # Prepare asset attributes
   $assets->map($_) for qw(checksum mtime);
