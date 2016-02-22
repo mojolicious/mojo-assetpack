@@ -110,8 +110,8 @@ Holds optional paths to search for where to find C<@import> files.
 
 =head2 sass_functions
 
-  $self = $self->sass_functions( { 'foo($arg)' => sub { $_[0] } } );
-  $paths = $self->sass_functions;
+  $self->sass_functions( { 'foo($arg)' => sub { $_[0] } } );
+  $functions = $self->sass_functions;
 
 Holds optional functions for libsass's use. Must use L<CSS::Sass> 
 
