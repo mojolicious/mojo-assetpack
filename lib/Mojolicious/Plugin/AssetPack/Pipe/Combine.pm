@@ -6,10 +6,11 @@ sub process {
   my ($self, $assets) = @_;
 
   return unless $self->assetpack->minify;
-  my $checksum = checksum $assets->map('checksum')->join(':');
-  my $content
+  @$assets
     = $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
-    ->map('content')->join("\n");
+    ->each;
+  my $checksum = checksum $assets->map('checksum')->join(':');
+  my $content  = $assets->map('content')->join("\n");
   diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
   @$assets
     = (
