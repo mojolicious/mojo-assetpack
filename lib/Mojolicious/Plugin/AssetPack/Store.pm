@@ -19,6 +19,16 @@ has _content_type => sub {
 };
 
 has_ro 'ua';
+has_ro '_db' => sub {
+  my $self = shift;
+  open my $DB, '<', $self->_file or return {};
+  my ($db, $key, $url) = ({});
+  while (my $line = <$DB>) {
+    ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
+    $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
+  }
+  return $db;
+};
 
 sub asset {
   my ($self, $url, $paths) = @_;
@@ -35,25 +45,17 @@ sub asset {
     else {
       local $self->{paths} = [$p];
       next unless $f = $self->file($url);
-      my $attrs = $self->attrs({key => 'original', url => $url}) || {};
-      return Mojolicious::Plugin::AssetPack::Asset->new(url => $url, %$attrs,
-        content => $f);
+      my $attrs = $self->_db_get({key => 'original', url => $url}) || {url => $url};
+      return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $f);
     }
   }
 
   return undef;
 }
 
-sub attrs {
-  my ($self, $attrs) = @_;
-  my $db = $self->_db('all');
-  return undef unless $db->{$attrs->{url}};
-  return $db->{$attrs->{url}}{$attrs->{key}};
-}
-
 sub load {
   my ($self, $attrs) = @_;
-  my $db_attr = $self->attrs($attrs) or return undef;
+  my $db_attr = $self->_db_get($attrs) or return undef;
   my @rel     = $self->_cache_path($attrs);
   my $asset   = $self->asset(join '/', @rel);
 
@@ -72,10 +74,11 @@ sub save {
   mkdir $dir if !-d $dir and -w dirname $dir;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
-  return Mojolicious::Plugin::AssetPack::Asset->new(content => $$ref) unless -w $dir;
-  $self->_db(save => $attrs);
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $$ref)
+    unless -w $dir;
+  $self->_db_set($attrs);
   spurt $$ref, $path;
-  return Mojolicious::Plugin::AssetPack::Asset->new(path => $path);
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
 sub serve_asset {
@@ -108,49 +111,37 @@ sub _cache_path {
   );
 }
 
-sub _db {
-  my ($self, $action, $attrs) = @_;
-  my ($data, $db);
+sub _db_get {
+  my ($self, $attrs) = @_;
+  my $db = $self->_db;
+  return undef unless my $data = $db->{$attrs->{url}};
+  return undef unless $data = $data->{$attrs->{key}};
+  return {%$attrs, %$data};
+}
 
-  unless ($db = $self->{_db}) {
-    my ($key, $url);
-    $db = $self->{_db} = {};
-    if (open my $DB, '<', $self->_file) {
-      while (my $line = <$DB>) {
-        chomp $line;
-        $db->{$2}{$1}{url} = $2 and ($key, $url) = ($1, $2)
-          if $line =~ /^\[([\w-]+):(.+)\]$/;
-        $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
-      }
-    }
-  }
+sub _db_set {
+  my ($self, $attrs) = @_;
+  my $db = $self->_db;
+  my $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
 
-  return $db if $action eq 'all';
-  $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
-
-  if ($action eq 'save') {
-    %$data = %$attrs;
-
-    if (open my $DB, '>', $self->_file) {
-      diag 'Save "%s" = 1', $self->_file if DEBUG;
-      for my $url (sort keys %$db) {
-        for my $key (sort keys %{$db->{$url}}) {
-          Carp::confess("Invalid key '$key'. Need to be [a-z-].")
-            unless $key =~ /^[\w-]+$/;
-          printf $DB "[%s:%s]\n", $key, $url;
-          for my $attr (sort keys %{$db->{$url}{$key}}) {
-            next if grep { $attr eq $_ } qw(key name url);
-            printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
-          }
+  %$data = %$attrs;
+  if (open my $DB, '>', $self->_file) {
+    diag 'Save "%s" = 1', $self->_file if DEBUG;
+    for my $url (sort keys %$db) {
+      for my $key (sort keys %{$db->{$url}}) {
+        delete $db->{$url}{$key}{$_} for qw(key name url);
+        next unless my @attrs = keys %{$db->{$url}{$key}};
+        Carp::confess("Invalid key '$key'. Need to be [a-z-].") unless $key =~ /^[\w-]+$/;
+        printf $DB "[%s:%s]\n", $key, $url;
+        for my $attr (sort @attrs) {
+          printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
         }
       }
     }
-    else {
-      diag 'Save "%s" = 0', $self->_file if DEBUG;
-    }
   }
-
-  return $data;
+  else {
+    diag 'Save "%s" = 0', $self->_file if DEBUG;
+  }
 }
 
 sub _download {
@@ -163,9 +154,10 @@ sub _download {
     $req_url = $url->clone->scheme($base->scheme)->authority($base->authority);
   }
 
-  my $attrs = $self->attrs({key => original => url => $url}) || {mtime => $^T};
+  my $attrs = $self->_db_get({key => 'original', url => $url}) || {mtime => $^T};
   if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
-    $asset->{$_} = $attrs->{$_} for qw(mtime url);
+    $asset->{$_} = $attrs->{$_}
+      for grep { $attrs->{$_} and !$asset->{$_} } qw(format mtime url);
     diag 'Already downloaded: %s', $req_url if DEBUG;
     return $asset;
   }
@@ -184,7 +176,9 @@ sub _download {
   spurt $tx->res->body, $path;
   _headers_to_attrs($tx->res->headers, $attrs);
   @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
-  $self->_db(save => $attrs);
+  $attrs->{format} ||= $url =~ /\.css$/ ? 'css' : $url =~ /\.js$/ ? 'js' : '';
+  delete $attrs->{format} unless $attrs->{format};
+  $self->_db_set($attrs);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
@@ -283,14 +277,6 @@ An relative URL will be looked up using L<Mojolicious::Static/file>.
 
 Note that assets from web will be cached locally, which means that you need to
 delete the files on disk to download a new version.
-
-=head2 attrs
-
-  $hash_ref = $self->attrs({key => $key, url => $url});
-
-Will lookup L<attributes|Mojolicious::Plugin::AssetPack::Asset/ATTRIBUTES> for
-a file in the database by "url" and "key". Returns "undef" if no attributes
-has been documented.
 
 =head2 load
 

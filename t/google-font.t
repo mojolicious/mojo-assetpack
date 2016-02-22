@@ -14,6 +14,14 @@ my $cache_file = File::Spec->catfile(
   qw(t assets cache fonts.googleapis.com css_family_Roboto_400_700));
 ok -e $cache_file, 'cache file does not contain weird characters';
 
+# make sure we are able to load from cache
+my $t2 = t::Helper->t(pipes => ['Css']);
+$t2->app->asset->process(
+  'app.css' => 'https://fonts.googleapis.com/css?family=Roboto:400,700');
+$t2->get_ok('/');
+$t2->get_ok($t2->tx->res->dom->at('link')->{href})->status_is(200)
+  ->header_is('Content-Type', 'text/css')->content_like(qr{font-family:\W*Roboto});
+
 done_testing;
 
 __DATA__
