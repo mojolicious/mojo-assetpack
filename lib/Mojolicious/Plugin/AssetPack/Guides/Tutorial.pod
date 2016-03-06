@@ -20,13 +20,13 @@ The plugin needs to be installed and loaded before any assets can be defined:
 
 Details about C<%args> can be found under
 L<Mojolicious::Plugin::AssetPack/register>, but there is one mandatory
-argument worth noting: "pipes". "pipes" needs to be a list of all the pipes
+argument worth noting: "pipes". "pipes" needs to be an arrayref of all the pipes
 you need to process your assets. Example:
 
   $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
 
-Loading the plugin with the list above will enable AssetPack to process Sass
-and Css files, minify them and combine them into a aingle asset in production.
+Loading the plugin with the arrayref above will enable AssetPack to process Sass
+and CSS files, minify them and combine them into a single asset in production.
 
 =head2 Optional dependencies
 
@@ -81,7 +81,7 @@ Minify JavaScript.
 
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Less>
 
-Process Less CSS files. Should be loaded before
+Process "Less" CSS files. Should be loaded before
 L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
 
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs>
