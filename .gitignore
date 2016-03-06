@@ -18,3 +18,6 @@
 /Mojolicious-Plugin-AssetPack*tar.gz
 /public/packed/
 /t/public/packed/
+node_modules
+.sass-cache
+.test-everything

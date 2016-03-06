@@ -1,4 +1,3 @@
-
 #!start included /home/jhthorsen/.perlbrew/perls/perl-5.18.2/lib/5.18.2/ExtUtils/MANIFEST.SKIP
 # Avoid version control files.
 \bRCS\b
@@ -63,3 +62,6 @@
 ^README\.pod
 ^Mojolicious-Plugin-AssetPack
 .sass-cache
+node_modules
+.sass-cache
+.test-everything

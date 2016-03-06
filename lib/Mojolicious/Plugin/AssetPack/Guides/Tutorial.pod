@@ -1,0 +1,260 @@
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Guides::Tutorial - AssetPack tutorial
+
+=head1 OVERVIEW
+
+This guide will give detailed information about how to define assets and
+include them in your templates.
+
+See L<Mojolicious::Plugin::AssetPack/DESCRIPTION> for a short description of
+AssetPack.
+
+=head1 GUIDE
+
+=head2 Loading the plugin
+
+The plugin needs to be installed and loaded before any assets can be defined:
+
+  $app->plugin(AssetPack => \%args);
+
+Details about C<%args> can be found under
+L<Mojolicious::Plugin::AssetPack/register>, but there is one mandatory
+argument worth noting: "pipes". "pipes" needs to be an arrayref of all the pipes
+you need to process your assets. Example:
+
+  $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
+
+Loading the plugin with the arrayref above will enable AssetPack to process Sass
+and CSS files, minify them and combine them into a single asset in production.
+
+=head2 Optional dependencies
+
+AssetPack has only optional dependencies. The reason for that is that the
+dependencies should be required only while developing, and not for running
+the application. See L<https://github.com/jhthorsen/mojolicious-plugin-assetpack/blob/v2/cpanfile>
+for a complete list, but here is the current list:
+
+=over 2
+
+=item * L<CSS::Minifier::XS> 0.09
+
+Used to minify CSS.
+
+=item * L<CSS::Sass> 3.3.0
+
+Used to process and minify CSS.
+
+=item * L<Imager::File::PNG> 0.90
+
+TODO: Used to generate CSS sprites.
+
+=item * L<JavaScript::Minifier::XS> 0.11
+
+Used to minify JavaScript.
+
+=back
+
+=head2 Pipes
+
+AssetPack does not do any heavy lifting itself: All of the processing is left
+to the L<pipe objects|Mojolicious::Plugin::AssetPack::Pipe>.
+
+=over 2
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript>
+
+Process CoffeeScript coffee files. Should be loaded before
+L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Combine>
+
+Combine multiple assets to one. Should be loaded last.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Css>
+
+Minify CSS.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>
+
+Minify JavaScript.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Less>
+
+Process "Less" CSS files. Should be loaded before
+L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs>
+
+Process L<http://riotjs.com/> tag files. Should be loaded before
+L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Sass>
+
+Process sass and scss files. Should be loaded before
+L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
+
+=back
+
+=head2 Where to place source files
+
+The source/input files that make up a virtual asset (topic) can come from
+either...
+
+=head3 On disk
+
+AssetPack will look for source files in the "assets" directory, relative to the
+application L<home|Mojo/home>. This directory is not shared on the Internet
+like the "public" directory, but the generated assets will still be available
+thanks to a custom L<route|Mojolicious::Plugin::AssetPack/route>.
+
+L<Mojolicious::Plugin::AssetPack::Store> is a sub class of
+L<Mojolicious::Static>, allowing it to find files relative to
+L<Mojolicious::Static/paths>.
+
+=head3 DATA section
+
+L<Mojolicious::Plugin::AssetPack::Store> is a sub class of
+L<Mojolicious::Static>, allowing it to look for files in DATA sections of
+L<Mojolicious::Static/classes>.
+
+The DATA section can also be used to lookup "@import" files. (Currently only
+supported by L<Mojolicious::Plugin::AssetPack::Pipe::Sass>)
+
+=head3 Web
+
+Any file starting with "http" or "https" will be downloaded from the web using
+L<Mojolicious::Plugin::AssetPack/ua>.
+
+It will also parse recursively "@import" files and download those as well.
+(Currently only supported by L<Mojolicious::Plugin::AssetPack::Pipe::Sass>)
+
+Assets from the web will be cached locally to prevent downloading new and
+untested assets on each application startup.
+
+=head3 Current Mojolicious application
+
+Any L</Web> asset with the hostname "local" will be routed to the current
+L<Mojolicious> application. Example:
+
+  http://local/some/resource
+         ^^^^^
+
+=head2 Process assets
+
+Assets should be defined when your application starts. This can either be done
+using a L<definition file|Mojolicious::Plugin::AssetPack/process> or inside
+your application.
+
+=head3 Defining assets in the application
+
+Assets can be defined using the L<Mojolicious::Plugin::AssetPack/process>
+method:
+
+  $app->asset->process(
+    "app.css" => (
+      "sass/bar.scss",
+      "foo/bar.css",
+      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss",
+    )
+  );
+
+In the example above we have defined a topic named "app.css" which
+later can be included in L<templates|/Using assets>. The list of files
+following are the source files which will make up the final asset.
+
+=head3 Defining assets in a definition file
+
+Moving the definition to an external file can be useful for keeping the
+application code tidy. The definition file can also be defined in the "DATA"
+section. The default file is called "assetpack.def" and will be looked up if
+L<Mojolicious::Plugin::AssetPack/process> is called without arguments. Example
+file:
+
+  ! app.css
+  < sass/bar.scss
+  << https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss
+  < sass/main.scss
+
+Empty lines and lines starting with "#" will be skipped. Each line starting
+with "!" will be used to define a topic (virtual asset name), and "E<lt>" will
+define a source file. This means that the file above will result in (almost)
+the same as in the L<example above|/Defining assets in the application>.
+
+The difference can be found on the line with a double "E<lt>": This results in
+the asset to be downloaded, but not included in the output asset. This is
+useful when you have something like "sass/main.scss" that depends on
+"materialize.scss", but "materialize.scss" itself should not be compiled.
+
+=head2 Using assets
+
+Any processed asset can be accessed by refering to a topic.
+
+=head3 Template
+
+An asset can be included in a template using the
+L<Mojolicious::Plugin::AssetPack/asset> helper:
+
+  <head>
+    %= asset "app.css"
+    %= asset "app.js"
+  </head>
+
+The L<Mojolicious::Plugin::AssetPack/asset> helper takes additional arguments
+which will be passed on directly to either the
+L<Mojolicious::Plugin::TagHelpers/javascript> helper or
+L<Mojolicious::Plugin::TagHelpers/stylesheet> helper. Example:
+
+    %= asset "app.css", media => "print"
+
+In production mode, the helper above will result in just one "link" tag. On the
+other hand, if you are in "development" mode, it will result in one "link" tag
+per source asset.
+
+=head3 Asset objects
+
+It is also possible to retrieve the processed asset objects. The example
+below will retrieve a L<Mojo::Collection> object holding zero or more
+L<Mojolicious::Plugin::AssetPack::Asset> objects:
+
+  my $collection = $app->asset->processed("app.css");
+  print $collection->map("checksum")->join(", ");
+
+This can also be used to inline assets in a template:
+
+  %= stylesheet sub { asset->processed('app.css')->map('content')->join }
+
+=head2 Application mode
+
+The application L<mode|Mojolicious/mode> will define if the assets should be
+combined and minified. The L<Mojolicious::Plugin::AssetPack/minify> attribute
+can also be set manually if you have special needs.
+
+=head3 Development
+
+The assets will be processed, but not minifed/combined if L<MOJO_MODE> or
+L<Mojolicious/mode> is set to "development". This is to make it easier to
+map JavaScript or CSS bugs to a specific file and line. "development" is
+the default mode while running L<morbo|Mojo::Server::Morbo>:
+
+  $ morbo -w assets/ -w lib/ -w templates/ script/myapp
+
+=head3 Any other mode
+
+Any "production" mode will result in one combined and minified asset. This will
+save bandwidth and roundtrip time to the server.
+
+=head2 Caching
+
+Processed assets will be cached to disk when possible. The process step is run
+so if such a processed asset exists, the process step will not be run again.
+This again only requires external tools (less, coffee, ...) and modules
+(L<JavaScript::Minifier::XS>, L<CSS::Sass>) to be required while developing,
+but can be skipped when installing an already built application.
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack> and
+L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>.
+
+=cut
