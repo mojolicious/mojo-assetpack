@@ -3,207 +3,191 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    0.69
+    1.00
 
 SYNOPSIS
   Application
       use Mojolicious::Lite;
 
-      # load plugin
-      plugin "AssetPack";
-
-      # Define assets: $moniker => @real_assets
-      app->asset('app.js' => '/js/foo.js', '/js/bar.js', '/js/baz.coffee');
-
-      # Add custom response headers for assets
-      app->asset->headers({"Cache-Control" => "max-age=31536000"});
-
-      # Remove old assets
-      app->asset->purge;
-
-      # Start the application
-      app->start;
-
-    See also Mojolicious::Plugin::AssetPack::Manual::Assets for more details
-    on how to define assets.
-
-  Template
-      %= asset 'app.js'
-      %= asset 'app.css'
-
-    See also Mojolicious::Plugin::AssetPack::Manual::Include for more
-    details on how to include assets.
-
-DESCRIPTION
-    Mojolicious::Plugin::AssetPack is a Mojolicious plugin which can be used
-    to cram multiple assets of the same type into one file. This means that
-    if you have a lot of CSS files (.css, .less, .sass, ...) as input, the
-    AssetPack can make one big CSS file as output. This is good, since it
-    will often speed up the rendering of your page. The output file can even
-    be minified, meaning you can save bandwidth and browser parsing time.
-
-    The core preprocessors that are bundled with this module can handle CSS
-    and JavaScript files, written in many languages.
-
-MANUALS
-    The documentation is split up in different manuals, for more in-depth
-    information:
-
-    *   See Mojolicious::Plugin::AssetPack::Manual::Assets for how to define
-        assets in your application.
-
-    *   See Mojolicious::Plugin::AssetPack::Manual::Include for how to
-        include the assets in the template.
-
-    *   See Mojolicious::Plugin::AssetPack::Manual::Modes for how AssetPack
-        behaves in different modes.
-
-    *   See Mojolicious::Plugin::AssetPack::Manual::CustomDomain for how to
-        serve your assets from a custom host.
-
-    *   See Mojolicious::Plugin::AssetPack::Preprocessors for details on the
-        different (official) preprocessors.
-
-ENVIRONMENT
-  MOJO_ASSETPACK_DEBUG
-    Set this to get extra debug information to STDERR from AssetPack
-    internals.
-
-  MOJO_ASSETPACK_NO_CACHE
-    If true, convert the assets each time they're expanded, instead of once
-    at application start (useful for development).
-
-HELPERS
-  asset
-    This plugin defined the helper "asset()". This helper can be called in
-    different ways:
-
-    *   $self = $c->asset;
-
-        This will return the plugin instance, that you can call methods on.
-
-    *   $c->asset($moniker => @real_files);
-
-        See "add".
-
-    *   $bytestream = $c->asset($moniker, \%args, @attr);
-
-        Used to include an asset in a template.
-
-ATTRIBUTES
-  base_url
-      $app->plugin("AssetPack" => {base_url => "/packed/"});
-      $str = $self->base_url;
-
-    This attribute can be used to control where to serve static assets from.
-
-    Defaults value is "/packed/".
-
-    See Mojolicious::Plugin::AssetPack::Manual::CustomDomain for more
-    details.
-
-    NOTE! You need to have a trailing "/" at the end of the string.
-
-  minify
-      $app->plugin("AssetPack" => {minify => $bool});
-      $bool = $self->minify;
-
-    Set this to true if the assets should be minified.
-
-    Default is false in "development" mode and true otherwise.
-
-    See also Mojolicious::Plugin::AssetPack::Manual::Modes.
-
-  preprocessors
-      $obj = $self->preprocessors;
-
-    Holds a Mojolicious::Plugin::AssetPack::Preprocessors object.
-
-METHODS
-  add
-      $self->add($moniker => @real_files);
-
-    Used to define assets.
-
-    See Mojolicious::Plugin::AssetPack::Manual::Assets for mode details.
-
-  fetch
-      $path = $self->fetch($url);
-
-    This method can be used to fetch an asset and store the content to a
-    local file. The download will be skipped if the file already exists. The
-    return value is the absolute path to the downloaded file.
-
-  get
-      @files = $self->get($moniker);
-
-    Returns a list of files which the moniker point to. The list will only
-    contain one file if "minify" is true.
-
-    See "Full control" in Mojolicious::Plugin::AssetPack::Manual::Include
-    for mode details.
-
-  headers
-      $app->plugin("AssetPack" => {headers => {"Cache-Control" => "max-age=31536000"}});
-      $app->asset->headers({"Cache-Control" => "max-age=31536000"});
-
-    Calling this method will add a after_static hook which will set
-    additional response headers when an asset is served.
-
-  out_dir
-      $app->plugin("AssetPack" => {out_dir => $str});
-      $str = $self->out_dir;
-
-    Returns the path to the directory where generated packed files are
-    located.
-
-    Changing this from the default will probably lead to inconsistency.
-    Please report back if you are using this feature with success.
-
-  purge
-      $self = $self->purge({always => $bool});
-
-    Used to purge old packed files. This is useful if you want to avoid
-    filling up "out_dir" with many versions of the packed file.
-
-    "always" default to true if in "development" mode and false otherwise.
-
-    This method is EXPERIMENTAL.
-
-  register
+      # Load plugin and pipes in the right order
       plugin AssetPack => {
-        base_url     => $str,     # default to "/packed"
-        headers      => {"Cache-Control" => "max-age=31536000"},
-        minify       => $bool,    # compress assets
-        proxy        => "detect", # autodetect proxy settings
-        out_dir      => "/path/to/some/directory",
-        source_paths => [...],
+        pipes => [qw(Less Sass Css CoffeeScript Riotjs JavaScript Combine)]
       };
 
-    Will register the "asset" helper. All arguments are optional.
+      # define asset
+      app->asset->process(
+        # virtual name of the asset
+        "app.css" => (
 
-  source_paths
-      $self = $self->source_paths($array_ref);
-      $array_ref = $self->source_paths;
+          # source files used to create the asset
+          "sass/bar.scss",
+          "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss",
+        )
+      );
 
-    This method returns a list of paths to source files. The default is to
-    return "paths" in Mojolicious::Static from the current application
-    object, but you can specify your own paths.
+  Template
+      <html>
+        <head>
+          %= asset "app.css"
+        </head>
+        <body><%= content %></body>
+      </html>
 
-    See also "Custom source directories" in
-    Mojolicious::Plugin::AssetPack::Manual::Assets for more information.
+FOR EXISTING USERS
+    Are you already using AssetPack? You can still do so without any change.
+    This new version was written to make it easier to maintain and also
+    easier to extend. The new code will be "activated" by loadind this
+    plugin with a list of pipes:
 
-  test_app
-      Mojolicious::Plugin::AssetPack->test_app("MyApp");
+      $app->plugin(AssetPack => {pipes => [...]});
 
-    This method will create two Mojo::Test instances of "MyApp" and create
-    assets with "minify" set to 0 and 1. "SHIPPING" in
-    Mojolicious::Plugin::AssetPack::Manual::Cookbook for more details.
+    The old API will not be maintained and slowly deprecated.
 
-    This method is EXPERIMENTAL.
+DESCRIPTION
+    Mojolicious::Plugin::AssetPack is Mojolicious plugin for processing
+    static assets. The idea is that JavaScript and CSS files should be
+    served as one minified file to save bandwidth and roundtrip time to the
+    server.
+
+    There are many external tools for doing this, but integrating them with
+    Mojolicious can be a struggle: You want to serve the source files
+    directly while developing, but a minified version in production. This
+    assetpack plugin will handle all of that automatically for you.
+
+    The actual processing is delegated to "pipe objects". Please see "Pipes"
+    in Mojolicious::Plugin::AssetPack::Guides::Tutorial for a complete list.
+
+GUIDES
+    * Mojolicious::Plugin::AssetPack::Guides::Tutorial
+
+      The tutorial will give an introduction to how AssetPack can be used.
+
+    * Mojolicious::Plugin::AssetPack::Guides::Cookbook
+
+      The cookbook has various receipes on how to cook with AssetPack.
+
+ENVIRONNMENT
+    It is possible to set environment variables to change the behavior of
+    AssetPack:
+
+    * MOJO_ASSETPACK_DEBUG
+
+      Set this environment variable to get more debug to STDERR. Currently
+      you can set it to a value between 0 and 3, where 3 provides the most
+      debug.
+
+HELPERS
+asset
+      $self = $app->asset;
+      $self = $c->asset;
+      $bytestream = $c->asset($topic, @args);
+      $bytestream = $c->asset("app.css", media => "print");
+
+    "asset()" is the main entry point to this plugin. It can either be used
+    to access the Mojolicious::Plugin::AssetPack instance or as a tag
+    helper.
+
+    The helper name "asset" can be customized by specifying "helper" when
+    registering the plugin.
+
+    See Mojolicious::Plugin::AssetPack::Guides::Tutorial for more details.
+
+ATTRIBUTES
+  minify
+      $bool = $self->minify;
+      $self = $self->minify($bool);
+
+    Set this to true to combine and minify the assets. Defaults to false if
+    "mode" in Mojolicious is "development" and true otherwise.
+
+    See "Application mode" in
+    Mojolicious::Plugin::AssetPack::Guides::Tutorial for more details.
+
+  route
+      $route = $self->route;
+      $self = $self->route($route);
+
+    A Mojolicious::Routes::Route object used to serve assets. The default
+    route responds to HEAD and GET requests and calls serve_asset() on
+    "store" to serve the asset.
+
+    See "ASSETS FROM CUSTOM DOMAIN" in
+    Mojolicious::Plugin::AssetPack::Guides::Cookbook for an example on how
+    to customize this route.
+
+  store
+      $obj = $self->store;
+      $self = $self->store(Mojolicious::Plugin::AssetPack::Store->new);
+
+    Holds a Mojolicious::Plugin::AssetPack::Store object used to locate,
+    store and serve assets.
+
+  ua
+      $ua = $self->ua;
+
+    Holds a Mojo::UserAgent which can be used to fetch assets either from
+    local application or from remote web servers.
+
+METHODS
+  pipe
+      $obj = $self->pipe($name);
+      $obj = $self->pipe("Css");
+
+    Will return a registered pipe by $name or "undef" if none could be
+    found.
+
+  process
+      $self = $self->process($topic => @assets);
+      $self = $self->process($definition_file);
+
+    Used to process assets. A $definition_file can be used to define $topic
+    and @assets in a seperate file. See "Process assets" in
+    Mojolicious::Plugin::AssetPack::Guides::Tutorial for more details.
+
+    $definition_file defaults to "assetpack.def".
+
+  processed
+      $collection = $self->processed($topic);
+
+    Can be used to retrieve a Mojo::Collection object, with zero or more
+    Mojolicious::Plugin::AssetPack::Asset objects. Returns undef if $topic
+    is not defined with "process".
+
+  register
+      $self->register($app, \%config);
+
+    Used to register the plugin in the application. %config can contain:
+
+    * helper
+
+      Name of the helper to add to the application. Default is "asset".
+
+    * pipes
+
+      This argument is mandatory and need to contain a complete list of
+      pipes that is needed. Example:
+
+        $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
+
+      See "Pipes" in Mojolicious::Plugin::AssetPack::Guides::Tutorial for a
+      complete list of available pipes.
+
+    * proxy
+
+      A hash of proxy settings. Set this to 0 to disable proxy detection.
+      Currently only "no_proxy" is supported, which will set which requests
+      that should bypass the proxy (if any proxy is detected). Default is to
+      bypass all requests to localhost.
+
+      See "detect" in Mojo::UserAgent::Proxy for more infomation.
+
+SEE ALSO
+    "GUIDES", Mojolicious::Plugin::AssetPack::Asset,
+    Mojolicious::Plugin::AssetPack::Pipe and
+    Mojolicious::Plugin::AssetPack::Store.
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2014, Jan Henning Thorsen.
+    Copyright (C) 2014, Jan Henning Thorsen
 
     This program is free software, you can redistribute it and/or modify it
     under the terms of the Artistic License version 2.0.

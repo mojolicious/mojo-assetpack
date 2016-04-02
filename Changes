@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-0.70 Not Released
+1.00 2016-04-02T21:26:35+0200
+ - Rewrote the module. Breaking changes might occur.
  - Changed from "pre-processors" to "pipes"
 
 0.69 2015-12-02T16:37:36+0100
