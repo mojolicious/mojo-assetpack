@@ -78,7 +78,6 @@ use Mojo::Util qw( slurp md5_sum );
 use File::Basename ();
 use File::Spec::Functions 'catfile';
 use File::Which ();
-use File::Which ();
 
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
