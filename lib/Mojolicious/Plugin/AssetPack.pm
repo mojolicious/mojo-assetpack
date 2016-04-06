@@ -284,6 +284,30 @@ set it to a value between 0 and 3, where 3 provides the most debug.
 
 =back
 
+=head1 OPTIONAL MODULES
+
+There are some optional modules you might want to install:
+
+=over 2
+
+=item * L<CSS::Minifier::XS>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::CSS>.
+
+=item * L<CSS::Sass>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::Sass>.
+
+=item * L<IO::Socket::SSL>
+
+Required if you want to download assets served over SSL.
+
+=item * L<JavaScript::Minifier::XS>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
+
+=back
+
 =head1 HELPERS
 
 =head1 asset
