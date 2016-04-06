@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.00
+    1.01
 
 SYNOPSIS
   Application
@@ -75,6 +75,25 @@ ENVIRONNMENT
       Set this environment variable to get more debug to STDERR. Currently
       you can set it to a value between 0 and 3, where 3 provides the most
       debug.
+
+OPTIONAL MODULES
+    There are some optional modules you might want to install:
+
+    * CSS::Minifier::XS
+
+      Used by Mojolicious::Plugin::AssetPack::Pipe::CSS.
+
+    * CSS::Sass
+
+      Used by Mojolicious::Plugin::AssetPack::Pipe::Sass.
+
+    * IO::Socket::SSL
+
+      Required if you want to download assets served over SSL.
+
+    * JavaScript::Minifier::XS
+
+      Used by Mojolicious::Plugin::AssetPack::Pipe::JavaScript.
 
 HELPERS
 asset
