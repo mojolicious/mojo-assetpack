@@ -6,8 +6,7 @@ use Mojolicious::Plugin::AssetPack::Util 'checksum';
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 
 # simulate minify()
-no warnings qw(once redefine);
-eval 'require CSS::Minifier::XS;1';
+$INC{'CSS/Minifier/XS.pm'} = 'mocked';
 *CSS::Minifier::XS::minify = sub { local $_ = shift; s!\s+!!g; $_ };
 
 my $t             = t::Helper->t(pipes => [qw(Css Combine)]);

@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.01 Not Released
+ - Cannot load CSS::Minifier::XS in old code - The module is optional
+ - Cannot load JavaScript::Minifier::XS in old code - The module is optional
+
 1.00 2016-04-02T21:26:35+0200
  - Rewrote the module. Breaking changes might occur.
  - Changed from "pre-processors" to "pipes"

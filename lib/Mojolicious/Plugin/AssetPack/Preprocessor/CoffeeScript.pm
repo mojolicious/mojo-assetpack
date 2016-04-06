@@ -22,8 +22,7 @@ Installation on Ubuntu or Debian:
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript';
-use File::Which              ();
-use JavaScript::Minifier::XS ();
+use File::Which ();
 
 =head1 ATTRIBUTES
 

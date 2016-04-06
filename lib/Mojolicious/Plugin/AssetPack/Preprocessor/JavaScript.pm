@@ -19,8 +19,8 @@ NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use JavaScript::Minifier::XS;
-use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH} || 300;    # might change
+use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH}
+  || 300;    # might change
 
 my $COMMENT_RE = do {
   my $re = sprintf '^\s*(%s)', join '|', map {quotemeta} qw( /* */ // );
@@ -49,6 +49,7 @@ sub minify {
     return $self if MINIFIED_LINE_LENGTH < length $line;
   }
 
+  require JavaScript::Minifier::XS;
   $$text = JavaScript::Minifier::XS::minify($$text) if length $$text;
   $self;
 }

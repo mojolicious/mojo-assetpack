@@ -26,6 +26,8 @@ sub t {
 }
 
 sub t_old {
+  Test::More::plan(skip_all => 'TEST_OLD=1') unless $ENV{TEST_OLD};
+
   my ($class, $args) = @_;
   my $static = delete $args->{static} || ['public'];
   my $t = Test::Mojo->new(Mojolicious->new(secrets => ['s3cret']));

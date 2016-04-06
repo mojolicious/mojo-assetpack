@@ -19,7 +19,6 @@ NOTE! L<CSS::Minifier::XS> might be replaced with something better.
 =cut
 
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use CSS::Minifier::XS;
 
 =head1 METHODS
 
@@ -35,7 +34,9 @@ sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
   if ($assetpack->minify and length $$text) {
-    $$text = CSS::Minifier::XS::minify($$text) // die "CSS::Minifier::XS::minify could not minify $path";
+    require CSS::Minifier::XS;
+    $$text = CSS::Minifier::XS::minify($$text)
+      // die "CSS::Minifier::XS::minify could not minify $path";
   }
 
   return $self;

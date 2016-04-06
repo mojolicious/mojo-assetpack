@@ -1,9 +1,10 @@
 use t::Helper;
+
 plan skip_all => 'TEST_ONLINE=1' unless $ENV{TEST_ONLINE} or -e '.test-everything';
 
 my $t = t::Helper->t(pipes => ['Css']);
 $t->app->asset->process(
-  'app.css' => 'https://fonts.googleapis.com/css?family=Roboto:400,700');
+  'app.css' => 'http://fonts.googleapis.com/css?family=Roboto:400,700');
 $t->get_ok('/')->status_is(200);
 
 # comment from https://github.com/hugeinc/flexboxgrid-sass/blob/master/demo/sass/_code.scss
@@ -17,7 +18,7 @@ ok -e $cache_file, 'cache file does not contain weird characters';
 # make sure we are able to load from cache
 my $t2 = t::Helper->t(pipes => ['Css']);
 $t2->app->asset->process(
-  'app.css' => 'https://fonts.googleapis.com/css?family=Roboto:400,700');
+  'app.css' => 'http://fonts.googleapis.com/css?family=Roboto:400,700');
 $t2->get_ok('/');
 $t2->get_ok($t2->tx->res->dom->at('link')->{href})->status_is(200)
   ->header_is('Content-Type', 'text/css')->content_like(qr{font-family:\W*Roboto});
