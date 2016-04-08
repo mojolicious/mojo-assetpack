@@ -392,6 +392,8 @@ Mojolicious::Plugin::AssetPack::Backcompat - Provides back compat functionality
 
 =head2 add
 
+=head2 base_url
+
 =head2 fetch
 
 =head2 get
@@ -399,6 +401,8 @@ Mojolicious::Plugin::AssetPack::Backcompat - Provides back compat functionality
 =head2 headers
 
 =head2 out_dir
+
+=head2 preprocessors
 
 =head2 purge
 

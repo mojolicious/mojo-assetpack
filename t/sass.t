@@ -5,13 +5,13 @@ my $t = t::Helper->t(pipes => [qw(Sass Css)]);
 $t->app->asset->process('app.css' => ('sass-one.sass', 'sass-two.scss'));
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/5660087922/sass-one.css"]))
-  ->element_exists(qq(link[href="/asset/df9ab2c3d8/sass-two.css"]));
+  ->element_exists(qq(link[href="/asset/9f0d8f784a/sass-two.css"]));
 
 my $html = $t->tx->res->dom;
 $t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)
   ->content_like(qr{\.sass\W+color:\s+\#aaa}s);
 $t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)
-  ->content_like(qr{body\W+background:.*\.scss \.nested\W+color:\s+\#919191}s);
+  ->content_like(qr{body\W+background:.*\.scss \.nested\W+color:\s+\#9\d9\d9\d}s);
 
 $ENV{MOJO_MODE} = 'Test_minify_from_here';
 
@@ -19,10 +19,10 @@ $ENV{MOJO_MODE} = 'Test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
 $t->app->asset->process('app.css' => ('sass-one.sass', 'sass-two.scss'));
 $t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/1a65a1afcb/app.css"]));
+  ->element_exists(qq(link[href="/asset/e035274e04/app.css"]));
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{\.sass\W+color:\s+\#aaa.*\.scss \.nested\W+color:\s+\#919191}s);
+  ->content_like(qr{\.sass\W+color:\s+\#aaa.*\.scss \.nested\W+color:\s+\#9\d9\d9\d}s);
 
 Mojo::Util::monkey_patch('CSS::Sass', sass2scss => sub { die 'Nope!' });
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
@@ -54,7 +54,7 @@ $color: #aaa;
 $color: #aaa;
 .scss {
   color: $color;
-  .nested { color: darken($color, 10%); }
+  .nested { color: darken($color, 9%); }
 }
 @@ sass-0-include.scss
 body { background: #fff; }

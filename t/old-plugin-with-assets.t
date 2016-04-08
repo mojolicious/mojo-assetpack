@@ -2,7 +2,7 @@ use t::Helper;
 use File::Find ();
 use File::Spec::Functions qw( catdir catfile );
 
-plan skip_all => 'Cannot chmod on Win32' if $^O eq 'Win32';
+plan skip_all => 'TEST_OLD=1' unless $ENV{TEST_OLD};
 
 my $source_dir   = catdir qw( t read-only-with-source-assets );
 my $existing_dir = catdir qw( t read-only-with-existing-assets );
@@ -19,14 +19,18 @@ $t->app->routes->get('/test1' => 'test1');
 $t->app->plugin('AssetPack');
 
 # undefined asset
-$t->get_ok('/test1')->status_is(200)->content_like(qr(Asset 'my-plugin-existing.css' is not defined));
+$t->get_ok('/test1')->status_is(200)
+  ->content_like(qr(Asset 'my-plugin-existing.css' is not defined));
 
 # define asset
 $t->app->plugin($plugin_name);
-$t->get_ok('/test1')->status_is(200)->content_like(qr/body\{color:\#aaa\}body\{color:\#aaa\}/);
+$t->get_ok('/test1')->status_is(200)
+  ->content_like(qr/body\{color:\#aaa\}body\{color:\#aaa\}/);
 
 # make sure we did not create a new asset
-ok !-e catfile(qw( t public packed my-plugin-existing-7c174b801d6fc968f1576055e88c18cb.css )), 'using existing asset';
+ok !-e catfile(
+  qw( t public packed my-plugin-existing-7c174b801d6fc968f1576055e88c18cb.css )),
+  'using existing asset';
 
 chmod_assets(0775);
 done_testing;
