@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.04 Not Released
+1.04 2016-04-08T22:40:29+0200
  - Fix Pipe::Reloader and files from def file
  - Change default Pipe::Reloader strategy to "document" to make reloading
    JavaScript more robust.
