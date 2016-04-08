@@ -388,6 +388,14 @@ sub _spurt_error_message_for {
 
 Mojolicious::Plugin::AssetPack::Backcompat - Provides back compat functionality
 
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Backcompat> will be DEPRECATED. It only acts
+as glue for a smoother transition.
+
+Have a look at L<http://thorsen.pm/perl/2016/02/21/rewriting-assetpack-plugin.html>
+for an explanation behind the change.
+
 =head1 METHODS
 
 =head2 add

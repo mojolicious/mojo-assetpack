@@ -1,32 +1,8 @@
 package Mojolicious::Plugin::AssetPack::Handler::Http;
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Handler::Http - A URL handler for http:// assets
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Handler::Http> is a module that can
-fetch assets from the web.
-
-This class is EXPERIMENTAL.
-
-=cut
-
 use Mojo::Base -base;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
-
-=head1 ATTRIBUTES
-
-=head2 asset_for
-
-  $asset = $self->asset_for($url, $assetpack);
-
-This method tries to download the asset from the web.
-
-=cut
 
 sub asset_for {
   my ($self, $url, $assetpack) = @_;
@@ -46,17 +22,24 @@ sub asset_for {
   $assetpack->_asset("$name.$ext")->spurt($tx->res->body);
 }
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Handler::Http - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Handler::Http> will be DEPRECATED.
+
+=head1 ATTRIBUTES
+
+=head2 asset_for
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut
-
-1;

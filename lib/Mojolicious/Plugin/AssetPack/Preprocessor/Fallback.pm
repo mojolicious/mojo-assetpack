@@ -1,52 +1,35 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Fallback;
-
-=encoding utf8
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Preprocessor::Fallback - Render missing preprocessor text
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Fallback> will render a CSS with
-an error message.
-
-=cut
-
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 
-=head1 METHODS
-
-=head2 can_process
-
-Will always return false.
-
-=cut
-
 sub can_process {0}
-
-=head2 process
-
-Will simply die.
-
-=cut
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
   die "No preprocessor defined for $path\n";
 }
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Preprocessor::Fallback - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Fallback> will be DEPRECATED.
+
+=head1 METHODS
+
+=head2 can_process
+
+=head2 process
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
+
+L<http://thorsen.pm/perl/2016/02/21/rewriting-assetpack-plugin.html>
 
 =cut
-
-1;

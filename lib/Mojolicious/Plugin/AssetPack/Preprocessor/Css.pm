@@ -1,34 +1,5 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Css;
-
-=encoding utf8
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Preprocessor::Css - Preprocessor for CSS
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Css> is a preprocessor for
-C<.css> files.
-
-CSS is minified using L<CSS::Minifier::XS>. This module is optional and must
-be installed manually.
-
-NOTE! L<CSS::Minifier::XS> might be replaced with something better.
-
-=cut
-
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-
-=head1 METHODS
-
-=head2 process
-
-This method use L<CSS::Minifier::XS> to process C<$text>.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
-
-=cut
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
@@ -42,17 +13,27 @@ sub process {
   return $self;
 }
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Preprocessor::Css - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Css> will be DEPRECATED.
+Use L<Mojolicious::Plugin::AssetPack::Pipe::Css> instead.
+
+=head1 METHODS
+
+=head2 process
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
+
+L<http://thorsen.pm/perl/2016/02/21/rewriting-assetpack-plugin.html>
 
 =cut
-
-1;

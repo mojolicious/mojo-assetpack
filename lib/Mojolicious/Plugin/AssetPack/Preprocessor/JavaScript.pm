@@ -1,23 +1,4 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript;
-
-=encoding utf8
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript - Preprocessor for JavaScript
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript> is a preprocessor for
-C<.js> files.
-
-JavaScript is minified using L<JavaScript::Minifier::XS>. This module is
-optional and must be installed manually.
-
-NOTE! L<JavaScript::Minifier::XS> might be replaced with something better.
-
-=cut
-
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
 use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH}
   || 300;    # might change
@@ -27,17 +8,6 @@ my $COMMENT_RE = do {
   $re = qr{$re};
   $re;
 };
-
-=head1 METHODS
-
-=head2 minify
-
-  $self = $self->minify($text);
-
-Used to minify C<$text>, which is a scalar reference to a chunk of JavaScript
-code.
-
-=cut
 
 sub minify {
   my ($self, $text) = @_;
@@ -54,14 +24,6 @@ sub minify {
   $self;
 }
 
-=head2 process
-
-This method use L<JavaScript::Minifier::XS> to process C<$text>.
-
-See L<Mojolicious::Plugin::AssetPack::Preprocessor/process>.
-
-=cut
-
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
 
@@ -71,17 +33,29 @@ sub process {
   return $self;
 }
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor::JavaScript> will be DEPRECATED.
+Use L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript> instead.
+
+=head1 METHODS
+
+=head2 minify
+
+=head2 process
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
+
+L<http://thorsen.pm/perl/2016/02/21/rewriting-assetpack-plugin.html>
 
 =cut
-
-1;

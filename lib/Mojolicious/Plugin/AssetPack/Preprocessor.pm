@@ -1,17 +1,4 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor;
-
-=encoding utf8
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Preprocessor - Base class for preprocessors
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor> is a base class for preprocessors.
-
-=cut
-
 use Mojo::Base -base;
 use Mojo::JSON 'encode_json';
 use Mojo::Util ();
@@ -21,53 +8,14 @@ use constant DEBUG => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 
 use overload (q(&{}) => sub { shift->can('process') }, fallback => 1,);
 
-=head1 ATTRIBUTES
-
-=head2 cwd
-
-Path to the current directory, before L<Mojolicious::Plugin::AssetPack::Preprocessor>
-did any C<chdir>.
-
-=cut
-
 has cwd => sub {Cwd::getcwd};
 
-=head1 METHODS
-
-=head2 can_process
-
-  $bool = $self->can_process;
-
-Returns true.
-
-=cut
-
 sub can_process {1}
-
-=head2 checksum
-
-  $str = $self->checksum($text, $path);
-
-Returns the checksum for a given chunk of C<$text>. C<$text> is a
-scalar ref containing the text from the asset. The default is
-to use L<Mojo::Util/md5_sum>.
-
-=cut
 
 sub checksum {
   my ($self, $text, $path) = @_;
   Mojo::Util::md5_sum($$text);
 }
-
-=head2 process
-
-  $self = $self->process($assetpack, $text, $path);
-
-This method is used to process a given C<$text>. C<$text> is a scalar ref,
-holding the text from the asset at location C<$path>. C<$assetpack> is
-an L<Mojolicious::Plugin::AssetPack> instance.
-
-=cut
 
 sub process {
   my ($self, $assetpack, $text, $path) = @_;
@@ -87,22 +35,38 @@ sub _run {
 
   return $self unless $?;
   die sprintf "Cannot execute '%s'. See %s\n", $cmd->[0], $self->_url if $! == 2;
-  die sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8, int($!), $err;
+  die sprintf "Failed to run '%s' (\$?=%s, \$!=%s) %s", join(' ', @$cmd), $? >> 8,
+    int($!), $err;
 }
 
 sub _url {'https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Preprocessors'}
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Preprocessor - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor> will be DEPRECATED.
+
+=head1 ATTRIBUTES
+
+=head2 cwd
+
+=head1 METHODS
+
+=head2 can_process
+
+=head2 checksum
+
+=head2 process
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut
-
-1;

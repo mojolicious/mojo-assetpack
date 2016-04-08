@@ -1,28 +1,20 @@
 package Mojolicious::Plugin::AssetPack::Handler::Https;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Handler::Http';
+
+1;
+
+=encoding utf8
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Handler::Https - A URL handler for https:// assets
+Mojolicious::Plugin::AssetPack::Handler::Https - DEPRECATED
 
 =head1 DESCRIPTION
 
 See L<Mojolicious::Plugin::AssetPack::Handler::Http>.
 
-=cut
+=head1 SEE ALSO
 
-use Mojo::Base 'Mojolicious::Plugin::AssetPack::Handler::Http';
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2014, Jan Henning Thorsen
-
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
-
-=head1 AUTHOR
-
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+L<Mojolicious::Plugin::AssetPack>.
 
 =cut
-
-1;

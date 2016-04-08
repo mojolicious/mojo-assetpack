@@ -1,32 +1,4 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Sass;
-
-=encoding utf8
-
-=head1 NAME
-
-Mojolicious::Plugin::AssetPack::Preprocessor::Sass - Preprocessor for sass
-
-=head1 DESCRIPTION
-
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> is a preprocessor for
-C<.sass> files.
-
-Sass makes CSS fun again. Sass is an extension of CSS3, adding nested rules,
-variables, mixins, selector inheritance, and more. See L<http://sass-lang.com>
-for more information. Supports both F<*.scss> and F<*.sass> syntax variants.
-
-You need either the "sass" executable or the cpan module L<CSS::Sass> to make
-this module work:
-
-  $ sudo apt-get install rubygems
-  $ sudo gem install sass
-
-  ...
-
-  $ sudo cpanm CSS::Sass
-
-=cut
-
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor::Scss';
 use File::Basename 'dirname';
 use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
@@ -35,17 +7,23 @@ use constant LIBSASS_BINDINGS => defined $ENV{ENABLE_LIBSASS_BINDINGS}
 
 sub _extension {'sass'}
 
-=head1 COPYRIGHT AND LICENSE
+1;
 
-Copyright (C) 2014, Jan Henning Thorsen
+=encoding utf8
 
-This program is free software, you can redistribute it and/or modify it under
-the terms of the Artistic License version 2.0.
+=head1 NAME
 
-=head1 AUTHOR
+Mojolicious::Plugin::AssetPack::Preprocessor::Sass - DEPRECATED
 
-Jan Henning Thorsen - C<jhthorsen@cpan.org>
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Sass> will be DEPRECATED.
+Use L<Mojolicious::Plugin::AssetPack::Pipe::Sass> instead.
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
+
+L<http://thorsen.pm/perl/2016/02/21/rewriting-assetpack-plugin.html>
 
 =cut
-
-1;
