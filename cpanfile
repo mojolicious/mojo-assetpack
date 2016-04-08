@@ -1,5 +1,5 @@
 # You can install this projct with curl -L http://cpanmin.us | perl - https://github.com/jhthorsen/mojolicious-plugin-assetpack/archive/master.tar.gz
-requires "Mojolicious" => "6.00";
+requires "Mojolicious" => "6.50";
 requires "IPC::Run3"   => "0.048";
 
 # required in old code
