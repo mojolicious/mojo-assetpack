@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.02 Not Released
+1.02 2016-04-08T14:30:19+0200
  - Add support for "sass_functions" #68
    Contributor: Mark Grimes
  - Fix 2 naked subroutines

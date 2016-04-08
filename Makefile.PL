@@ -15,6 +15,6 @@ WriteMakefile(
     },
   },
   BUILD_REQUIRES => {'Test::More' => '0.88'},
-  PREREQ_PM => {'File::Which' => '1.21', 'IPC::Run3' => '0.048', 'Mojolicious' => '6.00'},
+  PREREQ_PM => {'File::Which' => '1.21', 'IPC::Run3' => '0.048', 'Mojolicious' => '6.50'},
   test => {TESTS => (-e 'META.yml' ? 't/*.t' : 't/*.t xt/*.t')},
 );
