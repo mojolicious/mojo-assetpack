@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojo::Loader ();
 
 use constant CHECK_INTERVAL => $ENV{MOJO_ASSETPACK_CHECK_INTERVAL}  || 0.5;
-use constant STRATEGY       => $ENV{MOJO_ASSETPACK_RELOAD_STRATEGY} || 'inline';
+use constant STRATEGY       => $ENV{MOJO_ASSETPACK_RELOAD_STRATEGY} || 'document';
 
 # WARNING!
 # This pipe uses some of the internals in AssetPack which should not be accessed.
@@ -38,6 +38,7 @@ sub _ws {
 
   while (my ($topic, $c) = each %$by_topic) {
     $files{$_} = $topic for $c->map('path')->compact->each;
+    $files{$_} = $topic for map { @{$_->{dependencies} || []} } @$c;
   }
 
   $c->on(finish => sub { Mojo::IOLoop->remove($tid) });
@@ -97,7 +98,7 @@ to "document" or "inline". "document" means that the whole document should
 reload when an asset change, while "inline" will try to figure out which
 "link" and "script" tags that changed and only reload those.
 
-The default is "inline" for now, but this is EXPERIMENTAL.
+The default is "document" for now, but this might change in the future.
 
 =head1 METHODS
 

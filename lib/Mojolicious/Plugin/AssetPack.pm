@@ -31,9 +31,7 @@ sub pipe {
 
 sub process {
   my ($self, $topic, @input) = @_;
-
-  # hack to enable Reloader to work
-  $self->{input}{$topic} = [@input] if @input;
+  my $assets = Mojo::Collection->new;
 
   return $self->_process_from_def($topic) unless @input;
 
@@ -43,11 +41,15 @@ sub process {
   # TODO: The idea with blessed($_) is that maybe the user can pass inn
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
-  my $assets = Mojo::Collection->new(
-    map { Scalar::Util::blessed($_) ? $_ : $self->store->asset($_) } @input);
+  for my $f (@input) {
+    $f = $self->store->asset($f) unless Scalar::Util::blessed($f);
+    $f->_reset->content($self->store->asset($f->url)) if $self->{input}{$topic};
+    $f->$_ for qw(checksum mtime);
+    push @$assets, $f;
+  }
 
-  # Prepare asset attributes
-  $assets->map($_) for qw(checksum mtime);
+  # hack to enable Reloader to work
+  $self->{input}{$topic} = [@$assets];
 
   for my $pipe (@{$self->{pipes}}) {
     next unless $pipe->can('process');

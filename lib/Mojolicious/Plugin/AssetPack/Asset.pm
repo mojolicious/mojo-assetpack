@@ -31,6 +31,12 @@ sub get_chunk { shift->_asset->get_chunk(@_) }
 sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { $_[0]->_asset->size }
 
+sub _reset {
+  my $self = shift;
+  delete $self->{$_} for qw(checksum format mtime);
+  $self;
+}
+
 sub FROM_JSON {
   my ($self, $attrs) = @_;
   $self->$_($attrs->{$_})
