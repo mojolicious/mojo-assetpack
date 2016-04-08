@@ -1,9 +1,11 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.02 Not Released
+ - Add support for "sass_functions" #68
+   Contributor: Mark Grimes
  - Fix 2 naked subroutines
- - Skip more old tests by default
  - Fix t/sass.t: #919191 != #909090
+ - Skip more old tests by default
 
 1.01 2016-04-06T16:10:06+0200
  - Cannot load CSS::Minifier::XS in old code - The module is optional

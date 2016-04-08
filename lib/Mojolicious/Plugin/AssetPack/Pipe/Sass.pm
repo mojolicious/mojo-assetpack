@@ -7,11 +7,18 @@ use Mojo::Util;
 my $FORMAT_RE = qr{^s[ac]ss$};
 my $IMPORT_RE = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
 
+has functions => sub { +{} };
+
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
   my $file;
+
+  for my $name (keys %{$self->functions}) {
+    my $cb = $self->functions->{$name};
+    $opts{sass_functions}{$name} = sub { $self->$cb(@_); };
+  }
 
   return $assets->each(
     sub {
@@ -122,6 +129,27 @@ sub _output_style {
 
 Mojolicious::Plugin::AssetPack::Pipe::Sass - Process sass and scss files
 
+=head1 SYNOPSIS
+
+=head2 Application
+
+  plugin AssetPack => {pipes => [qw(Sass Css Combine)]};
+
+  $self->pipe("Sass")->functions({
+    q[image-url($arg)] => sub {
+      my ($pipe, $arg) = @_;
+      return sprintf "url(/assets/%s)", $_[1];
+    }
+  });
+
+=head2 Sass file
+
+The sass file below shows how to use the custom "image-url" function:
+
+  body {
+    background: #fff image-url('img.png') top left;
+  }
+
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will process sass and scss files.
@@ -129,6 +157,21 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will process sass and scss files.
 This module require either the optional module L<CSS::Sass> or the C<sass>
 program to be installed. C<sass> will be automatically installed using
 L<https://rubygems.org/> unless already available.
+
+=head1 ATTRIBUTES
+
+=head2 functions
+
+  $hash_ref = $self->functions;
+
+Used to define custom SASS functions. Note that the functions will be called
+with C<$self> as the first argument, followed by any arguments from the SASS
+function. This invocation is EXPERIMENTAL, but will hopefully not change.
+
+This attribute requires L<CSS::Sass> to work. It will not get passed on to
+the C<sass> executable.
+
+See L</SYNOPSIS> for example.
 
 =head1 METHODS
 
