@@ -1,5 +1,5 @@
 use t::Helper;
-plan skip_all => 'cpanm CSS::Sass' unless eval 'require CSS::Sass;1';
+plan skip_all => 'cpanm CSS::Sass' unless eval 'use CSS::Sass 3.3.0;1';
 
 my $t = t();
 $t->app->asset->process;
