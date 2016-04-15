@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.05 Not Released
  - Need to "use CSS::Sass 3.3.0" to avoid test failures on missing features
+ - Fix adding route earlier than on the first request #77
 
 1.04 2016-04-08T22:40:29+0200
  - Fix Pipe::Reloader and files from def file

@@ -9,7 +9,7 @@ our $VERSION = '1.04';
 has minify => sub { shift->_app->mode ne 'development' };
 
 has route => sub {
-  shift->_app->routes->route('/asset/:checksum/:name')->via(qw( HEAD GET ))
+  shift->_app->routes->route('/asset/:checksum/:name')->via(qw(HEAD GET))
     ->name('assetpack')->to(cb => \&_serve);
 };
 
@@ -62,6 +62,7 @@ sub process {
   $self->_app->log->debug(qq(Processed asset "$topic".));
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
+  $self->route;    # make sure we add the route to the app
   $self;
 }
 
@@ -352,6 +353,9 @@ A L<Mojolicious::Routes::Route> object used to serve assets. The default route
 responds to HEAD and GET requests and calls
 L<serve_asset()|Mojolicious::Plugin::AssetPack::Store/serve_asset> on L</store>
 to serve the asset.
+
+The default route will be built and added to the L<application|Mojolicious>
+when L</process> is called the first time.
 
 See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
 for an example on how to customize this route.
