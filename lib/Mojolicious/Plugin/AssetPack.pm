@@ -180,10 +180,7 @@ sub _tag_helpers {
     ->map(
     sub {
       my $tag_helper = $_->format eq 'js' ? 'javascript' : 'stylesheet';
-      my $url
-        = $base_url
-        . $route->render(
-        {checksum => $_->checksum, format => $_->format, name => $_->name});
+      my $url = $base_url . $route->render($_->TO_JSON);
       $c->$tag_helper($url, @attrs);
     }
     )->join("\n");

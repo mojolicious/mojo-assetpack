@@ -2,6 +2,7 @@ package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
 use Mojo::Util 'spurt';
 use Mojo::URL;
+use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
@@ -14,8 +15,14 @@ has _file => sub {
   File::Spec->catfile(shift->paths->[0], $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db');
 };
 
-has _content_type => sub {
-  return {css => 'text/css', js => 'application/javascript'};
+has _types => sub {
+  my $t = Mojolicious::Types->new;
+  $t->type(eot   => 'application/vnd.ms-fontobject');
+  $t->type(otf   => 'application/font-otf');
+  $t->type(ttf   => 'application/font-ttf');
+  $t->type(woff2 => 'application/font-woff2');
+  delete $t->mapping->{$_} for qw(atom bin htm html txt xml zip);
+  $t;
 };
 
 has_ro 'ua';
@@ -85,7 +92,7 @@ sub serve_asset {
   my ($self, $c, $asset) = @_;
   my $d  = $self->default_headers;
   my $h  = $c->res->headers;
-  my $ct = $self->_content_type->{$asset->format};
+  my $ct = $self->_types->type($asset->format);
 
   unless ($ct) {
     $h->content_type('text/css');
@@ -134,6 +141,7 @@ sub _db_set {
         Carp::confess("Invalid key '$key'. Need to be [a-z-].") unless $key =~ /^[\w-]+$/;
         printf $DB "[%s:%s]\n", $key, $url;
         for my $attr (sort @attrs) {
+          next unless defined $db->{$url}{$key}{$attr};
           printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
         }
       }
@@ -167,6 +175,7 @@ sub _download {
   my $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
   make_path(dirname $path) unless -d dirname $path;
   my $tx = $self->ua->get($req_url);
+  my $h  = $tx->res->headers;
 
   if ($tx->error) {
     diag 'Unable to download "%s": %s', $req_url, $tx->error->{message} if DEBUG;
@@ -175,23 +184,19 @@ sub _download {
 
   $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
   spurt $tx->res->body, $path;
-  _headers_to_attrs($tx->res->headers, $attrs);
-  @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
-  $attrs->{format} ||= $url =~ /\.css$/ ? 'css' : $url =~ /\.js$/ ? 'js' : '';
-  delete $attrs->{format} unless $attrs->{format};
-  $self->_db_set($attrs);
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
-}
 
-sub _headers_to_attrs {
-  my ($h, $attrs) = @_;
   if (my $lm = $h->last_modified) {
     $attrs->{mtime} = Mojo::Date->new($lm)->epoch;
   }
   if (my $ct = $h->content_type) {
-    $attrs->{format} = 'css' if $ct =~ /css/;
-    $attrs->{format} = 'js'  if $ct =~ /javascript/;
+    $ct =~ s!;.*$!!;
+    $attrs->{format} = $self->_types->detect($ct)->[0];
   }
+
+  $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
+  @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
+  $self->_db_set($attrs);
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
 sub _rel {

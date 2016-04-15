@@ -1,12 +1,22 @@
 package Mojolicious::Plugin::AssetPack::Asset;
 use Mojo::Base -base;
 use Mojo::Asset::Memory;
+use Mojo::URL;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
-has format   => sub { shift->url =~ /\.(\w+)$/ ? lc $1 : '' };
+has format => sub {
+  my $self = shift;
+  my $name
+    = $self->url =~ /^https?:/
+    ? Mojo::URL->new($self->url)->path->[-1]
+    : (split m!(\\|/)!, $self->url)[-1];
+
+  return $name =~ /\.(\w+)$/ ? $1 : '';
+};
+
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
-has mtime    => sub { shift->_asset->mtime };
+has mtime => sub { shift->_asset->mtime };
 
 has _asset => sub {
   my $self = shift;
@@ -15,7 +25,26 @@ has _asset => sub {
   return Mojo::Asset::Memory->new;
 };
 
-has_ro 'name' => sub { local $_ = (split m!(\\|/)!, $_[0]->url)[-1]; s!\.\w+$!!; $_ };
+has_ro name => sub {
+  my $self = shift;
+  my $name;
+
+  if ($self->url =~ /^https?:/) {
+    my $url = Mojo::URL->new($self->url);
+    my $qs  = $url->query->to_string;
+    $name = $url->path->[-1];
+    $qs =~ s!\W!_!g;
+    $name =~ s!\.\w+$!!;
+    $name .= "_$qs" if $qs;
+  }
+  else {
+    $name = (split m!(\\|/)!, $self->url)[-1];
+    $name =~ s!\.\w+$!!;
+  }
+
+  return $name;
+};
+
 has_ro 'url';
 
 sub content {
@@ -100,7 +129,7 @@ Holds the modification time of L</content>.
 
   $str = $self->name;
 
-Returns the last part of l</url> without extension.
+Returns the basename of L</url>, without extension.
 
 =head2 url
 

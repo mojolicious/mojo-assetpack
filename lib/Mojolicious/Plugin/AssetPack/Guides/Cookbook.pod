@@ -78,9 +78,11 @@ below:
   $app->asset->process(
     "app.css" => (
       "https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css",
-      "your-app.css",
     )
   );
+
+See also L<Mojolicious::Plugin::AssetPack::Pipe::Fetch> for information about
+automatically fetching related font files.
 
 =head2 Google fonts
 
