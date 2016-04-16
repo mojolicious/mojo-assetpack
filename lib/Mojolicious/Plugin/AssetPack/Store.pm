@@ -156,8 +156,9 @@ sub _download {
 
   my $attrs = $self->_db_get({key => 'original', url => $url}) || {mtime => $^T};
   if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
-    $asset->{$_} = $attrs->{$_}
-      for grep { $attrs->{$_} and !$asset->{$_} } qw(format mtime url);
+    $asset->{url} = $url;
+    $asset->{format} ||= $attrs->{format} if $attrs->{format};
+    $asset->{mtime}  ||= $attrs->{mtime}  if $attrs->{mtime};
     diag 'Already downloaded: %s', $req_url if DEBUG;
     return $asset;
   }
