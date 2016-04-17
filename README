@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.04
+    1.05
 
 SYNOPSIS
   Application
@@ -129,6 +129,9 @@ ATTRIBUTES
     A Mojolicious::Routes::Route object used to serve assets. The default
     route responds to HEAD and GET requests and calls serve_asset() on
     "store" to serve the asset.
+
+    The default route will be built and added to the application when
+    "process" is called the first time.
 
     See "ASSETS FROM CUSTOM DOMAIN" in
     Mojolicious::Plugin::AssetPack::Guides::Cookbook for an example on how
