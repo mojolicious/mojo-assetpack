@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.06 Not Released
+ - Fix Fetch with Combine #75
+
 1.05 2016-04-17T11:19:29+0200
  - Need to "use CSS::Sass 3.3.0" to avoid test failures on missing features
  - Add support for automatic download of fonts #75

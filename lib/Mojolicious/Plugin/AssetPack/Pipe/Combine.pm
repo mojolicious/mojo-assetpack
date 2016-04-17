@@ -6,18 +6,33 @@ has enabled => sub { shift->assetpack->minify };
 
 sub process {
   my ($self, $assets) = @_;
+  my $combined = Mojo::Collection->new;
+  my @other;
 
   return unless $self->enabled;
-  @$assets
-    = $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
-    ->each;
-  my $checksum = checksum $assets->map('checksum')->join(':');
-  my $content  = $assets->map('content')->join("\n");
+
+  for my $asset (@$assets) {
+    if ($asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null')) {
+      next;
+    }
+    elsif (grep { $asset->format eq $_ } qw(css js)) {
+      push @$combined, $asset;
+    }
+    else {
+      push @other, $asset;
+    }
+  }
+
+  my $checksum = checksum $combined->map('checksum')->join(':');
+  my $content  = $combined->map('content')->join("\n");
+
   diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
-  @$assets
-    = (
+
+  @$assets = (
+    @other,
     Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)
-      ->minified(1)->content($content));
+      ->minified(1)->content($content)
+  );
 }
 
 1;
