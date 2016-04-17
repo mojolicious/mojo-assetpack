@@ -4,6 +4,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
  - Need to "use CSS::Sass 3.3.0" to avoid test failures on missing features
  - Add support for automatic download of fonts #75
  - Add support for conditions in assetpack.def #78
+ - Fix SCSS files with UTF-8 encoding #70
  - Fix adding route earlier than on the first request #77
  - Fix setting url() on asset from db file
 

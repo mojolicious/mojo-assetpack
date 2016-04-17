@@ -47,6 +47,7 @@ sub process {
           die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s',
             $asset->url, dumper(\%opts), $err;
         }
+        $css = Mojo::Util::encode('UTF-8', $css);
         $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
       else {
