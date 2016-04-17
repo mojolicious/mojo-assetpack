@@ -186,6 +186,18 @@ the asset to be downloaded, but not included in the output asset. This is
 useful when you have something like "sass/main.scss" that depend on
 "materialize.scss", but "materialize.scss" itself should not be compiled.
 
+It is also possible to add (EXPERIMENTAL) conditions:
+
+  ! app.css
+  < development.css [mode==development] [minify==0]
+  < production.css  [mode!=development]
+
+"development.css" will be processed if L<Mojolicious/mode> is "development" and
+L<Mojolicious::Plugin::AssetPack/minify> is "0". "production.css" will be
+processed if L<Mojolicious/mode> is something else than "development". This is
+especially useful if you want to include a JavaScript with debug flags set
+while developing, but switch to a smaller version without debug in production.
+
 =head2 Using assets
 
 Any processed asset can be accessed by refering to a topic.

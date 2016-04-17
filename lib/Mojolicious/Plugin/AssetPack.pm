@@ -6,7 +6,7 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
 our $VERSION = '1.04';
 
-has minify => sub { shift->_app->mode ne 'development' };
+has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
 has route => sub {
   shift->_app->routes->route('/asset/:checksum/:name')->via(qw(HEAD GET))
@@ -102,6 +102,19 @@ sub register {
 
 sub _app { shift->ua->server->app }
 
+sub _correct_mode {
+  my ($self, $args) = @_;
+
+  while ($args =~ /\[(\w+)([!=]+)([^\]]+)/g) {
+    my $v = $1 eq 'minify' ? $self->minify : $self->_app->$1;
+    diag "Checking $1: $v $2 $3" if DEBUG == 2;
+    return 0 if $2 eq '==' and $v ne $3;
+    return 0 if $2 eq '!=' and $v eq $3;
+  }
+
+  return 1;
+}
+
 sub _pipes {
   my ($self, $names) = @_;
 
@@ -129,9 +142,11 @@ sub _process_from_def {
 
   for (split /\r?\n/, $asset->slurp) {
     s/\s*\#.*//;
-    if (/^\<(\S*)\s+(.+)/) {
-      my $asset = $self->store->asset($2);
-      bless $asset, 'Mojolicious::Plugin::AssetPack::Asset::Null' if $1 eq '<';
+    if (/^\<(\S*)\s+(\S+)\s*(.*)/) {
+      my ($class, $url, $args) = ($1, $2, $3);
+      next unless $self->_correct_mode($args);
+      my $asset = $self->store->asset($url);
+      bless $asset, 'Mojolicious::Plugin::AssetPack::Asset::Null' if $class eq '<';
       push @{$process{$topic}}, $asset;
     }
     elsif (/^\!\s*(.+)/) { $topic = $1; }

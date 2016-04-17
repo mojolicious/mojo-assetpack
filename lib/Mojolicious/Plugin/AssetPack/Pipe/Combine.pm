@@ -2,10 +2,12 @@ package Mojolicious::Plugin::AssetPack::Pipe::Combine;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(checksum diag DEBUG);
 
+has enabled => sub { shift->assetpack->minify };
+
 sub process {
   my ($self, $assets) = @_;
 
-  return unless $self->assetpack->minify;
+  return unless $self->enabled;
   @$assets
     = $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
     ->each;
@@ -30,6 +32,13 @@ Mojolicious::Plugin::AssetPack::Pipe::Combine - Combine multiple assets to one
 
 L<Mojolicious::Plugin::AssetPack::Pipe::Combine> will take a list of
 assets and turn them into a single asset.
+
+=head1 ATTRIBUTES
+
+  $bool = $self->enabled;
+
+Set this to false to disable combining assets into a single file. The default
+value will be L<Mojolicious::Plugin::AssetPack/minify>.
 
 =head1 METHODS
 
