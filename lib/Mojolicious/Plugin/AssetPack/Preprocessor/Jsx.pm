@@ -28,11 +28,11 @@ sub _url {'http://facebook.github.io/react'}
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Preprocessor::Jsx - DEPERACATED
+Mojolicious::Plugin::AssetPack::Preprocessor::Jsx - DEPRECATED
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx> will be DEPERACATED.
+L<Mojolicious::Plugin::AssetPack::Preprocessor::Jsx> will be DEPRECATED.
 No replacement is planned.
 
 =head1 ATTRIBUTES
