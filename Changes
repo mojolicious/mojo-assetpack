@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.07 Not Released
+ - Fix rendering assets URL in mounted apps
+
 1.06 2016-04-17T14:22:08+0200
  - Fix Fetch with Combine #75
 

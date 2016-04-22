@@ -190,12 +190,13 @@ sub _tag_helpers {
     or die qq(No assets registered by topic "$topic".);
 
   $base_url =~ s!/+$!!;
+  $base_url = Mojo::URL->new($base_url) if $base_url;
 
   return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
     ->map(
     sub {
       my $tag_helper = $_->format eq 'js' ? 'javascript' : 'stylesheet';
-      my $url = $base_url . $route->render($_->TO_JSON);
+      my $url = Mojo::URL->new($base_url . $c->url_for(assetpack => $_->TO_JSON));
       $c->$tag_helper($url, @attrs);
     }
     )->join("\n");

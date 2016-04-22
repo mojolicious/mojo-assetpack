@@ -1,6 +1,4 @@
 use t::Helper;
-use Mojo::Loader 'data_section';
-use Mojolicious::Plugin::AssetPack::Util 'checksum';
 
 $ENV{MOJO_MODE} = 'development';
 t()->content_like(qr{development})->content_unlike(qr{foo});
