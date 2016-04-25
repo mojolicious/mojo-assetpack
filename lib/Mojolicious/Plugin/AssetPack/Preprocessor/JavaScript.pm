@@ -4,7 +4,7 @@ use constant MINIFIED_LINE_LENGTH => $ENV{JAVASCRIPT_MINIFIED_LINE_LENGTH}
   || 300;    # might change
 
 my $COMMENT_RE = do {
-  my $re = sprintf '^\s*(%s)', join '|', map {quotemeta} qw( /* */ // );
+  my $re = sprintf '^\s*(%s)', join '|', map {quotemeta} qw(/* */ //);
   $re = qr{$re};
   $re;
 };

@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Preprocessor::Scss;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Preprocessor';
-use Mojo::Util qw( slurp md5_sum );
+use Mojo::Util qw(slurp md5_sum);
 use File::Basename ();
 use File::Spec::Functions 'catfile';
 use File::Which ();
@@ -53,9 +53,9 @@ sub process {
   else {
     local $ENV{SASS_PATH} = join ':', @include_paths;
     my @cmd = ($self->executable, '--stdin');
-    push @cmd, '--scss'           if $self->_extension eq 'scss';
-    push @cmd, qw( -t compressed) if $assetpack->minify;
-    push @cmd, qw( --compass )
+    push @cmd, '--scss'          if $self->_extension eq 'scss';
+    push @cmd, qw(-t compressed) if $assetpack->minify;
+    push @cmd, qw(--compass)
       if !$ENV{MOJO_ASSETPACK_NO_COMPASS} and $$text =~ m!\@import\W+compass\/!;
     $self->_run(\@cmd, $text, $text);
   }
