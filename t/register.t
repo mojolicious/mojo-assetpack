@@ -20,7 +20,7 @@ is $t->app->foo->ua->proxy->http, 'example.com', 'proxy http';
 }
 
 $t = Test::Mojo->new(Mojolicious->new);
-$t->app->plugin(AssetPack => {proxy => 0});
+$t->app->plugin(AssetPack => {pipes => ['Css'], proxy => 0});
 ok !$t->app->asset->ua->proxy->http, 'no http proxy';
 
 $t = Test::Mojo->new(Mojolicious->new);

@@ -94,6 +94,9 @@ sub register {
     $app->helper($helper => sub { @_ == 1 ? $self : $self->_tag_helpers(@_) });
   }
   else {
+    $app->log->warn('Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.');
+    Test::More::diag("Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.")
+      if $ENV{HARNESS_ACTIVE} and UNIVERSAL::can(qw(Test::More diag));
     require Mojolicious::Plugin::AssetPack::Backcompat;
     @Mojolicious::Plugin::AssetPack::ISA = ('Mojolicious::Plugin::AssetPack::Backcompat');
     return $self->SUPER::register($app, $config);
