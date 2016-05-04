@@ -23,16 +23,21 @@ sub process {
     }
   }
 
-  my $checksum = checksum $combined->map('checksum')->join(':');
-  my $content  = $combined->map('content')->join("\n");
+  if ( $combined->size > 0 ) {
+    my $checksum = checksum $combined->map('checksum')->join(':');
+    my $content  = $combined->map('content')->join("\n");
 
-  diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
+    diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
 
-  @$assets = (
-    @other,
-    Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)
-      ->minified(1)->content($content)
-  );
+    @$assets = (
+      @other,
+      Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)
+        ->minified(1)->content($content)
+    );
+  }
+  else {
+    @$assets = @other;
+  }
 }
 
 1;
