@@ -198,7 +198,9 @@ sub _tag_helpers {
   return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
     ->map(
     sub {
-      my $tag_helper = $_->format eq 'js' ? 'javascript' : 'stylesheet';
+      my $tag_helper = $_->format eq 'js'  ? 'javascript' :
+                       $_->format eq 'png' ? 'image'      :
+                                             'stylesheet';
       my $url = Mojo::URL->new($base_url . $c->url_for(assetpack => $_->TO_JSON));
       $c->$tag_helper($url, @attrs);
     }
