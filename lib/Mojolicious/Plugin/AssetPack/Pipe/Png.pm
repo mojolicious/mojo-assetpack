@@ -88,7 +88,7 @@ Mojolicious::Plugin::AssetPack::Pipe::Png - Crunch PNG image files
   # Forces the use of "optipng -clobber -preserve $input"
   $self->pipe("Png")->app("optipng");
 
-  # Forces the use of "optipng --speed 2 -"
+  # Forces the use of "pngquant --speed 2 -"
   $self->pipe("Png")->app("pngquant");
 
   # Set custom application arguments:
@@ -96,12 +96,12 @@ Mojolicious::Plugin::AssetPack::Pipe::Png - Crunch PNG image files
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack::Pipe::Png> can be used to chrunch "png"
-image files.
+L<Mojolicious::Plugin::AssetPack::Pipe::Png> can be used to crush "png" image
+files.
 
-This plugin has default settings for "pngquant" (default) and "optipng".
-Which that will be the default in the future is unknown, so force the
-one you want in case that matters.
+This plugin has default settings for "pngquant" (default) and "optipng". Which
+will be the default in the future is unknown, so force the one you want in case
+that matters.
 
 TODO: Detect which application is installed and use the best available.
 
