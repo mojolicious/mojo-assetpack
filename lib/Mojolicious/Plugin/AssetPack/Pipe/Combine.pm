@@ -6,7 +6,7 @@ has enabled => sub { shift->assetpack->minify };
 
 sub process {
   my ($self, $assets) = @_;
-  my $combined = Mojo::Collection->new;
+  my $combine = Mojo::Collection->new;
   my @other;
 
   return unless $self->enabled;
@@ -16,23 +16,24 @@ sub process {
       next;
     }
     elsif (grep { $asset->format eq $_ } qw(css js)) {
-      push @$combined, $asset;
+      push @$combine, $asset;
     }
     else {
       push @other, $asset;
     }
   }
 
-  my $checksum = checksum $combined->map('checksum')->join(':');
-  my $content  = $combined->map('content')->join("\n");
+  # preserve assets such as images and font files
+  @$assets = @other;
 
-  diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
-
-  @$assets = (
-    @other,
-    Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)
-      ->minified(1)->content($content)
-  );
+  if (@$combine) {
+    my $checksum = checksum $combine->map('checksum')->join(':');
+    my $content  = $combine->map('content')->join("\n");
+    diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
+    push @$assets,
+      Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)
+      ->checksum($checksum)->minified(1)->content($content);
+  }
 }
 
 1;
