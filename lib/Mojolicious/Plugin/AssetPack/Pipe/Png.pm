@@ -1,8 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Png;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
-use File::Temp ();
-use Mojo::Util 'slurp';
 
 has app      => 'pngquant';
 has app_args => sub {
@@ -16,45 +14,20 @@ has app_args => sub {
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
-  my $app   = $self->app;
   my $file;
 
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
       my $attrs = $asset->TO_JSON;
-      $attrs->{key} = sprintf '%s-min', $app;
+      $attrs->{key} = sprintf '%s-min', $self->app;
       $attrs->{minified} = 1;
       return if $asset->format ne 'png' or $asset->minified;
-
       $asset->tag_helper('image');
       return unless $self->assetpack->minify;
       return $asset->content($file)->minified(1) if $file = $store->load($attrs);
-
       diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-      my ($output, $tmp, @args) = ('');
-
-      for my $arg (@{$self->app_args}) {
-        if ($arg eq '$input') {
-          $tmp = File::Temp->new;
-          push @args, "$tmp";
-          defined $tmp->syswrite($asset->content) or die "Can't write to file $tmp: $!";
-          close $tmp;
-        }
-        else {
-          push @args, $arg;
-        }
-      }
-
-      if ($tmp) {
-        $self->run([$app, @args]);
-        $output = slurp "$tmp";
-      }
-      else {
-        $self->run([$app, @args], \$asset->content, \$output);
-      }
-
-      $asset->content($store->save(\$output, $attrs))->FROM_JSON($attrs);
+      $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
     }
   );
 }
@@ -79,7 +52,7 @@ sub _install_pngquant {
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack::Pipe::Png - Crunch PNG image files
+Mojolicious::Plugin::AssetPack::Pipe::Png - Crush PNG image files
 
 =head2 Application
 
@@ -103,6 +76,8 @@ This plugin has default settings for "pngquant" (default) and "optipng". Which
 will be the default in the future is unknown, so force the one you want in case
 that matters.
 
+This pipe is EXPERIMENTAL. Feedback wanted.
+
 TODO: Detect which application is installed and use the best available.
 
 TODO: Add support for pngcrush.
@@ -112,9 +87,9 @@ TODO: Add support for pngcrush.
 =head2 app
 
   $str = $self->app;
-  $self = $self->app("optipng");
+  $self = $self->app("pngquant");
 
-Can be used to set a custom application instead of "optipng".
+Can be used to set a custom application.
 
 =head2 app_args
 

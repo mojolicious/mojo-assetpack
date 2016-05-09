@@ -1,8 +1,10 @@
 package Mojolicious::Plugin::AssetPack::Pipe;
 use Mojo::Base -base;
+use Mojo::Util;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 use File::Basename ();
+use File::Temp     ();
 use IPC::Run3      ();
 use List::Util 'first';
 
@@ -51,6 +53,35 @@ sub _install_gem  { shift->_i('https://rubygems.org/pages/download') }
 sub _install_node { shift->_i('https://nodejs.org/en/download') }
 sub _install_ruby { shift->_i('https://ruby-lang.org/en/documentation/installation') }
 sub _i            { die "@{[ref $_[0]]} requires @{[$_[1]=~/\/(\w+)/?$1:1]}. $_[1]\n" }
+
+sub _run_app {
+  my ($self, $asset) = @_;
+  my $output = '';
+  my ($tmp, @args);
+
+  for my $arg (@{$self->app_args}) {
+    if ($arg eq '$input') {
+      $tmp = File::Temp->new;
+      unshift @args, $tmp;
+      push @args, "$tmp";
+      defined $tmp->syswrite($asset->content) or die "Can't write to file $tmp: $!";
+      close $tmp;
+    }
+    else {
+      push @args, $arg;
+    }
+  }
+
+  if ($tmp) {
+    $self->run([$self->app, @args]);
+    $output = Mojo::Util::slurp("$tmp");
+  }
+  else {
+    $self->run([$self->app, @args], \$asset->content, \$output);
+  }
+
+  return \$output;
+}
 
 1;
 

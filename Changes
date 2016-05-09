@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.08 Not Released
+ - Add support for minifying jpeg image files
  - Add support for minifying png image files #81
    Contributor: Heiko Jansen
  - Add Mojolicious::Plugin::AssetPack::Asset::tag_helper() to support
