@@ -18,6 +18,8 @@ has format => sub {
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
 has mtime => sub { shift->_asset->mtime };
 
+has tag_helper => sub { shift->format eq 'js' ? 'javascript' : 'stylesheet' };
+
 has _asset => sub {
   my $self = shift;
   return $self->content(delete $self->{content})->_asset if $self->{content};
@@ -130,6 +132,17 @@ Holds the modification time of L</content>.
   $str = $self->name;
 
 Returns the basename of L</url>, without extension.
+
+=head2 tag_helper
+
+  $self = $self->tag_helper("stylesheet");
+  $str = $self->tag_helper;
+
+Used to get the Mojolicious L<tag helper|Mojolicious::Plugin::TagHelpers> which
+should be used to render this asset.
+
+This could be set to "image" by a pipe, but defaults to either "stylesheet" or
+"javascript", based on L</format>.
 
 =head2 url
 

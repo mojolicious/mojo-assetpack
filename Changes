@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.08 Not Released
+ - Add Mojolicious::Plugin::AssetPack::Asset::tag_helper() to support
+   future "image" assets.
+
 1.07 2016-05-03T13:55:45+0200
  - Fix rendering assets URL in mounted apps
 
