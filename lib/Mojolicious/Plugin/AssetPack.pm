@@ -41,11 +41,12 @@ sub process {
   # TODO: The idea with blessed($_) is that maybe the user can pass inn
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
-  for my $f (@input) {
-    $f = $self->store->asset($f) unless Scalar::Util::blessed($f);
-    $f->_reset->content($self->store->asset($f->url)) if $self->{input}{$topic};
-    $f->$_ for qw(checksum mtime);
-    push @$assets, $f;
+  for my $i (@input) {
+    my $asset = Scalar::Util::blessed($i) ? $i : $self->store->asset($i);
+    die "Could not find asset '$i'." unless Scalar::Util::blessed($asset);
+    $asset->_reset->content($self->store->asset($asset->url)) if $self->{input}{$topic};
+    $asset->$_ for qw(checksum mtime);
+    push @$assets, $asset;
   }
 
   # hack to enable Reloader to work

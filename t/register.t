@@ -27,4 +27,7 @@ $t = Test::Mojo->new(Mojolicious->new);
 $t->app->plugin(AssetPack => {pipes => ['Css']});
 is @{$t->app->asset->{pipes}}, 1, 'only one pipe';
 
+eval { $t->app->asset->process('test.css' => '/file/not/found.css') };
+like $@, qr{Could not find asset}, 'file not found';
+
 done_testing;
