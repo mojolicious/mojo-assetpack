@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.08
+    1.09
 
 SYNOPSIS
   Application
@@ -218,6 +218,8 @@ AUTHOR
     Jan Henning Thorsen - "jhthorsen@cpan.org"
 
     Alexander Rymasheusky
+
+    Mark Grimes - "mgrimes@cpan.org"
 
     Per Edin - "info@peredin.com"
 

@@ -4,7 +4,7 @@ use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '1.08';
+our $VERSION = '1.09';
 
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
@@ -221,7 +221,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-1.08
+1.09
 
 =head1 SYNOPSIS
 
@@ -473,6 +473,8 @@ the terms of the Artistic License version 2.0.
 Jan Henning Thorsen - C<jhthorsen@cpan.org>
 
 Alexander Rymasheusky
+
+Mark Grimes - C<mgrimes@cpan.org>
 
 Per Edin - C<info@peredin.com>
 
