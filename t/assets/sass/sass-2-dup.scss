@@ -1,0 +1,7 @@
+@import "sass-2-dup/mixins";
+@import "sass-2-dup/mixins";
+
+div.test {
+  @extend .tester;
+  font-size: large;
+}

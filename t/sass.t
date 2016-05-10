@@ -40,6 +40,12 @@ $t->get_ok('/')->status_is(200)
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr{footer.*\#aaa.*body.*\#222}s);
 
+# Duplicate @import
+$t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
+ok eval { $t->app->asset->process('dup.css' => 'sass/sass-2-dup.scss') },
+  'sass with duplicate @imports'
+  or diag $@;
+
 done_testing;
 
 __DATA__
