@@ -78,7 +78,7 @@ SEARCH:
 
     for (@basename) {
       my $path = join '/', @rel, $_;
-      $self->{checksum_for_file}{$path}++ and next;
+      $self->{checksum_for_file}{$path}++ and next SEARCH;
       my $imported = $store->asset($path, $paths) or next;
 
       if ($imported->path) {
