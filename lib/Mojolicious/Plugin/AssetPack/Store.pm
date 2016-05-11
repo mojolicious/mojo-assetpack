@@ -8,7 +8,7 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
 
-has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
+has default_headers => sub { +{"Cache-Control" => "public, max-age=31536000"} };
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
 has _file => sub {
