@@ -8,7 +8,7 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
 
-has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
+has default_headers => sub { +{"Cache-Control" => "public, max-age=31536000"} };
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
 has _file => sub {
@@ -244,7 +244,7 @@ L<Mojolicious::Static> implements the following new ones.
 =head2 default_headers
 
   $hash_ref = $self->default_headers;
-  $self = $self->default_headers({"Cache-Control" => "max-age=31536000"});
+  $self = $self->default_headers({"Cache-Control" => "public, max-age=31536000"});
 
 Used to set default headers used by L</serve_asset>.
 
