@@ -244,7 +244,7 @@ L<Mojolicious::Static> implements the following new ones.
 =head2 default_headers
 
   $hash_ref = $self->default_headers;
-  $self = $self->default_headers({"Cache-Control" => "max-age=31536000"});
+  $self = $self->default_headers({"Cache-Control" => "public, max-age=31536000"});
 
 Used to set default headers used by L</serve_asset>.
 
