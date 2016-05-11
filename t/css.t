@@ -27,7 +27,7 @@ $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/$asset_checksum/app.css"]));
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->header_is('Cache-Control', 'max-age=31536000')->header_is('Content-Type', 'text/css')
+  ->header_is('Cache-Control', 'public, max-age=31536000')->header_is('Content-Type', 'text/css')
   ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
 
 Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Nope!' });
