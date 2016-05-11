@@ -68,7 +68,8 @@ sub _checksum {
 
 SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
-    my @rel      = split '/', $3;
+    my $imp_file = $3;
+    my @rel      = split '/', $imp_file;
     my $name     = pop @rel;
     my $mlen     = length $1;
     my $start    = pos($$ref) - $mlen;
@@ -99,7 +100,7 @@ SEARCH:
     }
 
     local $" = ', ';
-    die qq/[Pipe::Sass] Could not find "$3" file in "@{[$asset->url]}". (@$paths)/;
+    die qq/[Pipe::Sass] Could not find "$imp_file" file in "@{[$asset->url]}". (@$paths)/;
   }
 
   return checksum join ':', @c;
