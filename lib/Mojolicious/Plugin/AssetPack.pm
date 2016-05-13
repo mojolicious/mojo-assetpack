@@ -102,6 +102,8 @@ sub register {
     @Mojolicious::Plugin::AssetPack::ISA = ('Mojolicious::Plugin::AssetPack::Backcompat');
     return $self->SUPER::register($app, $config);
   }
+
+  push @{ $app->commands->namespaces }, 'Mojolicious::Plugin::AssetPack::Command';
 }
 
 sub _app { shift->ua->server->app }
