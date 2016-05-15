@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.10 Not Released
+1.10 2016-05-15T11:50:24+0200
  - Fix watching the actual input asset files in Pipe::Reloader #86
    Contributor: Mark Grimes
 
