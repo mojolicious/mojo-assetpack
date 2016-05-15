@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.10 Not Released
+ - Fix watching the actual input asset files in Pipe::Reloader #86
+   Contributor: Mark Grimes
+
 1.09 2016-05-10T21:36:09+0200
  - Fix to deal with multiple imports of the same Sass file #83
    Contributor: Mark Grimes

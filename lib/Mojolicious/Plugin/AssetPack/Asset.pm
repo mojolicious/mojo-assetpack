@@ -49,6 +49,13 @@ has_ro name => sub {
 
 has_ro 'url';
 
+sub clone {
+  my $self  = shift;
+  my $clone = (ref $self)->new(%{$self});
+  delete $clone->{$_} for qw(checksum minified mtime);
+  return $clone;
+}
+
 sub content {
   my $self = shift;
   return $self->_asset->slurp unless @_;
@@ -151,6 +158,14 @@ This could be set to "image" by a pipe, but defaults to either "stylesheet" or
 Returns the location of the asset.
 
 =head1 METHODS
+
+=head2 clone
+
+  $clone = $self->clone;
+
+Makes a shallow clone of the object.
+
+This method is EXPERIMENTAL.
 
 =head2 content
 

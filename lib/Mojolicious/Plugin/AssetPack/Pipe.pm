@@ -162,11 +162,29 @@ Returns the name of the current asset topic.
 
 =head1 METHODS
 
+=head2 after_process
+
+  $self->after_process(Mojo::Collection->new);
+
+L<Mojolicious::Plugin::AssetPack/process> will call this method before
+any of the pipe L</process> method is called.
+
+Note that this method is not defined in L<Mojolicious::Plugin::AssetPack::Pipe>!
+
 =head2 app
 
   $obh = $self->app;
 
 Returns the L<Mojolicious> application object.
+
+=head2 before_process
+
+  $self->before_process(Mojo::Collection->new);
+
+L<Mojolicious::Plugin::AssetPack/process> will call this method after all of
+the pipes L</process> method is called.
+
+Note that this method is not defined in L<Mojolicious::Plugin::AssetPack::Pipe>!
 
 =head2 process
 

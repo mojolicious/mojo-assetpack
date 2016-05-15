@@ -49,15 +49,14 @@ sub process {
     push @$assets, $asset;
   }
 
-  # hack to enable Reloader to work
-  $self->{input}{$topic} = [@$assets];
-
-  for my $pipe (@{$self->{pipes}}) {
-    next unless $pipe->can('process');
-    local $pipe->{topic} = $topic;
-    diag '%s->process($assets)', ref $pipe if DEBUG;
-    $pipe->process($assets);
-    push @{$self->{asset_paths}}, $_->path for @$assets;
+  for my $method (qw(before_process process after_process)) {
+    for my $pipe (@{$self->{pipes}}) {
+      next unless $pipe->can($method);
+      local $pipe->{topic} = $topic;
+      diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
+      $pipe->$method($assets);
+      push @{$self->{asset_paths}}, $_->path for @$assets;
+    }
   }
 
   $self->_app->log->debug(qq(Processed asset "$topic".));

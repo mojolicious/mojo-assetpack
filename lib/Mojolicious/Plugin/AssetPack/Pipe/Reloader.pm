@@ -5,8 +5,15 @@ use Mojo::Loader ();
 use constant CHECK_INTERVAL => $ENV{MOJO_ASSETPACK_CHECK_INTERVAL}  || 0.5;
 use constant STRATEGY       => $ENV{MOJO_ASSETPACK_RELOAD_STRATEGY} || 'document';
 
-# WARNING!
-# This pipe uses some of the internals in AssetPack which should not be accessed.
+has input => sub { +{} };
+has watch => sub { +{} };
+
+sub before_process {
+  my ($self, $assets) = @_;
+  $self->input->{$self->topic} = [map { $_->clone } @$assets];
+  $self->watch->{$self->topic}
+    = [map { ($_->path, @{$_->{dependencies} || []}) } @$assets];
+}
 
 sub new {
   my $self  = shift->SUPER::new(@_);
@@ -22,23 +29,21 @@ sub new {
   $asset->content(
     do { local $_ = $asset->content; s!STRATEGY!{STRATEGY}!e; $_ }
   );
-  $self->assetpack->{by_checksum}{$asset->checksum} = $asset;
-  $self->assetpack->{by_topic}{'reloader.js'} = Mojo::Collection->new($asset);
 
-  return $self;
+  $self->assetpack->process('reloader.js' => $asset);
+  $self;
 }
 
 sub process { }
 
 sub _ws {
-  my $c        = shift;
-  my $n        = 0;
-  my $by_topic = $c->app->asset->{by_topic} || {};
+  my $c    = shift;
+  my $self = $c->app->asset->pipe('Reloader');
+  my $n    = 0;
   my ($tid, %mem, %files);
 
-  while (my ($topic, $c) = each %$by_topic) {
-    $files{$_} = $topic for $c->map('path')->compact->each;
-    $files{$_} = $topic for map { @{$_->{dependencies} || []} } @$c;
+  while (my ($topic, $files) = each %{$self->watch}) {
+    $files{$_} = $topic for grep {$_} @$files;
   }
 
   $c->on(finish => sub { Mojo::IOLoop->remove($tid) });
@@ -51,10 +56,10 @@ sub _ws {
         next unless defined $mtime;
         my $stats = $mem{$file} ||= [$mtime, $size];
         next if $mtime <= $stats->[0] and $size == $stats->[1];
-        my $topic     = $files{$file};
-        my $assetpack = $c->app->asset;
+        my $topic = $files{$file};
+        my $self  = $c->app->asset->pipe('Reloader');
         warn qq([Pipe::Reloader] File "$file" changed. Processing "$topic"...\n);
-        $assetpack->process($topic => @{$assetpack->{input}{$topic}});
+        $self->assetpack->process($topic => @{$self->input->{$topic}});
         return $c->finish;
       }
     }
@@ -100,7 +105,31 @@ reload when an asset change, while "inline" will try to figure out which
 
 The default is "document" for now, but this might change in the future.
 
+=head1 ATTRIBUTES
+
+=head2 input
+
+  $hash = $self->input;
+
+Holds a mapping between the input
+L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic> and the list of input
+assets.
+
+=head2 watch
+
+  $hash = $self->watch;
+
+Holds a mapping between the input
+L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic> and the files on disk to
+watch.
+
 =head1 METHODS
+
+=head2 before_process
+
+This method builds up L</input> and L</watch>.
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
 
 =head2 new
 
