@@ -1,4 +1,5 @@
 use t::Helper;
+plan skip_all => 'cpanm CSS::Sass' unless eval 'use CSS::Sass 3.3.0;1';
 
 my $file = Mojo::Asset::File->new(path => 't/assets/t-reloader.scss');
 eval { $file->add_chunk("body{color:#000;}\n") }

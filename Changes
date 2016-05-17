@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.11 2016-05-17T07:55:56+0200
+ - Fix failing reloader-process.t
+
 1.10 2016-05-15T11:50:24+0200
  - Fix watching the actual input asset files in Pipe::Reloader #86
    Contributor: Mark Grimes
