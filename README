@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.11
+    1.12
 
 SYNOPSIS
   Application
@@ -81,7 +81,7 @@ OPTIONAL MODULES
 
     * CSS::Minifier::XS
 
-      Used by Mojolicious::Plugin::AssetPack::Pipe::CSS.
+      Used by Mojolicious::Plugin::AssetPack::Pipe::Css.
 
     * CSS::Sass
 

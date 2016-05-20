@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.12 Not Released
+1.12 2016-05-20T20:59:10+0200
  - Fix compressing Sass assets with SASS_STYLE_COMPRESSED
    Contributor: Zoffix Znet
 
