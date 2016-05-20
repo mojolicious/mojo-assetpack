@@ -314,7 +314,7 @@ There are some optional modules you might want to install:
 
 =item * L<CSS::Minifier::XS>
 
-Used by L<Mojolicious::Plugin::AssetPack::Pipe::CSS>.
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
 
 =item * L<CSS::Sass>
 
