@@ -1,5 +1,9 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.12 Not Released
+ - Fix compressing Sass assets with SASS_STYLE_COMPRESSED
+   Contributor: Zoffix Znet
+
 1.11 2016-05-17T07:55:56+0200
  - Fix failing reloader-process.t
 
@@ -125,8 +129,8 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 0.55 2015-05-25T12:58:04+0200
  - Will not add memory asset route if not needed #56
- - Make error visible regardless of page scroll position #57 Contributor:
-   Zoffix Znet
+ - Make error visible regardless of page scroll position #57
+   Contributor: Zoffix Znet
 
 0.54 2015-04-23T17:37:01+0200
  - Fix saving unchanged assets on disk

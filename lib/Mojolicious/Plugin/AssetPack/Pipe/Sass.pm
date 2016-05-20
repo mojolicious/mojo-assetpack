@@ -121,7 +121,7 @@ sub _install_sass {
 }
 
 sub _output_style {
-  return $_[0] ? CSS::Sass::SASS_STYLE_COMPACT() : CSS::Sass::SASS_STYLE_NESTED();
+  return $_[0] ? CSS::Sass::SASS_STYLE_COMPRESSED() : CSS::Sass::SASS_STYLE_NESTED();
 }
 
 1;

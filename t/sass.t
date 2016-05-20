@@ -22,7 +22,14 @@ $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/e035274e04/app.css"]));
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{\.sass\W+color:\s+\#aaa.*\.scss \.nested\W+color:\s+\#9\d9\d9\d}s);
+  ->content_like(qr/\nbody\{background:#fff\}/);
+
+if (-e '.test-everything') {
+  my @content = split /[\r?\n]/, $t->tx->res->text;
+  is $content[0], '.sass{color:#aaa}', 'line1';
+  is $content[1], 'body{background:#fff}.scss{color:#aaa}.scss .nested{color:#939393}',
+    'line2';
+}
 
 Mojo::Util::monkey_patch('CSS::Sass', sass2scss => sub { die 'Nope!' });
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;

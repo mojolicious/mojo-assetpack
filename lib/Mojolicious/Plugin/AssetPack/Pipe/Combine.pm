@@ -28,7 +28,7 @@ sub process {
 
   if (@$combine) {
     my $checksum = checksum $combine->map('checksum')->join(':');
-    my $content  = $combine->map('content')->join("\n");
+    my $content = $combine->map('content')->map(sub { /\n$/ ? $_ : "$_\n" })->join;
     diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
     push @$assets,
       Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)
