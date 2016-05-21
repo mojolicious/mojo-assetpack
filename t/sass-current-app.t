@@ -21,7 +21,7 @@ $t->app->asset->process;
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/98f95f2ef4/app.css"]));
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_unlike(qr{green.*green}s)->content_like(qr{green;}s);
+  ->content_unlike(qr{green.*green}s)->content_like(qr{green\b}s);
 
 unlink File::Spec->catfile(qw(t assets cache main-36fb02dacb.css));
 unlink File::Spec->catfile(qw(t assets cache local sass forms _forms.scss));
