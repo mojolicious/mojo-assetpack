@@ -77,12 +77,16 @@ After that, you might want to customize bootstrap. This can then be done by chan
   << https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss
   < sass/main.scss
 
-"assets/sass/main.scss" should then have this content:
+"assets/sass/main.scss" should then have a modified version of
+L<https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss>:
 
   // Core variables and mixins
   @import "../cache/github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/bootstrap/variables";
   @import "../cache/github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/bootstrap/mixins";
+  @import "variables.scss";
   ...
+
+The file "_variables.scss" should also be copied to "assets/sass".
 
 (Note that the rest of the example file above is truncated)
 
@@ -155,7 +159,8 @@ After that, you might want to customize Materialize. This can then be done by ch
   < https://fonts.googleapis.com/icon?family=Material+Icons
   < sass/main.scss
 
-"assets/sass/main.scss" should then have this content:
+"assets/sass/main.scss" should then have a modified version of
+L<https://raw.githubusercontent.com/Dogfalo/materialize/master/sass/materialize.scss>:
 
   @charset "UTF-8";
 
@@ -163,7 +168,10 @@ After that, you might want to customize Materialize. This can then be done by ch
   @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/prefixer";
   @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/mixins";
   @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/color";
+  @import "variables.scss";
   ...
+
+The file "_variables.scss" should also be copied to "assets/sass".
 
 (Note that the rest of the example file above is truncated)
 
