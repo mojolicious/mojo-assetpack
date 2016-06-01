@@ -62,13 +62,29 @@ instead.
 
 =head2 Bootstrap
 
-The SASS version of L<http://getbootstrap.com> can easily be included:
+The SASS version of L<http://getbootstrap.com> can easily be included by defining it
+in the L<assetspack.def|Mojolicious::Plugin::AssetPack::Guides::Tutorial/Defining assets in a definition file>
+file:
 
-  $app->asset->process(
-    "app.css" => (
-      "https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss"
-    )
-  );
+  $ cat - > assets/assetpack.def
+  ! app.css
+  < https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss
+
+After that, you might want to customize bootstrap. This can then be done by changing
+"assetpack.def" to:
+
+  ! app.css
+  << https://github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/_bootstrap.scss
+  < sass/main.scss
+
+"assets/sass/main.scss" should then have this content:
+
+  // Core variables and mixins
+  @import "../cache/github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/bootstrap/variables";
+  @import "../cache/github.com/twbs/bootstrap-sass/raw/master/assets/stylesheets/bootstrap/mixins";
+  ...
+
+(Note that the rest of the example file above is truncated)
 
 =head2 Font awesome
 
@@ -121,15 +137,35 @@ L<http://jquery.com> can easily be included by refering to a CDN:
 
 =head2 Materialize CSS
 
-L<http://materializecss.com/> can be included with the same code below.
-L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will also discover all the
-"@import" files and download those recusively as well.
+L<http://materializecss.com/> can be included by defining it
+in the L<assetspack.def|Mojolicious::Plugin::AssetPack::Guides::Tutorial/Defining assets in a definition file>
+file. L<Mojolicious::Plugin::AssetPack::Pipe::Sass> will also discover all
+the "@import" files and download those recusively as well.
 
-  $app->asset->process(
-    "app.css" => (
-      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss"
-    )
-  );
+  $ cat - > assets/assetpack.def
+  ! app.css
+  < https://raw.githubusercontent.com/Dogfalo/materialize/master/sass/materialize.scss
+  < https://fonts.googleapis.com/icon?family=Material+Icons
+
+After that, you might want to customize Materialize. This can then be done by changing
+"assetpack.def" to:
+
+  ! app.css
+  << https://raw.githubusercontent.com/Dogfalo/materialize/master/sass/materialize.scss
+  < https://fonts.googleapis.com/icon?family=Material+Icons
+  < sass/main.scss
+
+"assets/sass/main.scss" should then have this content:
+
+  @charset "UTF-8";
+
+  // Mixins
+  @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/prefixer";
+  @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/mixins";
+  @import "../cache/raw.githubusercontent.com/Dogfalo/materialize/master/sass/components/color";
+  ...
+
+(Note that the rest of the example file above is truncated)
 
 =head1 SEE ALSO
 
