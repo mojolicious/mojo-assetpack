@@ -1,6 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Less;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
+use File::Basename 'dirname';
 
 sub process {
   my ($self, $assets) = @_;
