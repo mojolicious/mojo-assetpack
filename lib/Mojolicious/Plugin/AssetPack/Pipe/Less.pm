@@ -18,7 +18,7 @@ sub process {
       my @args = qw(lessc --no-color);
       my $file
         = $asset->path ? $asset : Mojo::Asset::File->new->add_chunk($asset->content);
-      push @args, '--include-path' => dirname $asset->path if $asset->path;
+      push @args, '--include-path='.dirname($asset->path) if $asset->path;
       push @args, $file->path;
       $self->run(\@args, undef, \my $css);
       $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
