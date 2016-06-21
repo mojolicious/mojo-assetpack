@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack;
 use Mojo::Base 'Mojolicious::Plugin';
+
+use Mojo::Util 'trim';
 use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
@@ -152,7 +154,7 @@ sub _process_from_def {
       bless $asset, 'Mojolicious::Plugin::AssetPack::Asset::Null' if $class eq '<';
       push @{$process{$topic}}, $asset;
     }
-    elsif (/^\!\s*(.+)/) { $topic = $1; }
+    elsif (/^\!\s*(.+)/) { $topic = trim $1; }
   }
 
   $self->process($_ => @{$process{$_}}) for keys %process;

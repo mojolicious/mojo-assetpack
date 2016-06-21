@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.14 Not Released
  - Fix Fetch::URL_RE for url(...) without quotes #91 #99
+ - Fix trimming whitespace for topics in .def file, closes #93
  - Fix replacing all fetched files #94
  - Will show download error message #96
 
