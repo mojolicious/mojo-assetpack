@@ -3,15 +3,11 @@ language: perl
 perl:
   - "5.20"
   - "5.16"
-addons:
-  apt:
-    packages:
-      - libpng12-dev
 env:
   - 'HARNESS_OPTIONS=j1 TEST_ONLINE=1'
 install:
   - 'cpanm -n Test::Pod Test::Pod::Coverage IO::Socket::SSL'
-  - 'cpanm -n CSS::Minifier::XS CSS::Sass Imager::File::PNG JavaScript::Minifier::XS'
+  - 'cpanm -n CSS::Minifier::XS CSS::Sass JavaScript::Minifier::XS'
   - 'cpanm -n --installdeps .'
 notifications:
   email: false
