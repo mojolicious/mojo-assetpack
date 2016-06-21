@@ -8,7 +8,7 @@ $t->app->asset->process('app.css' => 'http://harvesthq.github.io/chosen/chosen.c
 $t->get_ok('/')->status_is(200);
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr{\Q../../\Easset/\w+/chosen-sprite\.png'?\)})
-  ->content_like(qr{\Q../../\Easset/\w+/chosen-sprite\E\@2x\.png'?\)})
+  ->content_like(qr{\Q../../\Easset/\w+/chosen-sprite\@2x\.png'?\)})
   ->content_unlike(qr{\Qurl('chosen-sprite.png')\E});
 
 done_testing;
