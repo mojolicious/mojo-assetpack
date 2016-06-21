@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.14 Not Released
  - Fix Fetch::URL_RE for url(...) without quotes #91 #99
+ - Fix replacing all fetched files #94
  - Will show download error message #96
 
 1.13 2016-05-21T08:11:27+0200

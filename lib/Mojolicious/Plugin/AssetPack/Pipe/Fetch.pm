@@ -19,22 +19,26 @@ sub process {
 
       my $base    = Mojo::URL->new($asset->url);
       my $content = $asset->content;
-      my %seen;
+      my %related;
 
       while ($content =~ /$URL_RE/g) {
         my $url   = Mojo::URL->new($2);
         my $len   = length $2;
         my $start = pos($content) - length($1) - $len - 1;
         $url = $url->base($base)->to_abs unless $url->is_abs;
-        next if $seen{$url}++;
-        diag "Fetch resource $url" if DEBUG;
-        my $related = $store->asset($url);
-        $self->assetpack->process($related->name, $related);
-        my $path = $route->render($related->TO_JSON);
-        $path =~ s!^/!!;
-        my $up = join '', map {'../'} $path =~ m!\/!g;
+
+        unless ($related{$url}) {
+          diag "Fetch resource $url" if DEBUG;
+          my $related = $store->asset($url);
+          $self->assetpack->process($related->name, $related);
+          my $path = $route->render($related->TO_JSON);
+          $path =~ s!^/!!;
+          my $up = join '', map {'../'} $path =~ m!\/!g;
+          $related{$url} = "$up$path";
+        }
+
         substr $content, $start, $len,
-          Mojo::URL->new("$up$path")->query(Mojo::Parameters->new);
+          Mojo::URL->new($related{$url})->query(Mojo::Parameters->new);
         pos($content) = $start + $len;
       }
 
