@@ -178,7 +178,7 @@ sub _download {
   my $h  = $tx->res->headers;
 
   if ($tx->error) {
-    diag 'Unable to download "%s": %s', $req_url, $tx->error->{message} if DEBUG;
+    diag 'Unable to download "%s": %s', $req_url, $tx->error->{message};
     return undef;
   }
 
