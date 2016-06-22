@@ -4,7 +4,7 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 use Mojo::URL;
 
 # Only made public for quick fixes. Subject for change
-our $URL_RE = qr{url\((['"]{0,1})((?:http?|).*?)\1\)};
+our $URL_RE = qr{url\((['"]{0,1})(.*?)\1\)};
 
 sub process {
   my ($self, $assets) = @_;

@@ -4,7 +4,7 @@ plan skip_all => 'TEST_ONLINE=1' unless $ENV{TEST_ONLINE} or -e '.test-everythin
 
 my $t = t::Helper->t(pipes => [qw(Css Fetch)]);
 $t->app->asset->process(
-  'app.css' => 'http://fonts.googleapis.com/css?family=Roboto:400,700');
+  'app.css' => 'https://fonts.googleapis.com/css?family=Roboto:400,700');
 $t->get_ok('/')->status_is(200);
 
 # comment from https://github.com/hugeinc/flexboxgrid-sass/blob/master/demo/sass/_code.scss
