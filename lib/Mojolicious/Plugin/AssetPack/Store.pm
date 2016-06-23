@@ -178,7 +178,8 @@ sub _download {
   my $h  = $tx->res->headers;
 
   if ($tx->error) {
-    diag 'Unable to download "%s": %s', $req_url, $tx->error->{message};
+    $self->ua->server->app->log->warn(
+      "[AssetPack] Unable to download $req_url: @{[$tx->error->{message}]}");
     return undef;
   }
 

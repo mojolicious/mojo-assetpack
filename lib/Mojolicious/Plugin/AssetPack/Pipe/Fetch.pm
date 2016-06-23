@@ -22,14 +22,19 @@ sub process {
       my %related;
 
       while ($content =~ /$URL_RE/g) {
-        my $url   = Mojo::URL->new($2);
-        my $len   = length $2;
-        my $start = pos($content) - length($1) - $len - 1;
+        my ($pre, $url) = ($1, $2);
+        my $len   = length $url;
+        my $start = pos($content) - length($pre) - $len - 1;
+
+        next if $url =~ /^data:/;    # Avoid "data:image/svg+xml..."
+
+        $url = Mojo::URL->new($url);
         $url = $url->base($base)->to_abs unless $url->is_abs;
 
         unless ($related{$url}) {
           diag "Fetch resource $url" if DEBUG;
-          my $related = $store->asset($url);
+          my $related = $store->asset($url)
+            or die "AssetPack was unable to fetch related asset $url";
           $self->assetpack->process($related->name, $related);
           my $path = $route->render($related->TO_JSON);
           $path =~ s!^/!!;

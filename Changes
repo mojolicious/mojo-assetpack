@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.15 Not Released
+ - Fix Fetch pipe will skip downloading "data:..." urls #100
+
 1.14 2016-06-21T13:33:41+0200
  - Fix Fetch::URL_RE for url(...) without quotes #91 #99
  - Fix trimming whitespace for topics in .def file, closes #93
