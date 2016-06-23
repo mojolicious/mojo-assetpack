@@ -14,7 +14,7 @@ is $t->app->foo->ua->server->app, $t->app, 'app';
 is $t->app->foo->ua->proxy->http, 'example.com', 'proxy http';
 
 {
-  local $TODO = $^O eq 'Win32' ? 'Proxy test fail on windows' : undef;
+  local $TODO = $^O eq 'MSWin32' ? 'Proxy test fail on windows' : undef;
   is_deeply $t->app->foo->ua->proxy->not, [qw(mojolicious.org 127.0.0.1 ::1 localhost)],
     'proxy not';
 }
