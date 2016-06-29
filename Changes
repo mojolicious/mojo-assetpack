@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.16 Not Released
+ - Improved documentation for store() #101
+
 1.15 2016-06-23T10:50:26+0200
  - Fix Fetch pipe will skip downloading "data:..." urls #100
 

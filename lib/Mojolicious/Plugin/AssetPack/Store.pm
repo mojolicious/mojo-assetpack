@@ -224,6 +224,28 @@ sub _reset {
 
 Mojolicious::Plugin::AssetPack::Store - Storage for assets
 
+=head1 SYNOPSIS
+
+  use Mojolicious::Lite;
+
+  # Load plugin and pipes in the right order
+  plugin AssetPack => {pipes => \@pipes};
+
+  # Change where assets can be found
+  app->asset->store->paths([
+    app->home->rel_dir("some/directory"),
+    "/some/other/directory",
+  ]);
+
+  # Change where assets are stored
+  app->asset->store->paths->[0] = app->home->rel_dir("some/directory");
+
+  # Define asset
+  app->asset->process($moniker => @assets);
+
+  # Retrieve a Mojolicious::Plugin::AssetPack::Asset object
+  my $asset = app->asset->store->asset("some/file.js");
+
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack::Store> is an object to manage cached
