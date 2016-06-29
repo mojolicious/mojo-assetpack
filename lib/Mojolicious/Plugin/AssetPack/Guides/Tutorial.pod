@@ -110,7 +110,10 @@ thanks to a custom L<route|Mojolicious::Plugin::AssetPack/route>.
 
 L<Mojolicious::Plugin::AssetPack::Store> is a sub class of
 L<Mojolicious::Static>, allowing it to find files relative to
-L<Mojolicious::Static/paths>.
+L<Mojolicious::Static/paths>. For example, to add new asset search paths,
+you can do:
+
+    $app->asset->store->paths(["/some/new/location", "/other/location"]);
 
 =head3 DATA section
 
