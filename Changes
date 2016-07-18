@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.17 Not Released
+1.17 2016-07-18T18:43:23+0200
  - Removed Mojolicious::Plugin::AssetPack::Asset::tag_helper()
  - Add Mojolicious::Plugin::AssetPack::tag_for()
  - Add Mojolicious::Plugin::AssetPack::Asset::url_for()

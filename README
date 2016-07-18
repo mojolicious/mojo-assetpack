@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.16
+    1.17
 
 SYNOPSIS
   Application
@@ -96,7 +96,7 @@ OPTIONAL MODULES
       Used by Mojolicious::Plugin::AssetPack::Pipe::JavaScript.
 
 HELPERS
-asset
+  asset
       $self = $app->asset;
       $self = $c->asset;
       $bytestream = $c->asset($topic, @args);
@@ -143,6 +143,26 @@ ATTRIBUTES
 
     Holds a Mojolicious::Plugin::AssetPack::Store object used to locate,
     store and serve assets.
+
+  tag_for
+      $self = $self->tag_for(sub { my ($asset, $c, \%args, @attrs) = @_; });
+      $code = $self->tag_for;
+
+    Holds a sub reference that returns a Mojo::Bytestream object containing
+    the markup required to render an asset.
+
+    $asset is a Mojolicious::Plugin::AssetPack::Asset object, $c is an
+    Mojolicious::Controller object and @attrs can contain a list of HTML
+    attributes. %args currently contains:
+
+    *   base_url
+
+        See "ASSETS FROM CUSTOM DOMAIN" in
+        Mojolicious::Plugin::AssetPack::Guides::Cookbook.
+
+    *   topic
+
+        Name of the current topic.
 
   ua
       $ua = $self->ua;
