@@ -283,6 +283,39 @@ This again only require external tools (less, coffee, ...) and modules
 (L<JavaScript::Minifier::XS>, L<CSS::Sass>) to be required while developing,
 but can be skipped when installing an already built application.
 
+=head2 Assets without topics
+
+One nifty feature is to use L<Mojolicious::Plugin::AssetPack> for assets which
+does not have any pipe to process them. The reason why this comes in handy is
+to avoid cache issues, since changing the file on disk will generate a new URL.
+
+These assets can also be defined directly in the templates, without having to
+be defined in the application startup process. Examples:
+
+  # <img src="/asset/52e98718f0/foo.gif">
+  %= asset "/image/foo.gif"
+
+  # <img src="/asset/87652910af/baz.svg">
+  %= asset "/image/baz.svg"
+
+  # <link rel="icon" href="/asset/65428718f1/bar.ico">
+  %= asset "/image/bar.gif"
+
+  # <source src="/asset/87652718f0/baz.mp3" type="audio/mpeg">
+  %= asset "/audio/baz.mp3"
+
+  # <source src="/asset/52e87652f0/foo.mp4" type="video/mp4">
+  %= asset "/video/foo.mp4"
+
+  # <source src="/asset/52eaz7613a/bar.ogg" type="audio/ogg">
+  %= asset "/audio/bar.ogg"
+
+  # <source src="/asset/baf72618f1/foo.ogv" type="audio/ogv">
+  %= asset "/video/foo.ogv"
+
+  # <source src="/asset/92118711f0/bar.webm" type="audio/webm">
+  %= asset "/video/bar.webm"
+
 =head1 SEE ALSO
 
 L<Mojolicious::Plugin::AssetPack> and

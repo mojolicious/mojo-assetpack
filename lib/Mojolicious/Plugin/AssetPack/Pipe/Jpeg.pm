@@ -21,7 +21,6 @@ sub process {
       $attrs->{key} = sprintf '%s-min', $self->app;
       $attrs->{minified} = 1;
       return if $asset->format !~ /^jpe?g$/ or $asset->minified;
-      $asset->tag_helper('image');
       return unless $self->assetpack->minify;
       return $asset->content($file)->minified(1) if $file = $store->load($attrs);
       diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;

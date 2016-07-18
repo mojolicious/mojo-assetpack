@@ -8,6 +8,13 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
 our $VERSION = '1.16';
 
+my %TAG_TEMPLATE;
+$TAG_TEMPLATE{css} = [qw(link rel stylesheet href)];
+$TAG_TEMPLATE{ico} = [qw(link rel icon href)];
+$TAG_TEMPLATE{js}  = [qw(script src)];
+$TAG_TEMPLATE{$_} = [qw(img src)]    for qw(gif jpg jpeg png svg);
+$TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
+
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
 has route => sub {
@@ -22,6 +29,17 @@ has store => sub {
     paths   => [$self->_app->home->rel_dir('assets')],
     ua      => $self->ua,
   );
+};
+
+has tag_for => sub {
+  return sub {
+    my ($asset, $c, $args, @attrs) = @_;
+    my $url = $asset->url_for($c);
+    my @template = @{$TAG_TEMPLATE{$_->format} || $TAG_TEMPLATE{css}};
+    splice @template, 1, 0, type => $c->app->types->type($asset->format)
+      if $template[0] eq 'source';
+    return $c->tag(@template, Mojo::URL->new("$args->{base_url}$url"), @attrs);
+  };
 };
 
 has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
@@ -90,7 +108,7 @@ sub register {
 
   if ($config->{pipes}) {
     $self->_pipes($config->{pipes});
-    $app->helper($helper => sub { @_ == 1 ? $self : $self->_tag_helpers(@_) });
+    $app->helper($helper => sub { @_ == 1 ? $self : $self->_render_tags(@_) });
   }
   else {
     $app->log->warn('Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.');
@@ -158,6 +176,20 @@ sub _process_from_def {
   $self;
 }
 
+sub _render_tags {
+  my ($self, $c, $topic, @attrs) = @_;
+  my $route = $self->route;
+  my $assets = $self->{by_topic}{$topic} ||= $self->_static_asset($topic);
+  my %args;
+
+  $args{base_url} = $route->pattern->defaults->{base_url} || '';
+  $args{base_url} =~ s!/+$!!;
+  $args{topic} = $topic;
+
+  return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
+    ->map($self->tag_for, $c, \%args, @attrs)->join("\n");
+}
+
 sub _reset {
   my ($self, $args) = @_;
 
@@ -184,24 +216,13 @@ sub _serve {
   $c->rendered;
 }
 
-sub _tag_helpers {
-  my ($self, $c, $topic, @attrs) = @_;
-  my $route    = $self->route;
-  my $base_url = $route->pattern->defaults->{base_url} || '';
-  my $assets   = $self->processed($topic)
+sub _static_asset {
+  my ($self, $topic) = @_;
+  my $asset = $self->store->asset($topic)
     or die qq(No assets registered by topic "$topic".);
-
-  $base_url =~ s!/+$!!;
-  $base_url = Mojo::URL->new($base_url) if $base_url;
-
-  return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
-    ->map(
-    sub {
-      my $tag_helper = $_->tag_helper;
-      my $url        = $_->url_for($c);
-      $c->$tag_helper(Mojo::URL->new("$base_url$url"), @attrs);
-    }
-    )->join("\n");
+  my $assets = Mojo::Collection->new($asset);
+  $self->{by_checksum}{$_->checksum} = $_ for @$assets;
+  return $assets;
 }
 
 sub DESTROY {
@@ -382,6 +403,34 @@ for an example on how to customize this route.
 
 Holds a L<Mojolicious::Plugin::AssetPack::Store> object used to locate, store
 and serve assets.
+
+=head2 tag_for
+
+  $self = $self->tag_for(sub { my ($asset, $c, \%args, @attrs) = @_; });
+  $code = $self->tag_for;
+
+Holds a sub reference that returns a L<Mojo::Bytestream> object containing the
+markup required to render an asset.
+
+Example usage:
+
+  $bytestream = $self->tag_for->($asset, $c, \%args, @attrs);
+
+C<$asset> is a L<Mojolicious::Plugin::AssetPack::Asset> object, C<$c> is an
+L<Mojolicious::Controller> object and C<@attrs> can contain a list of
+HTML attributes. C<%args> currently contains:
+
+=over 4
+
+=item * base_url
+
+See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>.
+
+=item * topic
+
+Name of the current topic.
+
+=back
 
 =head2 ua
 

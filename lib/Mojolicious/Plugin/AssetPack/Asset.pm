@@ -12,13 +12,13 @@ has format => sub {
     ? Mojo::URL->new($self->url)->path->[-1]
     : (split m!(\\|/)!, $self->url)[-1];
 
-  return $name =~ /\.(\w+)$/ ? $1 : '';
+  return $name =~ /\.(\w+)$/ ? lc $1 : '';
 };
 
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
 has mtime => sub { shift->_asset->mtime };
 
-has tag_helper => sub { shift->format eq 'js' ? 'javascript' : 'stylesheet' };
+sub tag_helper { warn "DEPRECATED in v1.17! This attribute does nothing." }
 
 has _asset => sub {
   my $self = shift;
@@ -144,14 +144,7 @@ Returns the basename of L</url>, without extension.
 
 =head2 tag_helper
 
-  $self = $self->tag_helper("stylesheet");
-  $str = $self->tag_helper;
-
-Used to get the Mojolicious L<tag helper|Mojolicious::Plugin::TagHelpers> which
-should be used to render this asset.
-
-This could be set to "image" by a pipe, but defaults to either "stylesheet" or
-"javascript", based on L</format>.
+Replaced by L<Mojolicious::Plugin::AssetPack/tag_for>.
 
 =head2 url
 
@@ -198,13 +191,6 @@ See L<Mojo::Asset/size>.
 
 Returns a L<Mojo::URL> object for this asset. C<$c> need to be a
 L<Mojolicious::Controller>.
-
-This method is useful for constructing other tags, than the standard based on
-L</tag_helper>. Example:
-
-  % for my $asset (@{asset->processed("favicon.png")}) {
-    <link rel="icon" type="image/<%= $asset->format %>" href="<%= $asset->url_for($c) %>">
-  % }
 
 =head2 FROM_JSON
 

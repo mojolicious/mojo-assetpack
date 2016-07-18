@@ -23,7 +23,6 @@ sub process {
       $attrs->{key} = sprintf '%s-min', $self->app;
       $attrs->{minified} = 1;
       return if $asset->format ne 'png' or $asset->minified;
-      $asset->tag_helper('image');
       return unless $self->assetpack->minify;
       return $asset->content($file)->minified(1) if $file = $store->load($attrs);
       diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
@@ -53,6 +52,8 @@ sub _install_pngquant {
 =head1 NAME
 
 Mojolicious::Plugin::AssetPack::Pipe::Png - Crush PNG image files
+
+=head1 SYNOPSIS
 
 =head2 Application
 
