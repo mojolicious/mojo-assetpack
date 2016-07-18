@@ -305,7 +305,7 @@ be defined in the application startup process. Examples:
   %= asset "/image/baz.svg"
 
   # <link rel="icon" href="/asset/65428718f1/bar.ico">
-  %= asset "/image/bar.gif"
+  %= asset "/image/bar.ico"
 
   # <source src="/asset/87652718f0/baz.mp3" type="audio/mpeg">
   %= asset "/audio/baz.mp3"
