@@ -4,6 +4,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
  - Removed Mojolicious::Plugin::AssetPack::Asset::tag_helper()
  - Add Mojolicious::Plugin::AssetPack::tag_for()
  - Add Mojolicious::Plugin::AssetPack::Asset::url_for()
+ - Add EXPERIMENTAL Mojolicious::Plugin::AssetPack::Pipe::Favicon
  - Add support for gif, ico, mp3, mp4, ogg, ogv, svg and webm.
 
 1.16 2016-06-29T19:05:43+0200

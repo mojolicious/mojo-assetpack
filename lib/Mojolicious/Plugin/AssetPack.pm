@@ -32,8 +32,14 @@ has store => sub {
 };
 
 has tag_for => sub {
+  my $self = shift;
+  my $favicon = $self->pipe('Favicon') ? 1 : 0;
+
+  Scalar::Util::weaken($self);
   return sub {
     my ($asset, $c, $args, @attrs) = @_;
+    return $self->pipe('Favicon')->render($c)
+      if $args->{topic} eq 'favicon.ico' and $favicon;
     my $url = $asset->url_for($c);
     my @template = @{$TAG_TEMPLATE{$_->format} || $TAG_TEMPLATE{css}};
     splice @template, 1, 0, type => $c->app->types->type($asset->format)
@@ -411,10 +417,6 @@ and serve assets.
 
 Holds a sub reference that returns a L<Mojo::Bytestream> object containing the
 markup required to render an asset.
-
-Example usage:
-
-  $bytestream = $self->tag_for->($asset, $c, \%args, @attrs);
 
 C<$asset> is a L<Mojolicious::Plugin::AssetPack::Asset> object, C<$c> is an
 L<Mojolicious::Controller> object and C<@attrs> can contain a list of

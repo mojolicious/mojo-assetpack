@@ -75,6 +75,12 @@ Combine multiple assets to one. Should be loaded last.
 
 Minify CSS.
 
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Favicon>
+
+There is a special topic called "favicon.ico", combined with the
+L<Mojolicious::Plugin::AssetPack::Pipe::Favicon> pipe which can be used to
+describe favicons, touch icons and tile icons.
+
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Fetch>
 
 Will look for "url(...)" in CSS files and download the related assets.

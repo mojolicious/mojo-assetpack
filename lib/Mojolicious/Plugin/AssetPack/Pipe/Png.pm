@@ -60,13 +60,13 @@ Mojolicious::Plugin::AssetPack::Pipe::Png - Crush PNG image files
   plugin AssetPack => {pipes => ["Png"]};
 
   # Forces the use of "optipng -clobber -preserve $input"
-  $self->pipe("Png")->app("optipng");
+  app->asset->pipe("Png")->app("optipng");
 
   # Forces the use of "pngquant --speed 2 -"
-  $self->pipe("Png")->app("pngquant");
+  app->asset->pipe("Png")->app("pngquant");
 
   # Set custom application arguments:
-  $self->pipe("Png")->app("pngquant")->app_args([qw(--speed 10 --ordered -)]);
+  app->asset->pipe("Png")->app("pngquant")->app_args([qw(--speed 10 --ordered -)]);
 
 =head1 DESCRIPTION
 
