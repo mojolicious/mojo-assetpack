@@ -75,14 +75,30 @@ Combine multiple assets to one. Should be loaded last.
 
 Minify CSS.
 
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Fetch>
+
+Will look for "url(...)" in CSS files and download the related assets.
+
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>
 
 Minify JavaScript.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Jpeg>
+
+Used to crush "jpeg" image files.
 
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Less>
 
 Process Less CSS files. Should be loaded before
 L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Png>
+
+Used to crush "png" image files.
+
+=item * L<Mojolicious::Plugin::AssetPack::Pipe::Reloader>
+
+EXPERIMENTAL pipe for reloading the page when the assets change.
 
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs>
 
