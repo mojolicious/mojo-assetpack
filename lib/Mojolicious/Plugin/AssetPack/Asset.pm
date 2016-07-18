@@ -69,6 +69,8 @@ sub get_chunk { shift->_asset->get_chunk(@_) }
 sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { $_[0]->_asset->size }
 
+sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
+
 sub _reset {
   my $self = shift;
   delete $self->{$_} for qw(checksum format mtime);
@@ -189,6 +191,20 @@ Returns the path to the asset, if it exists on disk.
 =head2 size
 
 See L<Mojo::Asset/size>.
+
+=head2 url_for
+
+  $url = $self->url_for($c);
+
+Returns a L<Mojo::URL> object for this asset. C<$c> need to be a
+L<Mojolicious::Controller>.
+
+This method is useful for constructing other tags, than the standard based on
+L</tag_helper>. Example:
+
+  % for my $asset (@{asset->processed("favicon.png")}) {
+    <link rel="icon" type="image/<%= $asset->format %>" href="<%= $asset->url_for($c) %>">
+  % }
 
 =head2 FROM_JSON
 

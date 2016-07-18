@@ -68,10 +68,7 @@ sub process {
   $self;
 }
 
-sub processed {
-  my ($self, $topic) = @_;
-  return $self->{by_topic}{$topic};
-}
+sub processed { $_[0]->{by_topic}{$_[1]} }
 
 sub register {
   my ($self, $app, $config) = @_;
@@ -191,7 +188,7 @@ sub _tag_helpers {
   my ($self, $c, $topic, @attrs) = @_;
   my $route    = $self->route;
   my $base_url = $route->pattern->defaults->{base_url} || '';
-  my $assets   = $self->{by_topic}{$topic}
+  my $assets   = $self->processed($topic)
     or die qq(No assets registered by topic "$topic".);
 
   $base_url =~ s!/+$!!;
@@ -201,8 +198,8 @@ sub _tag_helpers {
     ->map(
     sub {
       my $tag_helper = $_->tag_helper;
-      my $url = Mojo::URL->new($base_url . $c->url_for(assetpack => $_->TO_JSON));
-      $c->$tag_helper($url, @attrs);
+      my $url        = $_->url_for($c);
+      $c->$tag_helper(Mojo::URL->new("$base_url$url"), @attrs);
     }
     )->join("\n");
 }
@@ -334,7 +331,7 @@ Used by L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
 
 =head1 HELPERS
 
-=head1 asset
+=head2 asset
 
   $self = $app->asset;
   $self = $c->asset;
