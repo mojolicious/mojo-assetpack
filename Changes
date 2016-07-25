@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.18 Not Released
+ - Fix Can't locate object method "authority" via package "Mojo::URL" #102
+
 1.17 2016-07-18T18:43:23+0200
  - Removed Mojolicious::Plugin::AssetPack::Asset::tag_helper()
  - Add Mojolicious::Plugin::AssetPack::tag_for()

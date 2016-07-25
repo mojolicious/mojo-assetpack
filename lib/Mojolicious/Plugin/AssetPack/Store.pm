@@ -159,7 +159,7 @@ sub _download {
 
   if ($req_url->host eq 'local') {
     my $base = $self->ua->server->url;
-    $req_url = $url->clone->scheme($base->scheme)->authority($base->authority);
+    $req_url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
   }
 
   my $attrs = $self->_db_get({key => 'original', url => $url}) || {mtime => $^T};
