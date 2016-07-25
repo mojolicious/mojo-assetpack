@@ -23,7 +23,7 @@ L<Mojolicious::Plugin::AssetPack/register>, but there are one mandatory
 argument worth noting: "pipes". "pipes" need to be a list of all the pipes
 you need to process your assets. Example:
 
-  $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
+  $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]});
 
 Loading the plugin with the list above will enable AssetPack to process Sass
 and Css files, minify them and combine them into a aingle asset in production.
