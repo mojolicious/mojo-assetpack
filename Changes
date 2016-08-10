@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.19 Not Released
+ - Add EXPERIMENTAL support for compiling .vue (Vue.js) files
+
 1.18 2016-07-25T17:52:06+0200
  - Fix Can't locate object method "authority" via package "Mojo::URL" #102
 
