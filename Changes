@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.19 Not Released
+1.19 2016-08-10T19:14:16+0200
  - Add EXPERIMENTAL support for compiling .vue (Vue.js) files
 
 1.18 2016-07-25T17:52:06+0200
