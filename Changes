@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.20 Not Released
+ - Add EXPERIMENTAL Mojolicious::Plugin::AssetPack::Pipe::TypeScript
+
 1.19 2016-08-10T19:14:16+0200
  - Add EXPERIMENTAL support for compiling .vue (Vue.js) files
 

@@ -1,0 +1,83 @@
+package Mojolicious::Plugin::AssetPack::Pipe::TypeScript;
+use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
+use File::Basename 'dirname';
+use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
+
+has _typescript => sub {
+  my $self = shift;
+
+  return [
+    $self->_find_app('nodejs') || $self->_find_app('node'),
+    Cwd::abs_path(File::Spec->catfile(dirname(__FILE__), 'typescript.js')),
+  ];
+};
+
+sub process {
+  my ($self, $assets) = @_;
+  my $store = $self->assetpack->store;
+  my $file;
+
+  $assets->each(
+    sub {
+      my ($asset, $index) = @_;
+      my $attrs = $asset->TO_JSON;
+      $attrs->{key}    = 'ts';
+      $attrs->{format} = 'js';
+      return unless $asset->format eq 'ts';
+      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+      local $CWD = $self->app->home->to_string;
+      local $ENV{NODE_PATH} = $self->app->home->rel_dir('node_modules');
+
+      $self->run($self->_typescript, undef, \undef) unless $self->{installed}++;
+      $self->run($self->_typescript, \$asset->content, \my $js);
+      $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+    }
+  );
+}
+
+sub _install_typescript {
+  my $self = shift;
+  my $path = $self->app->home->rel_file('node_modules/.bin/tsc')
+    ;    # TODO: This is a bit fragile, since tsc is not part of typescript-simple
+  return $path if -e $path;
+  local $CWD = $self->app->home->to_string;
+  $self->app->log->warn(
+    'Installing typescript-simple... Please wait. (npm install typescript-simple)');
+  $self->run([qw(npm install typescript-simple)]);
+  return $path;
+}
+
+1;
+
+=encoding utf8
+
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Pipe::TypeScript - Process TypeScript .ts files
+
+=head1 SYNOPSIS
+
+  $app->plugin(pipes => [qw(TypeScript JavaScript Combine)]);
+  $app->asset->process("app.js" => qw(foo.ts));
+
+=head1 DESCRIPTION
+
+L<Mojolicious::Plugin::AssetPack::Pipe::TypeScript> will process
+L<https://www.typescriptlang.org/> files into JavaScript.
+
+This module require the C<typescript-simple> nodejs library to be installed.
+C<typescript-simple> will be automatically installed using
+L<https://www.npmjs.com/> unless already installed.
+
+=head1 METHODS
+
+=head2 process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/process>.
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>.
+
+=cut
