@@ -28,7 +28,7 @@ __DATA__
 # https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues/93
 ! app.css 
 < development.css [mode==development] [minify==0]
-< production.css  [mode==production]
+< production.css  [mode=production]
 < foo.css         [mode!=development]
 @@ development.css
 .development { color: #222 }

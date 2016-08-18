@@ -134,8 +134,8 @@ sub _correct_mode {
   while ($args =~ /\[(\w+)([!=]+)([^\]]+)/g) {
     my $v = $1 eq 'minify' ? $self->minify : $self->_app->$1;
     diag "Checking $1: $v $2 $3" if DEBUG == 2;
-    return 0 if $2 eq '==' and $v ne $3;
     return 0 if $2 eq '!=' and $v eq $3;
+    return 0 if $2 ne '!=' and $v ne $3;    # default to testing equality
   }
 
   return 1;
