@@ -88,7 +88,7 @@ sub process {
   $self->_app->log->debug(qq(Processed asset "$topic".));
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
-  $self->route;    # make sure we add the route to the app
+  $self->route;    # make sure we add the asset route to the app
   $self;
 }
 

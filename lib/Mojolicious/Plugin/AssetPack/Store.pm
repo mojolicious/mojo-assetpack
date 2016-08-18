@@ -148,7 +148,7 @@ sub _db_set {
     }
   }
   else {
-    diag 'Save "%s" = 0', $self->_file if DEBUG;
+    diag 'Save "%s" = 0 (%s)', $self->_file, $! if DEBUG;
   }
 }
 
