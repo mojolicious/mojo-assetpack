@@ -8,7 +8,7 @@ has _riotjs => sub {
   my $self = shift;
 
   return [
-    $self->_find_app('nodejs') || $self->_find_app('node'),
+    $self->_find_app([qw(nodejs node)]),
     Cwd::abs_path(File::Spec->catfile(dirname(__FILE__), 'riot.js')),
   ];
 };

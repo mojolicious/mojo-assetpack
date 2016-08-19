@@ -8,7 +8,7 @@ has _typescript => sub {
   my $self = shift;
 
   return [
-    $self->_find_app('nodejs') || $self->_find_app('node'),
+    $self->_find_app([qw(nodejs node)]),
     Cwd::abs_path(File::Spec->catfile(dirname(__FILE__), 'typescript.js')),
   ];
 };
@@ -26,10 +26,11 @@ sub process {
       $attrs->{format} = 'js';
       return unless $asset->format eq 'ts';
       return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+
+      $self->_install_typescript unless $self->{installed}++;
       local $CWD = $self->app->home->to_string;
       local $ENV{NODE_PATH} = $self->app->home->rel_dir('node_modules');
 
-      $self->run($self->_typescript, undef, \undef) unless $self->{installed}++;
       $self->run($self->_typescript, \$asset->content, \my $js);
       $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
     }
@@ -38,14 +39,15 @@ sub process {
 
 sub _install_typescript {
   my $self = shift;
-  my $path = $self->app->home->rel_file('node_modules/.bin/tsc')
-    ;    # TODO: This is a bit fragile, since tsc is not part of typescript-simple
-  return $path if -e $path;
+
+  # TODO: This is a bit fragile, since tsc is not part of typescript-simple
+  my $path = $self->app->home->rel_file('node_modules/.bin/tsc');
+  return 1 if -e $path;
+
   local $CWD = $self->app->home->to_string;
   $self->app->log->warn(
     'Installing typescript-simple... Please wait. (npm install typescript-simple)');
   $self->run([qw(npm install typescript-simple)]);
-  return $path;
 }
 
 1;

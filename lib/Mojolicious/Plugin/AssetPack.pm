@@ -79,7 +79,7 @@ sub process {
     for my $pipe (@{$self->{pipes}}) {
       next unless $pipe->can($method);
       local $pipe->{topic} = $topic;
-      diag '%s->%s($assets)', ref $pipe, $method if DEBUG;
+      diag '%s->%s("%s")', ref $pipe, $method, $topic if DEBUG;
       $pipe->$method($assets);
       push @{$self->{asset_paths}}, $_->path for @$assets;
     }

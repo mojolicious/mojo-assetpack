@@ -31,21 +31,24 @@ sub run {
 sub process { Carp::confess('Method "process" not implemented by subclass') }
 
 sub _find_app {
-  my ($self, $name, $path) = @_;
+  my ($self, $apps, $path) = @_;
   return $path if $path and File::Spec->file_name_is_absolute($path);
 
-  my $key = uc "MOJO_ASSETPACK_${name}_APP";
-  diag 'Looking for "%s" in %s', $name, $key if DEBUG > 1;
-  return $ENV{$key} if $ENV{$key};
+  $apps = [$apps] unless ref $apps eq 'ARRAY';
+  for my $name (@$apps) {
+    my $key = uc "MOJO_ASSETPACK_${name}_APP";
+    diag 'Looking for "%s" in $%s', $name, $key if DEBUG > 1;
+    return $ENV{$key} if $ENV{$key};                        # MOJO_ASSETPACK_FOO_APP wins
+    return $self->{apps}{$name} if $self->{apps}{$name};    # Already found
 
-  return $self->{apps}{$name} if $self->{apps}{$name};
-  diag 'Looking for "%s" in PATH.', $name if DEBUG > 1;
-  $path = first {-e} map { File::Spec->catfile($_, $name) } File::Spec->path;
-  return $self->{apps}{$name} = $path if $path;
+    diag 'Looking for "%s" in $PATH.', $name if DEBUG > 1;
+    $path = first {-e} map { File::Spec->catfile($_, $name) } File::Spec->path;
+    return $self->{apps}{$name} = $path if $path;           # Found in $PATH
+  }
 
-  my $code = $self->can(lc sprintf '_install_%s', $name);
-  diag 'Calling %s->_install_%s() ...', ref $self, $name if DEBUG > 1;
-  return $self->{apps}{$name} = $self->$code if $code;
+  my $code = $self->can(lc sprintf '_install_%s', $apps->[-1]);
+  diag 'Calling %s->_install_%s() ...', ref $self, $apps->[-1] if DEBUG > 1;
+  return $self->{apps}{$apps->[-1]} = $self->$code if $code;
   return '';
 }
 
