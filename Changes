@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.20 Not Released
+1.20 2016-08-19T15:11:58+0200
  - Add EXPERIMENTAL Mojolicious::Plugin::AssetPack::Pipe::TypeScript
  - Will default to "==" test when checking mode in assetpack.def
  - Moved Backcompat to the Mojolicious-Plugin-AssetPack-Backcompat dist

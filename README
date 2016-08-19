@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.19
+    1.20
 
 SYNOPSIS
   Application
@@ -41,7 +41,8 @@ FOR EXISTING USERS
 
       $app->plugin(AssetPack => {pipes => [...]});
 
-    The old API will not be maintained and slowly deprecated.
+    The old API require Mojolicious::Plugin::AssetPack::Backcompat to be
+    installed.
 
 DESCRIPTION
     Mojolicious::Plugin::AssetPack is Mojolicious plugin for processing
