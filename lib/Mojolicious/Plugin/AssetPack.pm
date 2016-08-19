@@ -117,7 +117,8 @@ sub register {
     $app->helper($helper => sub { @_ == 1 ? $self : $self->_render_tags(@_) });
   }
   else {
-    $app->log->warn('Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.');
+    $app->log->warn(
+      'https://metacpan.org/release/Mojolicious-Plugin-AssetPack-Backcompat is required');
     Test::More::diag("Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.")
       if $ENV{HARNESS_ACTIVE} and UNIVERSAL::can(qw(Test::More diag));
     require Mojolicious::Plugin::AssetPack::Backcompat;
@@ -288,7 +289,7 @@ pipes:
 
   $app->plugin(AssetPack => {pipes => [...]});
 
-The old API will not be maintained and slowly deprecated.
+The old API require L<Mojolicious::Plugin::AssetPack::Backcompat> to be installed.
 
 =head1 DESCRIPTION
 
