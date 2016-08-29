@@ -8,12 +8,10 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use File::Basename 'dirname';
 use File::Path 'make_path';
 
-has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
-
 # MOJO_ASSETPACK_DB_FILE is used in tests
-has _file => sub {
-  File::Spec->catfile(shift->paths->[0], $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db');
-};
+use constant DB_FILE_NAME => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
+
+has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
 
 has _types => sub {
   my $t = Mojolicious::Types->new;
@@ -26,13 +24,16 @@ has _types => sub {
 };
 
 has_ro 'ua';
-has_ro '_db' => sub {
+
+has_ro _db => sub {
   my $self = shift;
-  open my $DB, '<', $self->_file or return {};
   my ($db, $key, $url) = ({});
-  while (my $line = <$DB>) {
-    ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
-    $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
+  for my $path (reverse @{$self->_files(DB_FILE_NAME, sub {-r})}) {
+    open my $DB, '<', $path or next;
+    while (my $line = <$DB>) {
+      ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
+      $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
+    }
   }
   return $db;
 };
@@ -128,12 +129,13 @@ sub _db_get {
 
 sub _db_set {
   my ($self, $attrs) = @_;
-  my $db = $self->_db;
+  my $db   = $self->_db;
+  my $path = $self->_files(DB_FILE_NAME)->[0];
   my $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
 
   %$data = %$attrs;
-  if (open my $DB, '>', $self->_file) {
-    diag 'Save "%s" = 1', $self->_file if DEBUG;
+  if (open my $DB, '>', $path) {
+    diag 'Save "%s" = 1', $path if DEBUG;
     for my $url (sort keys %$db) {
       for my $key (sort keys %{$db->{$url}}) {
         delete $db->{$url}{$key}{$_} for qw(key name url);
@@ -148,7 +150,7 @@ sub _db_set {
     }
   }
   else {
-    diag 'Save "%s" = 0 (%s)', $self->_file, $! if DEBUG;
+    diag 'Save "%s" = 0 (%s)', $path, $! if DEBUG;
   }
 }
 
@@ -200,6 +202,13 @@ sub _download {
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
+sub _files {
+  my ($self, $name, $check) = @_;
+  my @files = map { File::Spec->catfile($_, split '/', $name) } @{$self->paths};
+  return [grep $check, @files] if $check;
+  return \@files;
+}
+
 sub _rel {
   local $_ = shift->clone->scheme(undef)->to_string;
   s![^\w\.\/-]!_!g;
@@ -210,10 +219,11 @@ sub _rel {
 
 sub _reset {
   my ($self, $args) = @_;
-  return unless $args->{unlink} and $self->{_file};
+  return unless $args->{unlink};
   local $! = 0;
-  unlink $self->_file;
-  diag 'unlink %s = %s', $self->_file, $! || '1' if DEBUG;
+  my $file = $self->_files(DB_FILE_NAME)->[0];
+  unlink $file;
+  diag 'unlink %s = %s', $file, $! || '1' if DEBUG;
 }
 
 1;

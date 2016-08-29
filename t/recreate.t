@@ -6,6 +6,7 @@ use Mojolicious::Plugin::AssetPack::Util 'checksum';
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 
 # simulate minify()
+no warnings 'once';
 $INC{'CSS/Minifier/XS.pm'} = 'mocked';
 *CSS::Minifier::XS::minify = sub { local $_ = shift; s!\s+!!g; $_ };
 
@@ -14,6 +15,12 @@ my @assets        = qw(one.css recreate.css);
 my $recreate_path = File::Spec->catfile(qw(t assets recreate.css));
 
 Mojo::Util::spurt ".recreate { color: #aaa }\n" => $recreate_path;
+
+# Add support for merging assetpack.db files
+unshift @{$t->app->asset->store->paths},
+  $t->app->home->parse(
+  File::Spec->catdir(Cwd::abs_path(File::Basename::dirname(__FILE__)), 'no-such-dir'));
+
 $t->app->asset->process('app.css' => @assets);
 
 $t->get_ok('/')->status_is(200)->element_exists(qq(link[href\$="/app.css"]));

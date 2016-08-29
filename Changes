@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.21 Not Released
+ - Add support for merging assetpack.db files
+
 1.20 2016-08-19T15:11:58+0200
  - Add EXPERIMENTAL Mojolicious::Plugin::AssetPack::Pipe::TypeScript
  - Will default to "==" test when checking mode in assetpack.def
