@@ -67,9 +67,9 @@ sub process {
   # TODO: The idea with blessed($_) is that maybe the user can pass inn
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
-  for my $i (@input) {
-    my $asset = Scalar::Util::blessed($i) ? $i : $self->store->asset($i);
-    die "Could not find asset '$i'." unless Scalar::Util::blessed($asset);
+  for my $url (@input) {
+    my $asset = Scalar::Util::blessed($url) ? $url : $self->store->asset($url);
+    die qq(Could not find input asset "$url".) unless Scalar::Util::blessed($asset);
     $asset->_reset->content($self->store->asset($asset->url)) if $self->{input}{$topic};
     $asset->$_ for qw(checksum mtime);
     push @$assets, $asset;
@@ -173,6 +173,7 @@ sub _process_from_def {
       my ($class, $url, $args) = ($1, $2, $3);
       next unless $self->_correct_mode($args);
       my $asset = $self->store->asset($url);
+      die qq(Could not find input asset "$url".) unless Scalar::Util::blessed($asset);
       bless $asset, 'Mojolicious::Plugin::AssetPack::Asset::Null' if $class eq '<';
       push @{$process{$topic}}, $asset;
     }

@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.22 Not Released
+ - Fix showing error message when asset could not be found
+
 1.21 2016-08-29T15:48:01+0200
  - Add support for merging assetpack.db files
 
