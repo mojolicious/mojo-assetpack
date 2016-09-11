@@ -157,7 +157,7 @@ sub _db_set {
 sub _download {
   my ($self, $url) = @_;
   my $req_url = $url;
-  my $asset;
+  my ($asset, $path);
 
   if ($req_url->host eq 'local') {
     my $base = $self->ua->server->url;
@@ -174,10 +174,8 @@ sub _download {
   }
 
   my $rel = _rel($url);
-  my $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
-  make_path(dirname $path) unless -d dirname $path;
-  my $tx = $self->ua->get($req_url);
-  my $h  = $tx->res->headers;
+  my $tx  = $self->ua->get($req_url);
+  my $h   = $tx->res->headers;
 
   if ($tx->error) {
     $self->ua->server->app->log->warn(
@@ -185,8 +183,12 @@ sub _download {
     return undef;
   }
 
-  $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
-  spurt $tx->res->body, $path;
+  if ($url->host ne 'local') {
+    $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
+    $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
+    make_path(dirname $path) unless -d dirname $path;
+    spurt $tx->res->body, $path;
+  }
 
   if (my $lm = $h->last_modified) {
     $attrs->{mtime} = Mojo::Date->new($lm)->epoch;
@@ -199,7 +201,8 @@ sub _download {
   $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
   @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
   $self->_db_set($attrs);
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path) if $path;
+  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs)->content($tx->res->body);
 }
 
 sub _files {

@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.23 Not Released
+ - Add EXPERIMENTAL support for mixing in dynamic SASS files
+
 1.22 2016-09-02T14:27:42+0200
  - Fix showing error message when asset could not be found
 

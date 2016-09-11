@@ -68,12 +68,17 @@ sub _checksum {
 
 SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
-    my $imp_file = $3;
-    my @rel      = split '/', $imp_file;
+    my $import   = $3;
+    my @rel      = split '/', $import;
     my $name     = pop @rel;
     my $mlen     = length $1;
     my $start    = pos($$ref) - $mlen;
+    my $dynamic  = $import =~ m!http://local/!;
     my @basename = ("_$name", $name);
+
+    # Follow sass rules for skipping, with one exception
+    next if $import =~ /\.css$/;
+    next if $import =~ m!^https?://! and !$dynamic;
 
     unshift @basename, "_$name.$ext", "$name.$ext" unless $name =~ /\.$ext$/;
 
@@ -100,7 +105,7 @@ SEARCH:
     }
 
     local $" = ', ';
-    die qq/[Pipe::Sass] Could not find "$imp_file" file in "@{[$asset->url]}". (@$paths)/;
+    die qq/[Pipe::Sass] Could not find "$import" file in "@{[$asset->url]}". (@$paths)/;
   }
 
   return checksum join ':', @c;

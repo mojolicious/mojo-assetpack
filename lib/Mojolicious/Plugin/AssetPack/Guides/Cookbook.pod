@@ -54,6 +54,46 @@ did fetching the web page.
 
 L<https://developers.google.com/speed/docs/best-practices/request#ServeFromCookielessDomain>.
 
+=head1 DYNAMIC ASSETS
+
+Any L<web|Mojolicious::Plugin::AssetPack::Guides::Tutorial/Web> asset with the
+hostname "local" will be routed to the current L<Mojolicious> application.
+Example:
+
+  $ cat assetpack.def
+  ! app.js
+  < http://local/some/resource.js
+
+The above URL will make AssetPack issue a request to the current Mojolicious
+application, allowing it to render dynamic JavaScript. Example Mojolicious
+resource:
+
+  get "/some/resource" => [format => "js"], sub {
+    my $c = shift;
+    $c->render(text => sprintf "rand = %s\n", rand);
+  };
+
+=head2 Sass
+
+Sass files can also be generated dynamically. Here is an example Sass file:
+
+  @import "http://local/sass/dynamic";
+  $color: red !default;
+  body { color: $color; }
+
+Normally, the C<@import> statement would be left untouched, but AssetPack will
+(in the special case where the host is "local") inline the result from that
+resource. This allow C<$color> to be set from the application and override the
+default C<$color> in the file above. Example:
+
+  get "/sass/_dynamic" => [format => "scss"], sub {
+    my $c = shift;
+    $c->render(text => "\$color: black;\n");
+  };
+
+Note that this feature is EXPERIMENTAL and not compatible with standard Sass
+rules.
+
 =head1 ONLINE ASSETS
 
 Instead of making custom AssetPack plugins, it is possible to simply include
