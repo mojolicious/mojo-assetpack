@@ -11,7 +11,7 @@ $t->get_ok($t->tx->res->dom->at('img')->{src})->status_is(200)
 my $len = $t->tx->res->headers->content_length;
 diag "original size: $len";
 
-if ($ENV{TEST_PNG} or -e '.test-everything') {
+if ($ENV{TEST_PNG}) {
   $ENV{MOJO_MODE} = 'production';
 
   for my $app (qw(pngquant optipng)) {
