@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.25 Not Released
+1.25 2016-10-30T21:24:48+0100
  - Add end_range(), start_range() and is_range() to Asset #104
 
 1.24 2016-09-11T17:22:08+0200
