@@ -64,11 +64,12 @@ sub content {
   return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0]));
 }
 
-sub get_chunk { shift->_asset->get_chunk(@_) }
-
-sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
-sub size { $_[0]->_asset->size }
-
+sub end_range   { shift->_asset->end_range(@_) }
+sub get_chunk   { shift->_asset->get_chunk(@_) }
+sub is_range    { shift->_asset->is_range }
+sub path        { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
+sub size        { $_[0]->_asset->size }
+sub start_range { shift->_asset->start_range(@_) }
 sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
 sub _reset {
@@ -171,9 +172,17 @@ This method is EXPERIMENTAL.
 Used to get or set the content of this asset. The default will be built from
 passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
 
+=head2 end_range
+
+See L<Mojo::Asset/end_range>.
+
 =head2 get_chunk
 
 See L<Mojo::Asset/get_chunk>.
+
+=head2 is_range
+
+See L<Mojo::Asset/is_range>.
 
 =head2 path
 
@@ -184,6 +193,10 @@ Returns the path to the asset, if it exists on disk.
 =head2 size
 
 See L<Mojo::Asset/size>.
+
+=head2 start_range
+
+See L<Mojo::Asset/start_range>.
 
 =head2 url_for
 
