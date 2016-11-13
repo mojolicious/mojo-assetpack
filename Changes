@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.26 Not Released
+1.26 2016-11-13T17:50:42+0100
  - Change Pipe::Fetch to avoid fetching URL that start with "#" #108
 
 1.25 2016-10-30T21:24:48+0100
