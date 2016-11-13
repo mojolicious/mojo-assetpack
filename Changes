@@ -1,7 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.26 Not Released
- - Change Pipe::Fetch to avoid fetching same URL many times, #108
+ - Change Pipe::Fetch to avoid fetching URL that start with "#" #108
 
 1.25 2016-10-30T21:24:48+0100
  - Add end_range(), start_range() and is_range() to Asset #104

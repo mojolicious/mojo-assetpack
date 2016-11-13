@@ -10,7 +10,7 @@ sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $route = $self->assetpack->route;
-  my %uniq;
+  my %related;
 
   return $assets->each(
     sub {
@@ -20,21 +20,16 @@ sub process {
 
       my $base    = Mojo::URL->new($asset->url);
       my $content = $asset->content;
-      my %related;
-
-      $uniq{$base}++;
 
       while ($content =~ /$URL_RE/g) {
         my ($pre, $url) = ($1, $2);
         my $len   = length $url;
         my $start = pos($content) - length($pre) - $len - 1;
 
-        next if $url =~ /^data:/;    # Avoid "data:image/svg+xml..."
+        next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 
         $url = Mojo::URL->new($url);
         $url = $url->base($base)->to_abs->fragment(undef) unless $url->is_abs;
-
-        next if $uniq{$url}++;
 
         unless ($related{$url}) {
           diag "Fetch resource $url" if DEBUG;
