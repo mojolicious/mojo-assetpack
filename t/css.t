@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::AssetPack::Util 'checksum';

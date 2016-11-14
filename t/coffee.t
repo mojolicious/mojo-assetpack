@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 plan skip_all => 'TEST_COFFEE=1' unless $ENV{TEST_COFFEE} or -e '.test-everything';
 

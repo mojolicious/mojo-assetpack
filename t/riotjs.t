@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 plan skip_all => 'TEST_RIOTJS=1' unless $ENV{TEST_RIOTJS} or -e '.test-everything';
 

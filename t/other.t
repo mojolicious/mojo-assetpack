@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 
 my %expected_element = (

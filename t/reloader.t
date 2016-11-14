@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 
 my $file = Mojo::Asset::File->new(path => 't/assets/t-reloader.css');

@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 
 plan skip_all => 'TEST_REALFAVICONGENERATOR_API_KEY=is_not_set'

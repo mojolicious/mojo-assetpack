@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 
 # This part does not required optipng

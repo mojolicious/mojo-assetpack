@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 plan skip_all => 'TEST_TYPESCRIPT=1'
   unless $ENV{TEST_TYPESCRIPT} or -e '.test-everything';

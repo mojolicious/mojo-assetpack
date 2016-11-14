@@ -1,3 +1,4 @@
+use lib '.';
 use t::Helper;
 use utf8;
 plan skip_all => 'cpanm CSS::Sass' unless eval 'use CSS::Sass 3.3.0;1';

@@ -1,4 +1,5 @@
 BEGIN { $ENV{MOJO_MODE} = 'not_development' }
+use lib '.';
 use t::Helper;
 
 my $t = t::Helper->t(pipes => ['Vuejs']);
