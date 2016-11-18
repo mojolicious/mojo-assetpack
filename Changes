@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.27 Not Released
+1.27 2016-11-18T15:13:55+0100
  - Add custom 404 page when an asset could not be found
 
 1.26 2016-11-13T17:50:42+0100
