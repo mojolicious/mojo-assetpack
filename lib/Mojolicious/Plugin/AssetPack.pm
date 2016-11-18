@@ -18,7 +18,7 @@ $TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
 has route => sub {
-  shift->_app->routes->route('/asset/:checksum/:name')->via(qw(HEAD GET))
+  shift->_app->routes->route('/asset/:checksum/*name')->via(qw(HEAD GET))
     ->name('assetpack')->to(cb => \&_serve);
 };
 
@@ -218,10 +218,21 @@ sub _reset {
 }
 
 sub _serve {
-  my $c = shift;
-  my $f = $c->asset->{by_checksum}{$c->stash('checksum')} or return $c->reply->not_found;
-  $c->asset->store->serve_asset($c, $f);
-  $c->rendered;
+  my $c        = shift;
+  my $checksum = $c->stash('checksum');
+  my $asset    = $c->asset;
+
+  if (my $f = $asset->{by_checksum}{$checksum}) {
+    $asset->store->serve_asset($c, $f);
+    return $c->rendered;
+  }
+
+  my $name = $c->stash('name');
+  if ($asset->{by_topic}{$name}) {
+    return $c->render(text => "// Invalid checksum for topic '$name'\n", status => 404);
+  }
+
+  $c->render(text => "// No such asset '$name'\n", status => 404);
 }
 
 sub _static_asset {

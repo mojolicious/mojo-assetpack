@@ -7,7 +7,7 @@ is_deeply([sort { length $a <=> length $b } routes()], ['/'], 'one route');
 $t->app->asset->process('app.css' => 'one.css');
 is_deeply(
   [sort { length $a <=> length $b } routes()],
-  ['/', '/asset/:checksum/:name'],
+  ['/', '/asset/:checksum/*name'],
   'two routes'
 );
 
