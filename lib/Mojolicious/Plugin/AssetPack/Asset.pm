@@ -1,7 +1,9 @@
 package Mojolicious::Plugin::AssetPack::Asset;
 use Mojo::Base -base;
+
 use Mojo::Asset::Memory;
 use Mojo::URL;
+use Mojo::Util 'deprecated';
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
@@ -49,6 +51,21 @@ has_ro name => sub {
 
 has_ro 'url';
 
+sub asset {
+  my $self  = shift;
+  my $orig  = $self->_asset;
+  my $clone = $orig->new;
+
+  if ($orig->can('path')) {
+    $clone->cleanup(0)->path($orig->path);
+  }
+  else {
+    $clone->auto_upgrade(0)->mtime($orig->mtime)->add_chunk($orig->slurp);
+  }
+
+  return $clone;
+}
+
 sub clone {
   my $self  = shift;
   my $clone = (ref $self)->new(%{$self});
@@ -64,12 +81,16 @@ sub content {
   return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0]));
 }
 
-sub end_range   { shift->_asset->end_range(@_) }
-sub get_chunk   { shift->_asset->get_chunk(@_) }
-sub is_range    { shift->_asset->is_range }
-sub path        { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
-sub size        { $_[0]->_asset->size }
-sub start_range { shift->_asset->start_range(@_) }
+sub end_range { deprecated 'end_range() is deprecated'; shift->_asset->end_range(@_) }
+sub get_chunk { deprecated 'get_chunk() is deprecated'; shift->_asset->get_chunk(@_) }
+sub is_range  { deprecated 'is_range() is deprecated';  shift->_asset->is_range }
+sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
+sub size { $_[0]->_asset->size }
+
+sub start_range {
+  deprecated 'start_range() is deprecated';
+  shift->_asset->start_range(@_);
+}
 sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
 sub _reset {
@@ -155,6 +176,15 @@ Returns the location of the asset.
 
 =head1 METHODS
 
+=head2 asset
+
+  $asset = $self->asset;
+
+Returns a new L<Mojo::Asset::File> or L<Mojo::Asset::Memory> object, with the
+content or path from this object.
+
+This method is EXPERIMENTAL.
+
 =head2 clone
 
   $clone = $self->clone;
@@ -174,15 +204,15 @@ passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
 
 =head2 end_range
 
-See L<Mojo::Asset/end_range>.
+DEPRECATED.
 
 =head2 get_chunk
 
-See L<Mojo::Asset/get_chunk>.
+DEPRECATED.
 
 =head2 is_range
 
-See L<Mojo::Asset/is_range>.
+DEPRECATED.
 
 =head2 path
 
@@ -192,11 +222,13 @@ Returns the path to the asset, if it exists on disk.
 
 =head2 size
 
-See L<Mojo::Asset/size>.
+  $int = $self->size;
+
+Returns the size of the asset in bytes.
 
 =head2 start_range
 
-See L<Mojo::Asset/start_range>.
+DEPRECATED.
 
 =head2 url_for
 
