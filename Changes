@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.28 Not Released
+1.28 2016-11-24T10:51:55+0100
  - Fix resetting end_range and start_range after a "Range: bytes=..." request #109
 
 1.27 2016-11-18T15:13:55+0100
