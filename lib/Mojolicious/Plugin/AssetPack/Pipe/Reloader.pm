@@ -11,8 +11,13 @@ has watch => sub { +{} };
 sub before_process {
   my ($self, $assets) = @_;
   $self->input->{$self->topic} = [map { $_->clone } @$assets];
-  $self->watch->{$self->topic}
-    = [map { ($_->path, @{$_->{dependencies} || []}) } @$assets];
+  $self->watch->{$self->topic} = [map { $_->path } @$assets];
+}
+
+sub after_process {
+  my ($self, $assets) = @_;
+  push @{ $self->watch->{$self->topic} },
+    map { (@{$_->{dependencies} || []}) } @$assets;
 }
 
 sub new {
