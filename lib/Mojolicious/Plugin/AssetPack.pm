@@ -50,6 +50,9 @@ has tag_for => sub {
 
 has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
 
+has [qw(config)];
+my $plugin;
+
 sub pipe {
   my ($self, $needle) = @_;
   return +(grep { $_ =~ /::$needle\b/ } @{$self->{pipes}})[0];
@@ -96,7 +99,8 @@ sub processed { $_[0]->{by_topic}{$_[1]} }
 
 sub register {
   my ($self, $app, $config) = @_;
-  my $helper = $config->{helper} || 'asset';
+  $plugin = $self->config($config);
+  my $helper = $config->{helper} ||= 'asset';
 
   if ($app->renderer->helpers->{$helper}) {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
@@ -115,6 +119,8 @@ sub register {
   if ($config->{pipes}) {
     $self->_pipes($config->{pipes});
     $app->helper($helper => sub { @_ == 1 ? $self : $self->_render_tags(@_) });
+    $self->process(ref eq 'ARRAY' ? @$_ : $_)
+      for ref $config->{process} eq 'HASH' ? map([$_=> @{$config->{process}{$_}}], keys %{$config->{process}}) : ref $config->{process} eq 'ARRAY' ? @{$config->{process}} : ();
   }
   else {
     $app->log->warn(
@@ -220,7 +226,8 @@ sub _reset {
 sub _serve {
   my $c        = shift;
   my $checksum = $c->stash('checksum');
-  my $asset    = $c->asset;
+  my $helper = $plugin->config->{helper};
+  my $asset    = $c->$helper;
 
   if (my $f = $asset->{by_checksum}{$checksum}) {
     $asset->store->serve_asset($c, $f);
@@ -504,6 +511,17 @@ needed. Example:
 
 See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete
 list of available pipes.
+
+=item * process
+
+Optional argument. Processing assets during registering the plugin.
+
+  $app->plugin(AssetPack => pipes => [...], process => {foo.js=>[...], ...});
+  # or
+  $app->plugin(AssetPack => pipes => [...], process => [[foo.js=>(...)], ...]);
+  # or
+  $app->plugin(AssetPack => pipes => [...], process => [$definition_file1, ...]);
+
 
 =item * proxy
 
