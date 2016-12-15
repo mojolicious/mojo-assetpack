@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.29 Not Released
+ - Fix custom helper name #111
+
 1.28 2016-11-24T10:51:55+0100
  - Fix resetting end_range and start_range after a "Range: bytes=..." request #109
 

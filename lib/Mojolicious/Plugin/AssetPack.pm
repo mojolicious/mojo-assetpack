@@ -85,7 +85,8 @@ sub process {
     }
   }
 
-  $self->_app->log->debug(qq(Processed asset "$topic".));
+  my @checksum = map { $_->checksum } @$assets;
+  $self->_app->log->debug(qq(Processed asset "$topic". [@checksum]));
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
   $self->route;    # make sure we add the asset route to the app
@@ -102,6 +103,7 @@ sub register {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
   }
 
+  $app->defaults('assetpack.helper' => $helper);
   $self->ua->server->app($app);
   Scalar::Util::weaken($self->ua->server->{app});
 
@@ -220,7 +222,8 @@ sub _reset {
 sub _serve {
   my $c        = shift;
   my $checksum = $c->stash('checksum');
-  my $asset    = $c->asset;
+  my $helper   = $c->stash('assetpack.helper');
+  my $asset    = $c->$helper;
 
   if (my $f = $asset->{by_checksum}{$checksum}) {
     $asset->store->serve_asset($c, $f);
