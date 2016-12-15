@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.29 Not Released
+1.29 2016-12-15T23:04:40+0100
  - Fix custom helper name #111
 
 1.28 2016-11-24T10:51:55+0100
