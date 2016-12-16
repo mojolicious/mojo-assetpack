@@ -39,22 +39,34 @@ has_ro _db => sub {
 };
 
 sub asset {
-  my ($self, $url, $paths) = @_;
-  my $f;
+  my ($self, $urls, $paths) = @_;
+  my $asset;
 
-  return $self->_download(Mojo::URL->new($url)) if $url =~ m!^https?://!;
-
-  for my $p (@{$paths || $self->paths}) {
-    if ($p =~ m!^https?://!) {
-      my $abs = Mojo::URL->new($p);
+  for my $url (ref $urls ? @$urls : ($urls)) {
+    for my $path (@{$paths || $self->paths}) {
+      next unless $path =~ m!^https?://!;
+      my $abs = Mojo::URL->new($path);
       $abs->path->merge($url);
-      return $f if $f = $self->_download($abs);
+      return $asset if $asset = $self->_already_downloaded($abs);
     }
-    else {
-      local $self->{paths} = [$p];
-      next unless $f = $self->file($url);
-      my $attrs = $self->_db_get({key => 'original', url => $url}) || {url => $url};
-      return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $f);
+  }
+
+  for my $url (ref $urls ? @$urls : ($urls)) {
+    return $asset
+      if $url =~ m!^https?://! and $asset = $self->_download(Mojo::URL->new($url));
+
+    for my $path (@{$paths || $self->paths}) {
+      if ($path =~ m!^https?://!) {
+        my $abs = Mojo::URL->new($path);
+        $abs->path->merge($url);
+        return $asset if $asset = $self->_download($abs);
+      }
+      else {
+        local $self->{paths} = [$path];
+        next unless $asset = $self->file($url);
+        my $attrs = $self->_db_get({key => 'original', url => $url}) || {url => $url};
+        return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $asset);
+      }
     }
   }
 
@@ -110,6 +122,22 @@ sub serve_asset {
   return $self;
 }
 
+sub _already_downloaded {
+  my ($self, $url) = @_;
+  my $attrs = $self->_db_get({key => 'original', url => $url}) or return undef;
+  my $asset;
+
+  if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
+    $asset->{url} = $url;
+    $asset->{format} ||= $attrs->{format} if $attrs->{format};
+    $asset->{mtime}  ||= $attrs->{mtime}  if $attrs->{mtime};
+    diag 'Already downloaded: %s', $asset->url if DEBUG;
+    return $asset;
+  }
+
+  return undef;
+}
+
 sub _cache_path {
   my ($self, $attrs) = @_;
   return (
@@ -159,21 +187,14 @@ sub _db_set {
 sub _download {
   my ($self, $url) = @_;
   my $req_url = $url;
-  my ($asset, $path);
+  my ($asset, $attrs, $path);
 
   if ($req_url->host eq 'local') {
     my $base = $self->ua->server->url;
     $req_url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
   }
 
-  my $attrs = $self->_db_get({key => 'original', url => $url}) || {mtime => $^T};
-  if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
-    $asset->{url} = $url;
-    $asset->{format} ||= $attrs->{format} if $attrs->{format};
-    $asset->{mtime}  ||= $attrs->{mtime}  if $attrs->{mtime};
-    diag 'Already downloaded: %s', $req_url if DEBUG;
-    return $asset;
-  }
+  return $asset if $asset = $self->_already_downloaded($url);
 
   my $rel = _rel($url);
   my $tx  = $self->ua->get($req_url);

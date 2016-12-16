@@ -68,44 +68,36 @@ sub _checksum {
 
 SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
-    my $import   = $3;
-    my @rel      = split '/', $import;
+    my $rel_path = $3;
+    my @rel      = split '/', $rel_path;
     my $name     = pop @rel;
     my $mlen     = length $1;
     my $start    = pos($$ref) - $mlen;
-    my $dynamic  = $import =~ m!http://local/!;
+    my $dynamic  = $rel_path =~ m!http://local/!;
     my @basename = ("_$name", $name);
 
-    # Follow sass rules for skipping, with one exception
-    next if $import =~ /\.css$/;
-    next if $import =~ m!^https?://! and !$dynamic;
+    # Follow sass rules for skipping,
+    # ...with exception for special assetpack handling for dynamic sass include
+    next if $rel_path =~ /\.css$/;
+    next if $rel_path =~ m!^https?://! and !$dynamic;
 
     unshift @basename, "_$name.$ext", "$name.$ext" unless $name =~ /\.$ext$/;
+    my $imported = $store->asset([map { join '/', @rel, $_ } @basename], $paths)
+      or die qq([Pipe::Sass] Could not find "$rel_path" file in @$paths);
 
-    for (@basename) {
-      my $path = join '/', @rel, $_;
-      $self->{checksum_for_file}{$path}++ and next SEARCH;
-      my $imported = $store->asset($path, $paths) or next;
-
-      if ($imported->path) {
-        diag '@import "%s" (%s)', $path, $imported->path if DEBUG >= 2;
-        local $paths->[0] = _include_path($imported);
-        push @{$asset->{dependencies}}, $imported->path;    # hack for Reloader
-        push @c, $self->_checksum(\$imported->content, $imported, $paths);
-      }
-      else {
-        diag '@import "%s" (memory)', $path if DEBUG >= 2;
-        pos($$ref) = $start;
-        substr $$ref, $start, $mlen,
-          $imported->content;    # replace "@import ..." with content of asset
-        push @c, $imported->checksum;
-      }
-
-      next SEARCH;
+    if ($imported->path) {
+      diag '@import "%s" (%s)', $rel_path, $imported->path if DEBUG >= 2;
+      local $paths->[0] = _include_path($imported);
+      push @{$asset->{dependencies}}, $imported->path;    # hack for Reloader
+      push @c, $self->_checksum(\$imported->content, $imported, $paths);
     }
-
-    local $" = ', ';
-    die qq/[Pipe::Sass] Could not find "$import" file in "@{[$asset->url]}". (@$paths)/;
+    else {
+      diag '@import "%s" (memory)', $rel_path if DEBUG >= 2;
+      pos($$ref) = $start;
+      substr $$ref, $start, $mlen,
+        $imported->content;    # replace "@import ..." with content of asset
+      push @c, $imported->checksum;
+    }
   }
 
   return checksum join ':', @c;
