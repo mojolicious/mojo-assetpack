@@ -57,40 +57,22 @@ sub pipe {
 
 sub process {
   my ($self, $topic, @input) = @_;
-  my $assets = Mojo::Collection->new;
 
+  $self->route unless $self->{route_added}++;
   return $self->_process_from_def($topic) unless @input;
-
-  # Used by diag()
-  local $Mojolicious::Plugin::AssetPack::Util::TOPIC = $topic;
 
   # TODO: The idea with blessed($_) is that maybe the user can pass inn
   # Mojolicious::Plugin::AssetPack::Sprites object, with images to generate
   # CSS from?
+  my $assets = Mojo::Collection->new;
   for my $url (@input) {
     my $asset = Scalar::Util::blessed($url) ? $url : $self->store->asset($url);
     die qq(Could not find input asset "$url".) unless Scalar::Util::blessed($asset);
-    $asset->_reset->content($self->store->asset($asset->url)) if $self->{input}{$topic};
-    $asset->$_ for qw(checksum mtime);
     push @$assets, $asset;
   }
 
-  for my $method (qw(before_process process after_process)) {
-    for my $pipe (@{$self->{pipes}}) {
-      next unless $pipe->can($method);
-      local $pipe->{topic} = $topic;
-      diag '%s->%s("%s")', ref $pipe, $method, $topic if DEBUG;
-      $pipe->$method($assets);
-      push @{$self->{asset_paths}}, $_->path for @$assets;
-    }
-  }
-
-  my @checksum = map { $_->checksum } @$assets;
-  $self->_app->log->debug(qq(Processed asset "$topic". [@checksum]));
-  $self->{by_checksum}{$_->checksum} = $_ for @$assets;
-  $self->{by_topic}{$topic} = $assets;
-  $self->route;    # make sure we add the asset route to the app
-  $self;
+  return $self->tap(sub { $_->{input}{$topic} = $assets }) if $self->{lazy};
+  return $self->_process($topic => $assets);
 }
 
 sub processed { $_[0]->{by_topic}{$_[1]} }
@@ -103,6 +85,8 @@ sub register {
     return $app->log->debug("AssetPack: Helper $helper() is already registered.");
   }
 
+  $self->{input} = {};
+  $self->{lazy} ||= $ENV{MOJO_ASSETPACK_LAZY} // $config->{lazy} || 0;
   $app->defaults('assetpack.helper' => $helper);
   $self->ua->server->app($app);
   Scalar::Util::weaken($self->ua->server->{app});
@@ -159,6 +143,38 @@ sub _pipes {
   ];
 }
 
+sub _process {
+  my ($self, $topic, $input) = @_;
+  my $assets = Mojo::Collection->new(@$input);    # Do not mess up input
+
+  local $Mojolicious::Plugin::AssetPack::Util::TOPIC = $topic;    # Used by diag()
+
+  for my $asset (@$assets) {
+    if (my $prev = $self->{by_topic}{$topic}) {
+      delete $self->{by_checksum}{$_->checksum} for @$prev;
+      delete $asset->{$_} for qw(checksum format mtime);
+      $asset->content($self->store->asset($asset->url));
+    }
+    $asset->$_ for qw(checksum mtime);
+  }
+
+  for my $method (qw(before_process process after_process)) {
+    for my $pipe (@{$self->{pipes}}) {
+      next unless $pipe->can($method);
+      local $pipe->{topic} = $topic;
+      diag '%s->%s("%s")', ref $pipe, $method, $topic if DEBUG;
+      $pipe->$method($assets);
+      push @{$self->{asset_paths}}, $_->path for @$assets;
+    }
+  }
+
+  my @checksum = map { $_->checksum } @$assets;
+  $self->_app->log->debug(qq(Processed asset "$topic". [@checksum]));
+  $self->{by_checksum}{$_->checksum} = $_ for @$assets;
+  $self->{by_topic}{$topic} = $assets;
+  $self;
+}
+
 sub _process_from_def {
   my $self  = shift;
   my $file  = shift || 'assetpack.def';
@@ -189,12 +205,12 @@ sub _process_from_def {
 sub _render_tags {
   my ($self, $c, $topic, @attrs) = @_;
   my $route = $self->route;
-  my $assets = $self->{by_topic}{$topic} ||= $self->_static_asset($topic);
-  my %args;
 
-  $args{base_url} = $route->pattern->defaults->{base_url} || '';
+  $self->_process($topic => $self->{input}{$topic}) if $self->{lazy};
+
+  my $assets = $self->{by_topic}{$topic} ||= $self->_static_asset($topic);
+  my %args = (base_url => $route->pattern->defaults->{base_url} || '', topic => $topic);
   $args{base_url} =~ s!/+$!!;
-  $args{topic} = $topic;
 
   return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
     ->map($self->tag_for, $c, \%args, @attrs)->join("\n");
@@ -223,19 +239,19 @@ sub _serve {
   my $c        = shift;
   my $checksum = $c->stash('checksum');
   my $helper   = $c->stash('assetpack.helper');
-  my $asset    = $c->$helper;
+  my $self     = $c->$helper;
 
-  if (my $f = $asset->{by_checksum}{$checksum}) {
-    $asset->store->serve_asset($c, $f);
+  if (my $f = $self->{by_checksum}{$checksum}) {
+    $self->store->serve_asset($c, $f);
     return $c->rendered;
   }
 
-  my $name = $c->stash('name');
-  if ($asset->{by_topic}{$name}) {
-    return $c->render(text => "// Invalid checksum for topic '$name'\n", status => 404);
+  my $topic = $c->stash('name');
+  if ($self->{by_topic}{$topic}) {
+    return $c->render(text => "// Invalid checksum for topic '$topic'\n", status => 404);
   }
 
-  $c->render(text => "// No such asset '$name'\n", status => 404);
+  $c->render(text => "// No such asset '$topic'\n", status => 404);
 }
 
 sub _static_asset {
@@ -345,6 +361,12 @@ It is possible to set environment variables to change the behavior of AssetPack:
 
 Set this environment variable to get more debug to STDERR. Currently you can
 set it to a value between 0 and 3, where 3 provides the most debug.
+
+=item * MOJO_ASSETPACK_LAZY
+
+Set this environment variable if you want to delay processing the assets until
+they are requested. This can be very useful while developing, and the assets
+are changed frequently.
 
 =back
 

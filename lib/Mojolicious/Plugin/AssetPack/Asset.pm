@@ -91,13 +91,8 @@ sub start_range {
   deprecated 'start_range() is deprecated';
   shift->_asset->start_range(@_);
 }
-sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
-sub _reset {
-  my $self = shift;
-  delete $self->{$_} for qw(checksum format mtime);
-  $self;
-}
+sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
 sub FROM_JSON {
   my ($self, $attrs) = @_;

@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.30 Not Released
+ - Add EXPERIMENTAL support for MOJO_ASSETPACK_LAZY=1
+
 1.29 2016-12-15T23:04:40+0100
  - Fix custom helper name #111
 
