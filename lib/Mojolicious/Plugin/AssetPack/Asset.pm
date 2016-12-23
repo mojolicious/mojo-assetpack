@@ -18,7 +18,6 @@ has format => sub {
 };
 
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
-has mtime => sub { shift->_asset->mtime };
 
 sub tag_helper { warn "DEPRECATED in v1.17! This attribute does nothing." }
 
@@ -69,7 +68,7 @@ sub asset {
 sub clone {
   my $self  = shift;
   my $clone = (ref $self)->new(%{$self});
-  delete $clone->{$_} for qw(checksum minified mtime);
+  delete $clone->{$_} for qw(checksum minified);
   return $clone;
 }
 
@@ -84,6 +83,7 @@ sub content {
 sub end_range { deprecated 'end_range() is deprecated'; shift->_asset->end_range(@_) }
 sub get_chunk { deprecated 'get_chunk() is deprecated'; shift->_asset->get_chunk(@_) }
 sub is_range  { deprecated 'is_range() is deprecated';  shift->_asset->is_range }
+sub mtime     { deprecated 'mtime() is deprecated';     shift->_asset->mtime }
 sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
 sub size { $_[0]->_asset->size }
 
@@ -96,13 +96,12 @@ sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
 sub FROM_JSON {
   my ($self, $attrs) = @_;
-  $self->$_($attrs->{$_})
-    for grep { defined $attrs->{$_} } qw(checksum format minified mtime);
+  $self->$_($attrs->{$_}) for grep { defined $attrs->{$_} } qw(checksum format minified);
   $self;
 }
 
 sub TO_JSON {
-  return {map { ($_ => $_[0]->$_) } qw(checksum format minified name mtime url)};
+  return {map { ($_ => $_[0]->$_) } qw(checksum format minified name url)};
 }
 
 1;
@@ -146,22 +145,11 @@ The format of L</content>. Defaults to the extension of L</url> or empty string.
 Will be set to true if either L</url> contains "min" or if a pipe has
 minified L</content>.
 
-=head2 mtime
-
-  $epoch = $self->mtime;
-  $self = $self->mtime($epoch);
-
-Holds the modification time of L</content>.
-
 =head2 name
 
   $str = $self->name;
 
 Returns the basename of L</url>, without extension.
-
-=head2 tag_helper
-
-Replaced by L<Mojolicious::Plugin::AssetPack/tag_for>.
 
 =head2 url
 
@@ -197,18 +185,6 @@ This method is EXPERIMENTAL.
 Used to get or set the content of this asset. The default will be built from
 passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
 
-=head2 end_range
-
-DEPRECATED.
-
-=head2 get_chunk
-
-DEPRECATED.
-
-=head2 is_range
-
-DEPRECATED.
-
 =head2 path
 
   $str = $self->path;
@@ -220,10 +196,6 @@ Returns the path to the asset, if it exists on disk.
   $int = $self->size;
 
 Returns the size of the asset in bytes.
-
-=head2 start_range
-
-DEPRECATED.
 
 =head2 url_for
 

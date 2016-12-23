@@ -27,6 +27,7 @@ find(
 
 plan tests => @files * 3 + 4;
 
+my @deprecated = qw(end_range get_chunk is_range mtime start_range tag_helper);
 for my $file (@files) {
   my $module = $file;
   $module =~ s,\.pm$,,;
@@ -34,7 +35,8 @@ for my $file (@files) {
   $module =~ s,/,::,g;
   ok eval "use $module; 1", "use $module" or diag $@;
   Test::Pod::pod_file_ok($file);
-  Test::Pod::Coverage::pod_coverage_ok($module, {also_private => [qr/^[A-Z_]+$/]});
+  Test::Pod::Coverage::pod_coverage_ok($module,
+    {also_private => [@deprecated, qr/^[A-Z_]+$/]});
 }
 
 Test::CPAN::Changes::changes_file_ok();

@@ -155,7 +155,7 @@ sub _process {
       delete $asset->{$_} for qw(checksum format mtime);
       $asset->content($self->store->asset($asset->url));
     }
-    $asset->$_ for qw(checksum mtime);
+    $asset->checksum;
   }
 
   for my $method (qw(before_process process after_process)) {
