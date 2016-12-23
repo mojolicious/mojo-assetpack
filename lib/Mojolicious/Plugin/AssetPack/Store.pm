@@ -42,7 +42,7 @@ sub asset {
   my ($self, $urls, $paths) = @_;
   my $asset;
 
-  for my $url (ref $urls ? @$urls : ($urls)) {
+  for my $url (ref $urls eq 'ARRAY' ? @$urls : ($urls)) {
     for my $path (@{$paths || $self->paths}) {
       next unless $path =~ m!^https?://!;
       my $abs = Mojo::URL->new($path);
@@ -51,7 +51,7 @@ sub asset {
     }
   }
 
-  for my $url (ref $urls ? @$urls : ($urls)) {
+  for my $url (ref $urls eq 'ARRAY' ? @$urls : ($urls)) {
     return $asset
       if $url =~ m!^https?://! and $asset = $self->_download(Mojo::URL->new($url));
 
