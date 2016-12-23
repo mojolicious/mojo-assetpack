@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.30 Not Released
+1.30 2016-12-23T03:14:34+0100
  - Fix CoffeeScript, by changing to coffee-script npm package
  - Add EXPERIMENTAL support for MOJO_ASSETPACK_LAZY=1
  - Marked AssetPack::Asset::mtime() as deprecated
