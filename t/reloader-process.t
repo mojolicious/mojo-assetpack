@@ -9,6 +9,7 @@ eval { $file->add_chunk("body{color:#000;}\n") }
 my $t = t::Helper->t(pipes => [qw(Sass Combine Reloader)]);
 my $asset = $t->app->asset->store->asset('t-reloader.scss');
 $t->app->asset->process('app.css' => $asset);
+$t->get_ok('/')->status_is(200);
 
 $t->websocket_ok('/mojo-assetpack-reloader-ws');
 Mojo::IOLoop->one_tick;
@@ -18,6 +19,7 @@ is $t->app->asset->processed('app.css')->first->checksum, 'c42b4ed75e',
 $file->add_chunk("div{color:#fff;}\n");
 $t->finished_ok(1005);
 
+$t->get_ok('/')->status_is(200);
 is $t->app->asset->processed('app.css')->first->checksum, 'ee9b1ee297',
   'checksum after chunk added';
 

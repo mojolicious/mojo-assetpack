@@ -1,12 +1,11 @@
+BEGIN { $ENV{MOJO_ASSETPACK_RELOADER} = 1 }
 use lib '.';
 use t::Helper;
-
-plan skip_all => 'reloader might go away...';
 
 my $file = Mojo::Asset::File->new(path => 't/assets/t-reloader.css');
 eval { $file->add_chunk("body{color:#000;}\n") } or plan skip_all => "t-reloader.css: $!";
 
-my $t = t::Helper->t(pipes => [qw(Reloader Css Combine)]);
+my $t = t::Helper->t(pipes => [qw(Css Combine)]);
 my $asset = $t->app->asset->store->asset('t-reloader.css');
 $t->app->asset->process('app.css' => $asset);
 $t->get_ok('/')->status_is(200)

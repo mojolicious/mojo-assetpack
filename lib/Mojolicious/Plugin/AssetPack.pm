@@ -130,6 +130,7 @@ sub _correct_mode {
 
 sub _pipes {
   my ($self, $names) = @_;
+  unshift @$names, 'Reloader' if $ENV{MOJO_ASSETPACK_RELOADER};    # experimental
 
   $self->{pipes} = [
     map {

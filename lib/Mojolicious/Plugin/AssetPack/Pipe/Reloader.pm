@@ -2,66 +2,58 @@ package Mojolicious::Plugin::AssetPack::Pipe::Reloader;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojo::Loader ();
 
-use constant CHECK_INTERVAL => $ENV{MOJO_ASSETPACK_CHECK_INTERVAL}  || 0.5;
-use constant STRATEGY       => $ENV{MOJO_ASSETPACK_RELOAD_STRATEGY} || 'document';
-
-has input => sub { +{} };
-has watch => sub { +{} };
+has _files => sub { +{} };
 
 sub before_process {
   my ($self, $assets) = @_;
-  $self->input->{$self->topic} = [map { $_->clone } @$assets];
-  $self->watch->{$self->topic}
-    = [map { ($_->path, @{$_->{dependencies} || []}) } @$assets];
+  $self->_files->{$_} = 1 for map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
 }
 
 sub new {
-  my $self  = shift->SUPER::new(@_);
-  my $asset = Mojolicious::Plugin::AssetPack::Asset->new(
-    content => Mojo::Loader::data_section(__PACKAGE__, 'reloader.js'),
-    format  => 'js',
-    url     => 'reloader.js',
-  );
+  my $self = shift->SUPER::new(@_);
 
-  $self->app->routes->websocket('/mojo-assetpack-reloader-ws')->to(cb => \&_ws)
-    ->name('mojo-assetpack-reloader-ws');
-
-  $asset->content(
-    do { local $_ = $asset->content; s!STRATEGY!{STRATEGY}!e; $_ }
-  );
-
-  $self->assetpack->process('reloader.js' => $asset);
+  push @{$self->assetpack->store->classes}, __PACKAGE__;
+  $self->assetpack->{lazy} = 1;
+  $self->assetpack->process('reloader.js' => 'reloader.js');
+  $self->_add_route;
+  $self->_start_watching;
   $self;
 }
 
 sub process { }
 
-sub _ws {
-  my $c    = shift;
-  my $self = $c->app->asset->pipe('Reloader');
-  my $n    = 0;
-  my ($tid, %mem, %files);
+sub _add_route {
+  shift->app->routes->websocket('/mojo-assetpack-reloader-ws')->to(
+    cb => sub {
+      my $c = shift;
+      my $cb = sub { $c->finish; };
+      $c->inactivity_timeout(3600);
+      $c->app->plugins->on(assets_changed => $cb);
+      $c->on(finish => sub { shift->app->plugins->unsubscribe(assets_changed => $cb); });
+    }
+  )->name('mojo-assetpack-reloader-ws');
+}
 
-  while (my ($topic, $files) = each %{$self->watch}) {
-    $files{$_} = $topic for grep {$_} @$files;
-  }
+sub _start_watching {
+  my $self  = shift;
+  my $app   = $self->app;
+  my $files = $self->_files;
+  my $cache = {};
 
-  $c->on(finish => sub { Mojo::IOLoop->remove($tid) });
-  $tid = Mojo::IOLoop->recurring(
-    CHECK_INTERVAL,
+  Mojo::IOLoop->recurring(
+    $ENV{MOJO_ASSETPACK_CHECK_INTERVAL} || 0.5,
     sub {
-      for my $file (keys %files) {
-        $c->send('keep-alive') if ++$n % 10 == 0;
-        my ($size, $mtime) = (stat $file)[7, 9];    # Check modify and size
+      my @changed;
+      for my $file (sort keys %$files) {
+        my ($size, $mtime) = (stat $file)[7, 9];
         next unless defined $mtime;
-        my $stats = $mem{$file} ||= [$mtime, $size];
-        next if $mtime <= $stats->[0] and $size == $stats->[1];
-        my $topic = $files{$file};
-        my $self  = $c->app->asset->pipe('Reloader');
-        warn qq([Pipe::Reloader] File "$file" changed. Processing "$topic"...\n);
-        $self->assetpack->process($topic => @{$self->input->{$topic}});
-        return $c->finish;
+        my $stats = $cache->{$file} ||= [$^T, $size];
+        next if $mtime <= $stats->[0] && $size == $stats->[1];
+        @$stats = ($mtime, $size);
+        push @changed, $file;
       }
+
+      $app->plugins->emit(assets_changed => \@changed) if @changed;
     }
   );
 }
@@ -94,40 +86,9 @@ need of L<morbo|Mojo::Server::Morbo>.
 This feature is EXPERIMENTAL, UNSTABLE and only meant to be used while
 developing.
 
-=head1 ENVIRONNMENT
-
-=head2 MOJO_ASSETPACK_RELOAD_STRATEGY
-
-The environment variable C<MOJO_ASSETPACK_RELOAD_STRATEGY> can either be set
-to "document" or "inline". "document" means that the whole document should
-reload when an asset change, while "inline" will try to figure out which
-"link" and "script" tags that changed and only reload those.
-
-The default is "document" for now, but this might change in the future.
-
-=head1 ATTRIBUTES
-
-=head2 input
-
-  $hash = $self->input;
-
-Holds a mapping between the input
-L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic> and the list of input
-assets.
-
-=head2 watch
-
-  $hash = $self->watch;
-
-Holds a mapping between the input
-L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic> and the files on disk to
-watch.
-
 =head1 METHODS
 
 =head2 before_process
-
-This method builds up L</input> and L</watch>.
 
 See L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
 
@@ -152,26 +113,8 @@ window.addEventListener("load", function(e) {
   var script   = document.querySelector('script[src$="/reloader.js"]');
   var reloader = function() {
     var socket = new WebSocket(script.src.replace(/^http/, "ws").replace(/\basset.*/, "mojo-assetpack-reloader-ws"));
-    socket.onopen = function() {
-      console.log("[AssetPack] Reloader is active.");
-    };
-    socket.onclose = function() {
-      if ("STRATEGY" != "inline") return location = location.href;
-      var xhr = new XMLHttpRequest();
-      xhr.responseType = "document";
-      xhr.open("GET", location.href);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState != 4) return;
-        var elems = document.querySelectorAll('[src*="/asset/"], [href*="/asset/"]');
-        for (i = 0; i < elems.length; i++)
-          elems[i].parentNode.removeChild(elems[i]);
-        elems = this.responseXML.querySelectorAll('[src*="/asset/"], [href*="/asset/"]');
-        for (i = 0; i < elems.length; i++)
-          document.body.appendChild(elems[i]);
-        reloader();
-      };
-      xhr.send(null);
-    };
+    socket.onopen = function() { console.log("[AssetPack] Reloader is active."); };
+    socket.onclose = function() { return location = location.href; };
   };
   reloader();
 });
