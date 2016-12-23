@@ -26,8 +26,9 @@ sub _install_coffee {
   my $path = $self->app->home->rel_file('node_modules/.bin/coffee');
   return $path if -e $path;
   local $CWD = $self->app->home->to_string;
-  $self->app->log->warn('Installing coffee... Please wait. (npm install coffee)');
-  $self->run([qw(npm install coffee)]);
+  $self->app->log->warn(
+    'Installing coffee-script... Please wait. (npm install coffee-script)');
+  $self->run([qw(npm install coffee-script)]);
   return $path;
 }
 
