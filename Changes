@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.31 Not Released
+ - Fix generating favicons once with MOJO_ASSETPACK_LAZY
+
 1.30 2016-12-23T03:14:34+0100
  - Fix CoffeeScript, by changing to coffee-script npm package
  - Fix "Unable to download" messages after downloaded sass file #107

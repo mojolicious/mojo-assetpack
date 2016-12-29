@@ -12,7 +12,7 @@ has api_key  => sub { die 'api_key() must be set' };
 has design   => sub { +{desktop_browser => {}} };
 has settings => sub { +{error_on_image_too_small => Mojo::JSON->true} };
 
-has _icons => sub { [] };
+has _icons => sub { +{} };
 
 sub process {
   my ($self, $assets) = @_;
@@ -31,7 +31,7 @@ sub process {
     $files = [grep {/\w/} split /\n/, $files];
   }
   else {
-    ($files, $markup) = $self->_generate($assets);
+    ($files, $markup) = $self->_fetch($assets);
     $db = join "\n", @$files, __MARKUP__ => $markup;
     $store->save(\$db, $attrs);
   }
@@ -46,24 +46,27 @@ sub process {
 
   for my $child (Mojo::DOM->new($markup)->children->each) {
     my $key = $child->{content} ? 'content' : 'href';
-    push @{$self->_icons}, [$key => $child, shift @icons];
+    my $icon = shift @icons;
+    $self->_icons->{$icon->url} = [$key => $child, $icon];
   }
 
   if (@icons) {
     my $child
       = Mojo::DOM->new('<link rel="shortcut icon" href="favicon.ico">')->children->first;
-    push @{$self->_icons}, [href => $child, shift @icons];
+    my $icon = shift @icons;
+    $self->_icons->{$icon->url} = [href => $child, $icon];
   }
 }
 
 sub render {
   my ($self, $c) = @_;
   my $icons = $self->_icons;
+  $icons = [map { $icons->{$_} } sort keys %$icons];
   $_->[1]{$_->[0]} = $_->[2]->url_for($c) for @$icons;
   return Mojo::ByteStream->new(join "\n", map { $_->[1] } @$icons);
 }
 
-sub _generate {
+sub _fetch {
   my ($self, $assets) = @_;
   my $res = $self->assetpack->ua->post($URL, json => $self->_request($assets))->res;
 
