@@ -352,7 +352,7 @@ The cookbook has various receipes on how to cook with AssetPack.
 
 =back
 
-=head1 ENVIRONNMENT
+=head1 ENVIRONMENT
 
 It is possible to set environment variables to change the behavior of AssetPack:
 
