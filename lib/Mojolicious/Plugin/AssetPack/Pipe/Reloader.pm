@@ -14,13 +14,19 @@ sub new {
 
   push @{$self->assetpack->store->classes}, __PACKAGE__;
   $self->assetpack->{lazy} = 1;
-  $self->assetpack->process('reloader.js' => 'reloader.js');
   $self->_add_route;
-  $self->_start_watching;
   $self;
 }
 
-sub process { }
+sub process {
+  my $self = shift;
+  return if $self->{processed}++;
+
+  # Cannot call assetpack->process() in new(), since it will initialize and start building
+  # attributes too soon.
+  $self->assetpack->process('reloader.js' => 'reloader.js');
+  $self->_start_watching;
+}
 
 sub _add_route {
   shift->app->routes->websocket('/mojo-assetpack-reloader-ws')->to(
