@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.31 Not Released
+1.31 2017-01-04T14:19:34+0100
  - Fix generating favicons once with MOJO_ASSETPACK_LAZY
  - Made Reloader call process() later
 

@@ -6,7 +6,7 @@ use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '1.30';
+our $VERSION = '1.31';
 
 my %TAG_TEMPLATE;
 $TAG_TEMPLATE{css} = [qw(link rel stylesheet href)];
@@ -279,7 +279,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-1.30
+1.31
 
 =head1 SYNOPSIS
 
