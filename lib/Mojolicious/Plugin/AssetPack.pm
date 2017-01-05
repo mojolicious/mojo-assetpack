@@ -130,7 +130,6 @@ sub _correct_mode {
 
 sub _pipes {
   my ($self, $names) = @_;
-  unshift @$names, 'Reloader' if $ENV{MOJO_ASSETPACK_RELOADER};    # experimental
 
   $self->{pipes} = [
     map {
@@ -366,7 +365,7 @@ set it to a value between 0 and 3, where 3 provides the most debug.
 =item * MOJO_ASSETPACK_LAZY
 
 Set this environment variable if you want to delay processing the assets until
-they are requested. This can be very useful while developing, and the assets
+they are requested. This can be very useful while developing when the assets
 are changed frequently.
 
 =back

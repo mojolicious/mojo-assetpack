@@ -2,7 +2,16 @@ package Mojolicious::Plugin::AssetPack::Pipe::Reloader;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojo::Loader ();
 
+has enabled => sub {
+  return $ENV{MOJO_ASSETPACK_LAZY} || shift->app->mode eq 'development';
+};
+
 has _files => sub { +{} };
+
+sub after_process {
+  my ($self, $assets) = @_;
+  $self->_files->{$_} = 1 for map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
+}
 
 sub before_process {
   my ($self, $assets) = @_;
@@ -11,7 +20,7 @@ sub before_process {
 
 sub new {
   my $self = shift->SUPER::new(@_);
-
+  return $self unless $self->enabled;
   push @{$self->assetpack->store->classes}, __PACKAGE__;
   $self->assetpack->{lazy} = 1;
   $self->_add_route;
@@ -20,6 +29,7 @@ sub new {
 
 sub process {
   my $self = shift;
+  return unless $self->enabled;
   return if $self->{processed}++;
 
   # Cannot call assetpack->process() in new(), since it will initialize and start building
@@ -89,14 +99,33 @@ an asset called "reloader.js". This asset will automatically reload the page in
 the browser when one of the assets change on disk. This is done without the
 need of L<morbo|Mojo::Server::Morbo>.
 
+This pipe should be loaded last to enable it to watch all input assets.
+
 This feature is EXPERIMENTAL, UNSTABLE and only meant to be used while
 developing.
 
+=head1 ATTRIBUTES
+
+=head2 enabled
+
+  $bool = $self->enabled;
+
+This pipe is only enabled if either
+L<Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_LAZY> is
+set or L<Mojolicious/mode> is "development".
+
 =head1 METHODS
+
+=head2 after_process
+
+This method will look for all the input assets and dependencies and add them to
+a list of watched files.
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/after_process>.
 
 =head2 before_process
 
-See L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
+See L</after_process> and L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
 
 =head2 new
 
