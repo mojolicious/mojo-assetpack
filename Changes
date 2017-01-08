@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.32 Not Released
+ - Fix Mojo::Home::rel_dir is DEPRECATED in favor of Mojo::Hom::rel_file #112
+
 1.31 2017-01-04T14:19:34+0100
  - Fix generating favicons once with MOJO_ASSETPACK_LAZY
  - Made Reloader call process() later

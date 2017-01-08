@@ -29,7 +29,7 @@ sub process {
 
       $self->_install_typescript unless $self->{installed}++;
       local $CWD = $self->app->home->to_string;
-      local $ENV{NODE_PATH} = $self->app->home->rel_dir('node_modules');
+      local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
 
       $self->run($self->_typescript, \$asset->content, \my $js);
       $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);

@@ -269,12 +269,12 @@ Mojolicious::Plugin::AssetPack::Store - Storage for assets
 
   # Change where assets can be found
   app->asset->store->paths([
-    app->home->rel_dir("some/directory"),
+    app->home->rel_file("some/directory"),
     "/some/other/directory",
   ]);
 
   # Change where assets are stored
-  app->asset->store->paths->[0] = app->home->rel_dir("some/directory");
+  app->asset->store->paths->[0] = app->home->rel_file("some/directory");
 
   # Define asset
   app->asset->process($moniker => @assets);

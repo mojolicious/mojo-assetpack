@@ -26,7 +26,7 @@ has store => sub {
   my $self = shift;
   Mojolicious::Plugin::AssetPack::Store->new(
     classes => [@{$self->_app->static->classes}],
-    paths   => [$self->_app->home->rel_dir('assets')],
+    paths   => [$self->_app->home->rel_file('assets')],
     ua      => $self->ua,
   );
 };
