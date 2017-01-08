@@ -23,17 +23,19 @@ $t->get_ok('/')->status_is(200)
 $t->get_ok($t->tx->res->dom->at('link')->{href})
   ->content_is("body{color:#000;}\ndiv{color:#fff;}\n");
 
-$ENV{MOJO_MODE} = 'whatever';
-$t = t::Helper->t(pipes => [qw(Css Combine Reloader)]);
-ok !$t->app->asset->pipe('Reloader')->enabled, 'disabled';
-$t->app->asset->process('app.css' => $asset);
-$t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/ee9b1ee297/app.css"]));
+if (eval 'require CSS::Minifier::XS;1') {
+  $ENV{MOJO_MODE} = 'whatever';
+  $t = t::Helper->t(pipes => [qw(Css Combine Reloader)]);
+  ok !$t->app->asset->pipe('Reloader')->enabled, 'disabled';
+  $t->app->asset->process('app.css' => $asset);
+  $t->get_ok('/')->status_is(200)
+    ->element_exists(qq(link[href="/asset/ee9b1ee297/app.css"]));
 
-$t->get_ok('/mojo-assetpack-reloader-ws')->status_is(404);
-$file->add_chunk("div{color:#456;}\n");
-$t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/ee9b1ee297/app.css"]));
+  $t->get_ok('/mojo-assetpack-reloader-ws')->status_is(404);
+  $file->add_chunk("div{color:#456;}\n");
+  $t->get_ok('/')->status_is(200)
+    ->element_exists(qq(link[href="/asset/ee9b1ee297/app.css"]));
+}
 
 unlink $file->path;
 
