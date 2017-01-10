@@ -55,7 +55,7 @@ sub asset {
   my $orig  = $self->_asset;
   my $clone = $orig->new;
 
-  if ($orig->can('path')) {
+  if ($orig->is_file) {
     $clone->cleanup(0)->path($orig->path);
   }
   else {

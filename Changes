@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.34 Not Released
+ - Compatible with Mojolicious 7.15
+
 1.33 2017-01-08T14:20:03+0100
  - Fix t/reloader.t when CSS::Minifier::XS is missing #113
 

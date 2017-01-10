@@ -18,8 +18,8 @@ sub t {
 
   $ENV{MOJO_ASSETPACK_CLEANUP} //= 1;    # remove generated assets
   $ENV{MOJO_ASSETPACK_DB_FILE} = sprintf '%s.db', basename $0;
+  ${$app->home} = Cwd::abs_path(dirname __FILE__);
   delete $app->log->{$_} for qw(handle path);
-  $app->home->parse(Cwd::abs_path(dirname __FILE__));
   $app->routes->get('/' => 'index');
   $app->plugin(AssetPack => $args);
   return Test::Mojo->new($app);

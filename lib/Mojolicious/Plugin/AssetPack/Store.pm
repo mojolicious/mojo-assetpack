@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
-use Mojo::Util 'spurt';
+use Mojo::File 'path';
 use Mojo::URL;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
@@ -97,7 +97,7 @@ sub save {
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $$ref)
     unless -w $dir;
   $self->_db_set($attrs);
-  spurt $$ref, $path;
+  path($path)->spurt($$ref);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
@@ -210,7 +210,7 @@ sub _download {
     $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
     $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
     make_path(dirname $path) unless -d dirname $path;
-    spurt $tx->res->body, $path;
+    path($path)->spurt($tx->res->body);
   }
 
   if (my $lm = $h->last_modified) {

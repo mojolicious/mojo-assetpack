@@ -1,8 +1,11 @@
 BEGIN { $ENV{MOJO_MODE} = 'not_development' }
 use lib '.';
 use t::Helper;
+use Mojo::File 'path';
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::AssetPack::Util 'checksum';
+
+use Carp::Always;
 
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 
@@ -11,16 +14,11 @@ no warnings 'once';
 $INC{'CSS/Minifier/XS.pm'} = 'mocked';
 *CSS::Minifier::XS::minify = sub { local $_ = shift; s!\s+!!g; $_ };
 
-my $t             = t::Helper->t(pipes => [qw(Css Combine)]);
-my @assets        = qw(one.css recreate.css);
-my $recreate_path = File::Spec->catfile(qw(t assets recreate.css));
+my $t        = t::Helper->t(pipes => [qw(Css Combine)]);
+my @assets   = qw(one.css recreate.css);
+my $recreate = path(qw(t assets recreate.css));
 
-Mojo::Util::spurt ".recreate { color: #aaa }\n" => $recreate_path;
-
-# Add support for merging assetpack.db files
-unshift @{$t->app->asset->store->paths},
-  $t->app->home->parse(
-  File::Spec->catdir(Cwd::abs_path(File::Basename::dirname(__FILE__)), 'no-such-dir'));
+$recreate->spurt(".recreate { color: #aaa }\n");
 
 $t->app->asset->process('app.css' => @assets);
 
@@ -34,7 +32,7 @@ $t->get_ok('/')->status_is(200);
 is $t->tx->res->dom->at('link')->{href}, $link, 'same link href';
 
 # recreate
-Mojo::Util::spurt ".recreate { color: #bbb }\n" => $recreate_path;
+$recreate->spurt(".recreate { color: #bbb }\n");
 my $tr = t::Helper->t(pipes => [qw(Css Combine)]);
 $tr->app->asset->process('app.css' => @assets);
 $tr->get_ok('/')->status_is(200);
@@ -43,7 +41,7 @@ $tr->get_ok($tr->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr{color:\#bbb});
 
 # reset asset
-Mojo::Util::spurt ".recreate { color: #aaa }\n" => $recreate_path;
+$recreate->spurt(".recreate { color: #aaa }\n");
 $ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 
 done_testing;
