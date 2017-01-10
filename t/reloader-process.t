@@ -1,5 +1,7 @@
 use lib '.';
 use t::Helper;
+
+plan skip_all => 'TEST_RELOADER=1' unless $ENV{TEST_RELOADER} or -e '.test-everything';
 plan skip_all => 'cpanm CSS::Sass' unless eval 'use CSS::Sass 3.3.0;1';
 
 my $file = Mojo::Asset::File->new(path => 't/assets/t-reloader.scss');

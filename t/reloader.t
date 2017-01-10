@@ -1,6 +1,8 @@
 use lib '.';
 use t::Helper;
 
+plan skip_all => 'TEST_RELOADER=1' unless $ENV{TEST_RELOADER} or -e '.test-everything';
+
 my $file = Mojo::Asset::File->new(path => 't/assets/t-reloader.css');
 eval { $file->add_chunk("body{color:#000;}\n") } or plan skip_all => "t-reloader.css: $!";
 
