@@ -17,7 +17,6 @@ has _types => sub {
   $t->type(otf   => 'application/font-otf');
   $t->type(ttf   => 'application/font-ttf');
   $t->type(woff2 => 'application/font-woff2');
-  delete $t->mapping->{$_} for qw(atom bin htm html txt xml zip);
   $t;
 };
 

@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.37 Not Released
+ - No need to delete known media types in AssetPack::Store
+
 1.36 2017-01-11T11:18:45+0100
  - Fix bug in Fetch pipe, fixing t/font-awesome.t
  - Change Mojolicious::Plugin::AssetPack::Asset::path() to return a Mojo::File object
