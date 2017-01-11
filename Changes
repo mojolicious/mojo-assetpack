@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.36 Not Released
+ - Fix bug in Fetch pipe, fixing t/font-awesome.t
+
 1.35 2017-01-11T10:30:09+0100
  - Forgot to remove Carp::Always from t/recreate.t after debugging
 

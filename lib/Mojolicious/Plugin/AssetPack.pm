@@ -151,8 +151,7 @@ sub _process {
 
   for my $asset (@$assets) {
     if (my $prev = $self->{by_topic}{$topic}) {
-      delete $self->{by_checksum}{$_->checksum} for @$prev;
-      delete $asset->{$_} for qw(checksum format mtime);
+      delete $asset->{$_} for qw(checksum format);
       $asset->content($self->store->asset($asset->url));
     }
     $asset->checksum;
