@@ -10,12 +10,14 @@ has _files => sub { +{} };
 
 sub after_process {
   my ($self, $assets) = @_;
-  $self->_files->{$_} = 1 for map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
+  $self->_files->{$_} = 1
+    for grep {$_} map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
 }
 
 sub before_process {
   my ($self, $assets) = @_;
-  $self->_files->{$_} = 1 for map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
+  $self->_files->{$_} = 1
+    for grep {$_} map { ($_->path, @{$_->{dependencies} || []}) } @$assets;
 }
 
 sub new {

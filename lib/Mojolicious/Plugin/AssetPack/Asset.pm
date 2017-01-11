@@ -3,6 +3,7 @@ use Mojo::Base -base;
 
 use Mojo::Asset::Memory;
 use Mojo::URL;
+use Mojo::File;
 use Mojo::Util 'deprecated';
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
@@ -84,7 +85,10 @@ sub end_range { deprecated 'end_range() is deprecated'; shift->_asset->end_range
 sub get_chunk { deprecated 'get_chunk() is deprecated'; shift->_asset->get_chunk(@_) }
 sub is_range  { deprecated 'is_range() is deprecated';  shift->_asset->is_range }
 sub mtime     { deprecated 'mtime() is deprecated';     shift->_asset->mtime }
-sub path { $_[0]->_asset->isa('Mojo::Asset::File') ? $_[0]->_asset->path : '' }
+
+sub path {
+  $_[0]->_asset->isa('Mojo::Asset::File') ? Mojo::File->new($_[0]->_asset->path) : undef;
+}
 sub size { $_[0]->_asset->size }
 
 sub start_range {
@@ -189,7 +193,8 @@ passing L</url> to L<Mojolicious::Plugin::AssetPack::Store/file>.
 
   $str = $self->path;
 
-Returns the path to the asset, if it exists on disk.
+Returns a L<Mojo::File> object that holds the location to the asset on disk or
+C<undef> if this asset is in memory.
 
 =head2 size
 

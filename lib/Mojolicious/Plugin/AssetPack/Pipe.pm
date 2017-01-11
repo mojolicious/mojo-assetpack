@@ -1,11 +1,10 @@
 package Mojolicious::Plugin::AssetPack::Pipe;
 use Mojo::Base -base;
-use Mojo::Util;
+use Mojo::File 'path';
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
-use File::Basename ();
-use File::Temp     ();
-use IPC::Run3      ();
+use File::Temp ();
+use IPC::Run3  ();
 use List::Util 'first';
 
 $ENV{PATH} ||= '';
@@ -17,7 +16,7 @@ sub app { shift->assetpack->ua->server->app }
 
 sub run {
   my ($self, $cmd, @args) = @_;
-  my $name = File::Basename::basename($cmd->[0]);
+  my $name = path($cmd->[0])->basename;
   local $cmd->[0] = $self->_find_app($name, $cmd->[0]);
   die qq(@{[ref $self]} was unable to locate the "$name" application.) unless $cmd->[0];
   diag '$ %s', join ' ', @$cmd if DEBUG > 1;
@@ -32,7 +31,7 @@ sub process { Carp::confess('Method "process" not implemented by subclass') }
 
 sub _find_app {
   my ($self, $apps, $path) = @_;
-  return $path if $path and File::Spec->file_name_is_absolute($path);
+  return $path if $path and path($path)->is_abs;
 
   $apps = [$apps] unless ref $apps eq 'ARRAY';
   for my $name (@$apps) {
@@ -42,7 +41,7 @@ sub _find_app {
     return $self->{apps}{$name} if $self->{apps}{$name};    # Already found
 
     diag 'Looking for "%s" in $PATH.', $name if DEBUG > 1;
-    $path = first {-e} map { File::Spec->catfile($_, $name) } File::Spec->path;
+    $path = first {-e} map { path($_, $name) } File::Spec->path;
     return $self->{apps}{$name} = $path if $path;           # Found in $PATH
   }
 
@@ -77,7 +76,7 @@ sub _run_app {
 
   if ($tmp) {
     $self->run([$self->app, @args]);
-    $output = Mojo::Util::slurp("$tmp");
+    $output = path($tmp)->slurp;
   }
   else {
     $self->run([$self->app, @args], \$asset->content, \$output);

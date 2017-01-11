@@ -5,8 +5,6 @@ use Mojo::URL;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
-use File::Basename 'dirname';
-use File::Path 'make_path';
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
 use constant DB_FILE_NAME => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
@@ -87,17 +85,17 @@ sub load {
 
 sub save {
   my ($self, $ref, $attrs) = @_;
-  my $path = File::Spec->catfile($self->paths->[0], $self->_cache_path($attrs));
-  my $dir = dirname $path;
+  my $path = path($self->paths->[0], $self->_cache_path($attrs));
+  my $dir = $path->dirname;
 
   # Do not care if this fail. Can fallback to temp files.
-  mkdir $dir if !-d $dir and -w dirname $dir;
+  mkdir $dir if !-d $dir and -w $dir->dirname;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $$ref)
     unless -w $dir;
   $self->_db_set($attrs);
-  path($path)->spurt($$ref);
+  $path->spurt($$ref);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
@@ -207,10 +205,10 @@ sub _download {
   }
 
   if ($url->host ne 'local') {
-    $path = File::Spec->catdir($self->paths->[0], split '/', $rel);
+    $path = path($self->paths->[0], split '/', $rel);
     $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
-    make_path(dirname $path) unless -d dirname $path;
-    path($path)->spurt($tx->res->body);
+    $path->dirname->make_path unless -d $path->dirname;
+    $path->spurt($tx->res->body);
   }
 
   if (my $lm = $h->last_modified) {
@@ -222,7 +220,7 @@ sub _download {
   }
 
   $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
-  @$attrs{qw(key rel url)} = ('original', $rel, $url->to_string);
+  @$attrs{qw(key rel url)} = ('original', $rel, $url);
   $self->_db_set($attrs);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path) if $path;
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs)->content($tx->res->body);
@@ -230,7 +228,7 @@ sub _download {
 
 sub _files {
   my ($self, $name, $check) = @_;
-  my @files = map { File::Spec->catfile($_, split '/', $name) } @{$self->paths};
+  my @files = map { path($_, split '/', $name) } @{$self->paths};
   return [grep $check, @files] if $check;
   return \@files;
 }

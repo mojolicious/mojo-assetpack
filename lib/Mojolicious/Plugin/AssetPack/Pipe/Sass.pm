@@ -1,7 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Sass;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(checksum diag dumper load_module DEBUG);
-use File::Basename 'dirname';
 use Mojo::Util;
 
 my $FORMAT_RE = qr{^s[ac]ss$};
@@ -35,7 +34,7 @@ sub process {
 
       return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
       return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
-      $opts{include_paths}[0] = $asset->path ? dirname $asset->path : undef;
+      $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
       $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
       diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
@@ -103,13 +102,18 @@ SEARCH:
   return checksum join ':', @c;
 }
 
-sub _include_path { $_[0]->url =~ m!^https?://! ? $_[0]->url : dirname $_[0]->path }
+sub _include_path {
+  my $asset = shift;
+  return $asset->url if $asset->url =~ m!^https?://!;
+  return $asset->path->dirname if $asset->path;
+  return '';
+}
 
 sub _install_sass {
   my $self = shift;
   $self->run([qw(ruby -rubygems -e), 'puts Gem.user_dir'], undef, \my $base);
   chomp $base;
-  my $path = File::Spec->catfile($base, qw(bin sass));
+  my $path = path($base, qw(bin sass));
   return $path if -e $path;
   $self->app->log->warn(
     'Installing sass... Please wait. (gem install --user-install sass)');

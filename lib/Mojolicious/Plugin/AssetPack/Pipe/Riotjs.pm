@@ -1,15 +1,14 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Riotjs;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
+use Mojo::File 'path';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
-use File::Basename 'dirname';
 use Cwd ();
 
 has _riotjs => sub {
   my $self = shift;
 
-  return [
-    $self->_find_app([qw(nodejs node)]),
-    Cwd::abs_path(File::Spec->catfile(dirname(__FILE__), 'riot.js')),
+  return [$self->_find_app([qw(nodejs node)]), path(__FILE__)->dirname->child('riot.js'),
   ];
 };
 

@@ -1,7 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Pipe::TypeScript;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
-use File::Basename 'dirname';
+use Mojo::File 'path';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 has _typescript => sub {
@@ -9,7 +9,7 @@ has _typescript => sub {
 
   return [
     $self->_find_app([qw(nodejs node)]),
-    Cwd::abs_path(File::Spec->catfile(dirname(__FILE__), 'typescript.js')),
+    path(__FILE__)->dirname->child('typescript.js')->to_abs,
   ];
 };
 

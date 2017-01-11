@@ -1,7 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Util;
 use Mojo::Base 'Exporter';
 use Mojo::Util;
-use File::Spec;
 
 use constant DEBUG   => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
