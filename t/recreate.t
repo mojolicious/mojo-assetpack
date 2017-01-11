@@ -5,8 +5,6 @@ use Mojo::File 'path';
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::AssetPack::Util 'checksum';
 
-use Carp::Always;
-
 $ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 
 # simulate minify()
