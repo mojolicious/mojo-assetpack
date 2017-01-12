@@ -17,6 +17,7 @@ has _types => sub {
   $t->type(otf   => 'application/font-otf');
   $t->type(ttf   => 'application/font-ttf');
   $t->type(woff2 => 'application/font-woff2');
+  delete $t->mapping->{$_} for qw(atom bin htm html txt xml zip);
   $t;
 };
 
@@ -197,7 +198,7 @@ sub _download {
   my $tx  = $self->ua->get($req_url);
   my $h   = $tx->res->headers;
 
-  if ($tx->error) {
+  if ($tx->res->is_error or $tx->error) {
     $self->ua->server->app->log->warn(
       "[AssetPack] Unable to download $req_url: @{[$tx->error->{message}]}");
     return undef;
@@ -215,7 +216,7 @@ sub _download {
   }
   if (my $ct = $h->content_type) {
     $ct =~ s!;.*$!!;
-    $attrs->{format} = $self->_types->detect($ct)->[0];
+    $attrs->{format} = $self->_types->detect($ct)->[0] unless $ct eq 'text/plain';
   }
 
   $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
