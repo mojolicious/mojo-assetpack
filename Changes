@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.37 Not Released
+ - Add support for sass source maps
  - No need to delete known media types in AssetPack::Store
 
 1.36 2017-01-11T11:18:45+0100

@@ -1,12 +1,18 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Sass;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
 use Mojolicious::Plugin::AssetPack::Util qw(checksum diag dumper load_module DEBUG);
+use Mojo::JSON qw(decode_json encode_json);
 use Mojo::Util;
 
-my $FORMAT_RE = qr{^s[ac]ss$};
-my $IMPORT_RE = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
+my $FORMAT_RE              = qr{^s[ac]ss$};
+my $IMPORT_RE              = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
+my $SOURCE_MAP_PLACEHOLDER = sprintf '__%s__', __PACKAGE__;
+
+$SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
 
 has functions => sub { +{} };
+has generate_source_map => sub { shift->app->mode eq 'development' ? 1 : 0 };
 
 sub process {
   my ($self, $assets) = @_;
@@ -17,6 +23,11 @@ sub process {
   for my $name (keys %{$self->functions}) {
     my $cb = $self->functions->{$name};
     $opts{sass_functions}{$name} = sub { $self->$cb(@_); };
+  }
+
+  if ($self->generate_source_map) {
+    $opts{source_map_file} = $SOURCE_MAP_PLACEHOLDER;
+    $opts{source_map_file_urls} = $self->app->mode eq 'development' ? 1 : 0;
   }
 
   return $assets->each(
@@ -47,6 +58,8 @@ sub process {
             $asset->url, dumper(\%opts), $err;
         }
         $css = Mojo::Util::encode('UTF-8', $css);
+        $self->_add_source_map_asset($asset, \$css, $stats)
+          if $stats->{source_map_string};
         $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
       }
       else {
@@ -57,6 +70,25 @@ sub process {
       }
     }
   );
+}
+
+sub _add_source_map_asset {
+  my ($self, $asset, $css, $stats) = @_;
+  my $data       = decode_json $stats->{source_map_string};
+  my $source_map = Mojolicious::Plugin::AssetPack::Asset->new(
+    url => sprintf('%s.css.map', $asset->name));
+
+  # override "stdin" with real file
+  $data->{file} = sprintf 'file://%s', $asset->path if $asset->path;
+  $data->{sources}[0] = $data->{file};
+  $source_map->content(encode_json $data);
+
+  my $relative = join '/', '..', $source_map->checksum, $source_map->url;
+  $$css =~ s!$SOURCE_MAP_PLACEHOLDER!$relative!;
+
+  # TODO
+  $self->assetpack->{by_checksum}{$source_map->checksum} = $source_map;
+  $self->assetpack->{by_topic}{$source_map->url} = Mojo::Collection->new($source_map);
 }
 
 sub _checksum {
@@ -176,6 +208,22 @@ This attribute requires L<CSS::Sass> to work. It will not get passed on to
 the C<sass> executable.
 
 See L</SYNOPSIS> for example.
+
+=head2 generate_source_map
+
+  $bool = $self->generate_source_map;
+  $self = $self->generate_source_map(1);
+
+This pipe will generate source maps if true. Default is "1" if
+L<Mojolicious/mode> is "development".
+
+See also L<http://thesassway.com/intermediate/using-source-maps-with-sass> and
+L<https://robots.thoughtbot.com/sass-source-maps-chrome-magic> for more
+information about the usefulness.
+
+See also L<Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_LAZY> and
+L<Mojolicious::Plugin::AssetPack::Pipe::Reloader> for how to reload the page
+when changes are done inside the browser's dev tools.
 
 =head1 METHODS
 

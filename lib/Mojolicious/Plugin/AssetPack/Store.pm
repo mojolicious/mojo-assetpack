@@ -103,21 +103,12 @@ sub serve_asset {
   my ($self, $c, $asset) = @_;
   my $d  = $self->default_headers;
   my $h  = $c->res->headers;
-  my $ct = $self->_types->type($asset->format);
+  my $ct = $self->_types->type($asset->format) || 'application/octet-stream';
 
-  if ($ct) {
-    $h->header($_ => $d->{$_}) for keys %$d;
-    $h->content_type($ct);
-    $self->SUPER::serve_asset($c, $asset->can('asset') ? $asset->asset : $asset);
-  }
-  else {
-    $h->content_type('text/css');
-    $c->render(text =>
-        qq(body:before{content:'"@{[$asset->url]}" is not processed.';font-size:32px;position:absolute;top:0;left:0;background:red;color:white;}\n)
-    );
-  }
-
-  return $self;
+  $h->header($_ => $d->{$_}) for keys %$d;
+  $h->content_type($ct);
+  $self->SUPER::serve_asset($c, $asset->can('asset') ? $asset->asset : $asset);
+  $self;
 }
 
 sub _already_downloaded {

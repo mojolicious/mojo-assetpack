@@ -6,6 +6,8 @@ $t->app->asset->process('app.js' => ('r1.tag'));
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/7373328564/r1.tag"]));
 
+local $TODO = 'removed support for detecting unprocessed in 1.37';
+
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->header_is('Content-Type', 'text/css')
   ->content_like(qr{content:'"r1.tag" is not processed.';}s);
