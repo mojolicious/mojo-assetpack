@@ -8,7 +8,7 @@ $t->app->asset->process('app.js' => 'https://cdnjs.cloudflare.com/ajax/libs/angu
 
 $t->get_ok('/')->status_is(200);
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{sourceMappingURL=../../\Easset/\w+/angular\.min\.js\.map});
+  ->content_like(qr{sourceMappingURL=../../asset/\w+/angular\.min\.js\.map});
 
 done_testing;
 
