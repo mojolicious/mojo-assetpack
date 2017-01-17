@@ -3,7 +3,7 @@ use t::Helper;
 
 plan skip_all => 'TEST_ONLINE=1' unless $ENV{TEST_ONLINE} or -e '.test-everything';
 
-my $t = t::Helper->t(pipes => [qw(Javascript Fetch)]);
+my $t = t::Helper->t(pipes => [qw(JavaScript Fetch)]);
 $t->app->asset->process('app.js' => 'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular.min.js');
 
 $t->get_ok('/')->status_is(200);
