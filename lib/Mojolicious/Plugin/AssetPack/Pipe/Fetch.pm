@@ -16,8 +16,8 @@ our %formats = (
     js => {
         regex => qr{(\/\/\# sourceMappingURL=)(.*?)$},
         subst => sub {
-            my ($content, $start + 1, $len_pre, $len_url, $with) = @_;
-            substr $content, $start, $len_pre + $len_url,
+            my ($content, $start, $len_pre, $len_url, $with) = @_;
+            substr $content, $start + 1, $len_pre + $len_url,
                 "//# sourceMappingURL=$with";
             return $content;
         }
