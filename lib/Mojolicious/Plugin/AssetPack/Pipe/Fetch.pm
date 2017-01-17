@@ -3,8 +3,26 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 use Mojo::URL;
 
-# Only made public for quick fixes. Subject for change
-our $URL_RE = qr{url\((['"]{0,1})(.*?)\1\)};
+our %formats = (
+    css => {
+        regex => qr{url\((['"]{0,1})(.*?)\1\)},
+        subst => sub {
+            my ($content, $start, $len_pre, $len_url, $with) = @_;
+            substr $content, $start, $len_url,
+                Mojo::URL->new($with)->query(Mojo::Parameters->new);
+            return $content;
+        }
+    },
+    js => {
+        regex => qr{(\/\/\# sourceMappingURL=)(.*?)$},
+        subst => sub {
+            my ($content, $start, $len_pre, $len_url, $with) = @_;
+            substr $content, $start, $len_pre + $len_url,
+                "//# sourceMappingURL=$with";
+            return $content;
+        }
+    }
+);
 
 sub process {
   my ($self, $assets) = @_;
@@ -15,16 +33,20 @@ sub process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      return unless $asset->format eq 'css';
+      return unless exists $formats{$asset->format} &&
+        exists $formats{$asset->format}->{regex} &&
+        exists $formats{$asset->format}->{subst}; 
       return unless $asset->url =~ /^https?:/;
 
       my $base    = Mojo::URL->new($asset->url);
       my $content = $asset->content;
+      my $regex = $formats{$asset->format}->{regex};
 
-      while ($content =~ /$URL_RE/g) {
+      while ($content =~ /$regex/g) {
         my ($pre, $url) = ($1, $2);
-        my $len   = length $url;
-        my $start = pos($content) - length($pre) - $len - 1;
+        my $len_pre   = length $pre;
+        my $len_url   = length $url;
+        my $start = pos($content) - $len_pre - $len_url;
 
         next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 
@@ -42,9 +64,11 @@ sub process {
           $related{$url} = "$up$path";
         }
 
-        substr $content, $start, $len,
-          Mojo::URL->new($related{$url})->query(Mojo::Parameters->new);
-        pos($content) = $start + $len;
+        $content = $formats{$asset->format}->{subst}->(
+            $content, $start, $len_pre, $len_url, $related{$url}
+        );
+
+        pos($content) = $start + $len_url;
       }
 
       $asset->content($content);
