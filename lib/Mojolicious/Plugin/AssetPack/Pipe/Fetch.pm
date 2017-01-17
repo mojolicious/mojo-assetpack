@@ -16,7 +16,7 @@ our %formats = (
     js => {
         regex => qr{(\/\/\# sourceMappingURL=)(.*?)$},
         subst => sub {
-            my ($content, $start, $len_pre, $len_url, $with) = @_;
+            my ($content, $start + 1, $len_pre, $len_url, $with) = @_;
             substr $content, $start, $len_pre + $len_url,
                 "//# sourceMappingURL=$with";
             return $content;
@@ -46,7 +46,7 @@ sub process {
         my ($pre, $url) = ($1, $2);
         my $len_pre   = length $pre;
         my $len_url   = length $url;
-        my $start = pos($content) - $len_pre - $len_url;
+        my $start = pos($content) - $len_pre - $len_url - 1;
 
         next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 
