@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.38 Not Released
+ - Fix missing path() function in Pipe::Sass
+
 1.37 2017-01-12T20:52:18+0100
  - Add support for sass source maps
  - No need to delete known media types in AssetPack::Store

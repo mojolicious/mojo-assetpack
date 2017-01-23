@@ -2,6 +2,7 @@ package Mojolicious::Plugin::AssetPack::Pipe::Sass;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
 use Mojolicious::Plugin::AssetPack::Util qw(checksum diag dumper load_module DEBUG);
+use Mojo::File;
 use Mojo::JSON qw(decode_json encode_json);
 use Mojo::Util;
 
@@ -145,7 +146,7 @@ sub _install_sass {
   my $self = shift;
   $self->run([qw(ruby -rubygems -e), 'puts Gem.user_dir'], undef, \my $base);
   chomp $base;
-  my $path = path($base, qw(bin sass));
+  my $path = Mojo::File->new($base, qw(bin sass));
   return $path if -e $path;
   $self->app->log->warn(
     'Installing sass... Please wait. (gem install --user-install sass)');
