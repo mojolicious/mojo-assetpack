@@ -1,6 +1,7 @@
 use lib '.';
 use t::Helper;
 plan skip_all => 'cpanm CSS::Sass' unless eval 'use CSS::Sass 3.3.0;1';
+plan skip_all => 'cpanm CSS::Sass' unless $ENV{TEST_SOURCE_MAPS};
 
 my $t = t::Helper->t(pipes => [qw(Sass)]);
 $t->app->asset->process('app.css' => 'sass/sass-1.scss');
