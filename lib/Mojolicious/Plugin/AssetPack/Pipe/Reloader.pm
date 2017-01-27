@@ -94,6 +94,12 @@ Mojolicious::Plugin::AssetPack::Pipe::Reloader - Automatically reload assets in 
 
   %= asset "reloader.js" if app->mode eq "development"
 
+=head2 Browser
+
+The reloader can be disabled by adding the query parameter
+"_assetpack_reload=false" to the url, or by setting
+C<window.ASSETPACK_RELOAD = false;> in JavaScript.
+
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack::Pipe::Reloader> is a pipe which will create
@@ -147,11 +153,17 @@ L<Mojolicious::Plugin::AssetPack>.
 __DATA__
 @@ reloader.js
 window.addEventListener("load", function(e) {
-  var script   = document.querySelector('script[src$="/reloader.js"]');
+  if (typeof ASSETPACK_RELOAD == "undefined") {
+    ASSETPACK_RELOAD = location.href.indexOf("_assetpack_reload=false") == -1 ? true : false;
+  }
+  var script = document.querySelector('script[src$="/reloader.js"]');
   var reloader = function() {
     var socket = new WebSocket(script.src.replace(/^http/, "ws").replace(/\basset.*/, "mojo-assetpack-reloader-ws"));
     socket.onopen = function() { console.log("[AssetPack] Reloader is active."); };
-    socket.onclose = function() { return location = location.href; };
+    socket.onclose = function() {
+      if (ASSETPACK_RELOAD) return location = location.href;
+      console.log("[AssetPack] Reloader was disabled with window.ASSETPACK_RELOAD = true.");
+    };
   };
   reloader();
 });
