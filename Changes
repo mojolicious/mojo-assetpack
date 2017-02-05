@@ -5,7 +5,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
  - Can disable Pipe::Reloader from the browser
 
 1.39 2017-01-25T22:39:45+0100
- - Skipping t/sass-source-map.t for now
+ - Skipping t/sass-source-map.t for now #115
    http://cpantesters.org/cpan/report/c59d94d4-e16e-11e6-ab5a-96809f28caea
 
 1.38 2017-01-23T14:12:31+0100
