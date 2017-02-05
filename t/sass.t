@@ -6,7 +6,7 @@ my $t = t::Helper->t(pipes => [qw(Sass Css)]);
 $t->app->asset->process('app.css' => ('sass-one.sass', 'sass-two.scss'));
 $t->get_ok('/')->status_is(200)
   ->element_exists(qq(link[href="/asset/5660087922/sass-one.css"]))
-  ->element_exists(qq(link[href="/asset/9f0d8f784a/sass-two.css"]));
+  ->element_exists(qq(link[href="/asset/a2245cadf4/sass-two.css"]));
 
 my $html = $t->tx->res->dom;
 $t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)
@@ -20,7 +20,7 @@ $ENV{MOJO_MODE} = 'Test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
 $t->app->asset->process('app.css' => ('sass-one.sass', 'sass-two.scss'));
 $t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/e035274e04/app.css"]));
+  ->element_exists(qq(link[href="/asset/08eb78e42a/app.css"]));
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->content_like(qr/\nbody\{background:#fff\}/);
@@ -64,6 +64,7 @@ $color: #aaa;
 .sass
   color: $color;
 @@ sass-two.scss
+// .foo { @import "sass-two.scss"; }`).
 @import "sass-0-include";
 $color: #aaa;
 .scss {

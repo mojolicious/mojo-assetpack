@@ -6,8 +6,8 @@ use Mojo::File;
 use Mojo::JSON qw(decode_json encode_json);
 use Mojo::Util;
 
-my $FORMAT_RE              = qr{^s[ac]ss$};
-my $IMPORT_RE              = qr{( \@import \s+ (["']) (.*?) \2 \s* ; )}x;
+my $FORMAT_RE = qr{^s[ac]ss$};
+my $IMPORT_RE = qr{ (^|[\n\r]+) ([^\@]*) (\@import \s+ (["']) (.*?) \4 \s* ;)}sx;
 my $SOURCE_MAP_PLACEHOLDER = sprintf '__%s__', __PACKAGE__;
 
 $SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
@@ -100,13 +100,16 @@ sub _checksum {
 
 SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
-    my $rel_path = $3;
+    my $pre      = $2;
+    my $rel_path = $5;
+    my $mlen     = length $3;
     my @rel      = split '/', $rel_path;
     my $name     = pop @rel;
-    my $mlen     = length $1;
     my $start    = pos($$ref) - $mlen;
     my $dynamic  = $rel_path =~ m!http://local/!;
     my @basename = ("_$name", $name);
+
+    next if $pre =~ m{^\s*//};
 
     # Follow sass rules for skipping,
     # ...with exception for special assetpack handling for dynamic sass include

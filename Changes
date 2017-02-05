@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.40 Not Released
+ - Fix skipping @import in comments #121
  - Can disable Pipe::Reloader from the browser
 
 1.39 2017-01-25T22:39:45+0100
