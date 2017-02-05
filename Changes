@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.40 Not Released
+1.40 2017-02-05T15:10:58-0800
  - Fix skipping @import in comments #121
  - Improved documentation for assetpack.def and paths #110
  - Can disable Pipe::Reloader from the browser
