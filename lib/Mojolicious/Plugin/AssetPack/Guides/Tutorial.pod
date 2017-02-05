@@ -187,8 +187,10 @@ following are the source files which will make up the final asset.
 =head3 Defining assets in a definition file
 
 Moving the definition to an external file can be useful for keeping the
-application code tidy. The definition file can also be defined in the "DATA"
-section. The default file is called "assetpack.def" and will be looked up if
+application code tidy. The definition file should be located in the
+L<assets|Mojolicious::Plugin::AssetPack::Store/paths> directory, or optionally
+defined it in the "DATA" section.  section. The default file is called
+"assetpack.def" and will be looked up if
 L<Mojolicious::Plugin::AssetPack/process> is called without arguments. Example
 file:
 

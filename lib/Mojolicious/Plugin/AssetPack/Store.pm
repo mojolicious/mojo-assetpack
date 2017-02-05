@@ -296,6 +296,13 @@ L<Mojolicious::Static> implements the following new ones.
 
 Used to set default headers used by L</serve_asset>.
 
+=head2 paths
+
+  $paths = $self->paths;
+  $self = $self->paths([$app->home->rel_file("assets")]);
+
+See L<Mojolicious::Static/paths> for details.
+
 =head2 ua
 
   $ua = $self->ua;
