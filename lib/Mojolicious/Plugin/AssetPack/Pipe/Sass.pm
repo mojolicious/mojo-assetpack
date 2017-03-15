@@ -7,7 +7,7 @@ use Mojo::JSON qw(decode_json encode_json);
 use Mojo::Util;
 
 my $FORMAT_RE = qr{^s[ac]ss$};
-my $IMPORT_RE = qr{ (^|[\n\r]+) ([^\@]*) (\@import \s+ (["']) (.*?) \4 \s* ;)}sx;
+my $IMPORT_RE = qr{ (?:^|[\n\r]+) ([^\@\r\n]*) (\@import \s+ (["']) (.*?) \3 \s* ;)}sx;
 my $SOURCE_MAP_PLACEHOLDER = sprintf '__%s__', __PACKAGE__;
 
 $SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
@@ -100,9 +100,9 @@ sub _checksum {
 
 SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
-    my $pre      = $2;
-    my $rel_path = $5;
-    my $mlen     = length $3;
+    my $pre      = $1;
+    my $rel_path = $4;
+    my $mlen     = length $2;
     my @rel      = split '/', $rel_path;
     my $name     = pop @rel;
     my $start    = pos($$ref) - $mlen;

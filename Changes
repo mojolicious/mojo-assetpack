@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.41 Not Released
+ - Fix bug in @import regex used by Pipe::Sass
+
 1.40 2017-02-05T15:10:58-0800
  - Fix skipping @import in comments #121
  - Improved documentation for assetpack.def and paths #110
