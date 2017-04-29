@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.42 Not Released
+1.42 2017-04-29T14:23:37+0200
  - Fix missing use lib '.' in register.t #124
  - Add fetching of source maps to "Fetch" pipe #117
 
