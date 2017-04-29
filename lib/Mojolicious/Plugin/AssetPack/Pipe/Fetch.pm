@@ -4,7 +4,24 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 use Mojo::URL;
 
 # Only made public for quick fixes. Subject for change
-our $URL_RE = qr{url\((['"]{0,1})(.*?)\1\)};
+our %FORMATS = (
+  css => {
+    re  => qr{url\((['"]{0,1})(.*?)\1\)},
+    pos => sub {
+      my ($start, $url, $quotes) = @_;
+      my $len = length $url;
+      return $start - length($quotes) - $len - 1, $len;
+    },
+  },
+  js => {
+    re  => qr{(//\W*sourceMappingURL=)(\S+)}m,
+    pos => sub {
+      my ($start, $url) = @_;
+      my $len = length $url;
+      return $start - $len, $len;
+    },
+  },
+);
 
 sub process {
   my ($self, $assets) = @_;
@@ -15,16 +32,16 @@ sub process {
   return $assets->each(
     sub {
       my ($asset, $index) = @_;
-      return unless $asset->format eq 'css';
       return unless $asset->url =~ /^https?:/;
+      return unless my $format = $FORMATS{$asset->format};
 
       my $base    = Mojo::URL->new($asset->url);
       my $content = $asset->content;
+      my $re      = $format->{re};
 
-      while ($content =~ /$URL_RE/g) {
-        my ($pre, $url) = ($1, $2);
-        my $len   = length $url;
-        my $start = pos($content) - length($pre) - $len - 1;
+      while ($content =~ /$re/g) {
+        my @matches = ($2, $1);
+        my $url = $matches[0];
 
         next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 
@@ -42,6 +59,7 @@ sub process {
           $related{$url} = "$up$path";
         }
 
+        my ($start, $len) = $format->{pos}->(pos($content), @matches);
         substr $content, $start, $len,
           Mojo::URL->new($related{$url})->query(Mojo::Parameters->new);
         pos($content) = $start + $len;

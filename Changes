@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.42 Not Released
  - Fix missing use lib '.' in register.t #124
+ - Add fetching of source maps to "Fetch" pipe #117
 
 1.41 2017-03-15T22:09:14+0100
  - Fix bug in @import regex used by Pipe::Sass
