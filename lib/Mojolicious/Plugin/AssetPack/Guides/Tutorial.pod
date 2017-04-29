@@ -204,10 +204,13 @@ with "!" will be used to define a topic (virtual asset name), and "E<lt>" will
 define a source file. This means that the file above will result in (almost)
 the same as in the L<example above|/Defining assets in the application>.
 
-The difference can be found on the line with a double "E<lt>": This results in
-the asset to be downloaded, but not included in the output asset. This is
-useful when you have something like "sass/main.scss" that depend on
-"materialize.scss", but "materialize.scss" itself should not be compiled.
+The idea of the line starting with "<<" is to download an external (remote)
+file for your convenience, which can be imported in your SASS/LESS files. The
+downloaded file is not included in the output asset. For example, you have
+"sass/main.scss" which depends on "materialize.scss" (remote file) and you need
+this "materialize.scss" file locally available to be imported in
+"sass/main.scss".  If you want to include a remote file in your output asset,
+use '<' insteaf of '<<'.
 
 It is also possible to add (EXPERIMENTAL) conditions:
 
