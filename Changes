@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.43 Not Released
+1.43 2017-05-12T14:38:02+0200
  - Fix not escaping Vuejs template code
  - Less verbose logging when processing assets
 
