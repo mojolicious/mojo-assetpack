@@ -168,7 +168,7 @@ sub _process {
   }
 
   my @checksum = map { $_->checksum } @$assets;
-  $self->_app->log->debug(qq(Processed asset "$topic". [@checksum]));
+  $self->_app->log->debug(qq(Processed asset "$topic". [@checksum])) if DEBUG;
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
   $self;
