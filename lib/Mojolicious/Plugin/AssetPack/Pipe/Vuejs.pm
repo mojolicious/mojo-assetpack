@@ -1,6 +1,5 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Vuejs;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
-use Mojo::DOM;
 
 sub process {
   my ($self, $assets) = @_;
@@ -11,28 +10,27 @@ sub process {
       my ($asset, $index) = @_;
       return unless $asset->format eq 'vue';
 
-      my $vue = Mojo::DOM->new($asset->content);
-      my $js = sprintf 'Vue.component("%s", {', $asset->name;
-      my %elem;
+      my $vue = sprintf 'Vue.component("%s", {', $asset->name;
+      my ($script, $template);
 
-      $vue->children->each(sub { $elem{$_->tag} = $_->content; });
-
-      if ($elem{script}) {
-        $elem{script} =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
-        $js = "$1$js" if $1;
-        $elem{script} =~ s!\s*\}\s*;?\s*$!!s;
-        $js .= $elem{script};
-      }
-      if ($elem{template}) {
-        $elem{template} =~ s!"!\\"!g;    # escape all double quotes
-        $elem{template} =~ s!^\s*!!s;
-        $elem{template} =~ s!\r?\n!\\n!g;
-        $js .= qq',\n' if $elem{script};
-        $js .= qq'  template: "$elem{template}"';
+      if ($asset->content =~ m!<script[^>]*>(.+)</script>!s) {
+        $script = $1;
+        $vue = "$1$vue" if $script =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
+        $script =~ s!\s*\}\s*;?\s*$!!s;
+        $vue .= $script;
       }
 
-      $js = Mojo::Util::encode('UTF-8', "(function(){$js})})();");
-      $asset->content($js)->format('js');
+      if ($asset->content =~ m!<template[^>]*>(.+)</template>!s) {
+        $template = $1;
+        $template =~ s!"!\\"!g;    # escape all double quotes
+        $template =~ s!^\s*!!s;
+        $template =~ s!\r?\n!\\n!g;
+        $vue .= qq',\n' if $script;
+        $vue .= qq'  template: "$template"';
+      }
+
+      $vue = Mojo::Util::encode('UTF-8', "(function(){$vue})})();");
+      $asset->content($vue)->format('js');
     }
   );
 }

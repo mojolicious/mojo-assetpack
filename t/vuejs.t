@@ -14,7 +14,8 @@ $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)
   ->content_like(qr[\Q)})();\E],               'ends with calling function')
   ->content_like(qr[\Qvar initial = false;\E], 'var initial')
   ->content_like(qr[\QVue.component("example"\E.*data:.*methods:.*template:.*\);]s, 'vue')
-  ->content_like(qr[\Q\"loading\"\E], 'quotes espcaped in template');
+  ->content_like(qr[\Q\"loading\"\E], 'quotes espcaped in template')
+  ->content_unlike(qr[&quot;loading&quot;]);
 
 done_testing;
 
