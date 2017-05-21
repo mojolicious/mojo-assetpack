@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.43
+    1.44
 
 SYNOPSIS
   Application
@@ -55,8 +55,10 @@ DESCRIPTION
     directly while developing, but a minified version in production. This
     assetpack plugin will handle all of that automatically for you.
 
-    The actual processing is delegated to "pipe objects". Please see "Pipes"
-    in Mojolicious::Plugin::AssetPack::Guides::Tutorial for a complete list.
+    Your application creates and refers to an asset by its topic (virtual
+    asset name). The process of building actual assets from their components
+    is delegated to "pipe objects". Please see "Pipes" in
+    Mojolicious::Plugin::AssetPack::Guides::Tutorial for a complete list.
 
 GUIDES
     * Mojolicious::Plugin::AssetPack::Guides::Tutorial
