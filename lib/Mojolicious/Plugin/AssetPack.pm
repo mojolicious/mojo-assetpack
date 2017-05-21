@@ -333,7 +333,9 @@ L<Mojolicious> can be a struggle: You want to serve the source files directly
 while developing, but a minified version in production. This assetpack plugin
 will handle all of that automatically for you.
 
-The actual processing is delegated to "pipe objects". Please see
+Your application creates and refers to an asset by its topic (virtual asset
+name).  The process of building actual assets from their components is
+delegated to "pipe objects". Please see
 L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
 
 =head1 GUIDES

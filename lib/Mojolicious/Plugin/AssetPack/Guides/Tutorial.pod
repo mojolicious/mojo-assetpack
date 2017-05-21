@@ -14,12 +14,12 @@ AssetPack.
 
 =head2 Loading the plugin
 
-The plugin need to be installed an loaded before any assets can be defined:
+The plugin needs to be installed an loaded before any assets can be defined:
 
   $app->plugin(AssetPack => \%args);
 
 Details about C<%args> can be found under
-L<Mojolicious::Plugin::AssetPack/register>, but there are one mandatory
+L<Mojolicious::Plugin::AssetPack/register>, but there is one mandatory
 argument worth noting: "pipes". "pipes" need to be a list of all the pipes
 you need to process your assets. Example:
 
@@ -30,7 +30,7 @@ and Css files, minify them and combine them into a aingle asset in production.
 
 =head2 Optional dependencies
 
-AssetPack only has optional dependencies. The reason for that is that the
+AssetPack has only optional dependencies. The reason for that is that the
 dependencies should only be required while developing, and not for running
 the application. See L<https://github.com/jhthorsen/mojolicious-plugin-assetpack/blob/v2/cpanfile>
 for a complete list, but here are the current list:
@@ -126,8 +126,8 @@ either...
 =head3 On disk
 
 AssetPack will look for source files in the "assets" directory, relative to the
-application L<home|Mojo/home>. This directory is not shared on the internet
-like the "public" directory, but the generated assets will still be available
+application L<home|Mojo/home>. Unlike the "public" directory, this directory is
+not shared on the internet, but the generated assets will still be available
 thanks to a custom L<route|Mojolicious::Plugin::AssetPack/route>.
 
 L<Mojolicious::Plugin::AssetPack::Store> is a sub class of
@@ -270,7 +270,7 @@ can also be set manually if you have special needs.
 
 =head3 Development
 
-The assets will be processed, but not minifed/combined if L<MOJO_MODE> or
+The assets will be processed, but not minified/combined if L<MOJO_MODE> or
 L<Mojolicious/mode> is set to "development". This is to make it easier to
 map JavaScript or CSS bugs to a specific file and line. "development" is
 the default mode while running L<morbo|Mojo::Server::Morbo>:
@@ -286,15 +286,15 @@ save bandwidth and roundtrip time to the server.
 
 Processed assets will be cached to disk when possible. The process step is run
 so if such a processed asset exists, the process step will not be run again.
-This again only require external tools (less, coffee, ...) and modules
-(L<JavaScript::Minifier::XS>, L<CSS::Sass>) to be required while developing,
-but can be skipped when installing an already built application.
+Again, the external tools (less, coffee, ...) and modules
+(L<JavaScript::Minifier::XS>, L<CSS::Sass>) will only be required while
+developing, but can be skipped when installing an already built application.
 
 =head2 Assets without topics
 
 One nifty feature is to use L<Mojolicious::Plugin::AssetPack> for assets which
-does not have any pipe to process them. The reason why this comes in handy is
-to avoid cache issues, since changing the file on disk will generate a new URL.
+do not have any pipe to process them. The reason why this comes in handy is to
+avoid cache issues, since changing the file on disk will generate a new URL.
 
 These assets can also be defined directly in the templates, without having to
 be defined in the application startup process. Examples:
