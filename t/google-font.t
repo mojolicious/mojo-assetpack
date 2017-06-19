@@ -25,6 +25,26 @@ $t2->get_ok('/');
 $t2->get_ok($t2->tx->res->dom->at('link')->{href})->status_is(200)
   ->header_is('Content-Type', 'text/css')->content_like(qr{font-family:\W*Roboto});
 
+my $t3 = t::Helper->t(pipes => [qw(Css Fetch)]);
+my $db = $t3->app->asset->store->_db;
+
+is_deeply(
+  $db->{'https://fonts.googleapis.com/css?family=Roboto:400,700'},
+  {
+    original =>
+      {format => 'css', rel => 'cache/fonts.googleapis.com/css_family_Roboto_400_700'}
+  },
+  'assetpack.db looks right'
+);
+
+for my $url (keys %$db) {
+  like $url, qr{^https?:}, "db $url";
+  for my $key (keys %{$db->{$url}}) {
+    is $key, 'original', 'db has no processed assets';
+    is_deeply [sort keys %{$db->{$url}{$key}}], [qw(format rel)], 'correct db attributes';
+  }
+}
+
 done_testing;
 
 __DATA__

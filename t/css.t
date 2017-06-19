@@ -31,7 +31,7 @@ $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
   ->header_is('Cache-Control', 'max-age=31536000')->header_is('Content-Type', 'text/css')
   ->content_like(qr/\.one\{color.*\.two\{color.*.skipped\s\{/s);
 
-Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Nope!' });
+Mojo::Util::monkey_patch('CSS::Minifier::XS', minify => sub { die 'Not cached!' });
 ok -e $file->path, 'cached file exists';
 $t = t::Helper->t(pipes => [qw(Css Combine)]);
 $t->app->asset->process('app.css' => @assets);

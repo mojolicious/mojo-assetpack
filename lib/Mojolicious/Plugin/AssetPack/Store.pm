@@ -7,7 +7,8 @@ use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
-use constant DB_FILE_NAME => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
+use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
+our %DB_KEYS = map { $_ => 1 } qw(checksum format minified rel);
 
 has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
 
@@ -26,11 +27,11 @@ has_ro 'ua';
 has_ro _db => sub {
   my $self = shift;
   my ($db, $key, $url) = ({});
-  for my $path (reverse @{$self->_files(DB_FILE_NAME, sub {-r})}) {
+  for my $path (reverse map { path($_, DB_FILE) } @{$self->paths}) {
     open my $DB, '<', $path or next;
     while (my $line = <$DB>) {
       ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
-      $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/;
+      $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/ and $DB_KEYS{$1};
     }
   }
   return $db;
@@ -83,6 +84,33 @@ sub load {
   return $asset;
 }
 
+sub persist {
+  my $self    = shift;
+  my $db      = $self->_db;
+  my $path    = path($self->paths->[0], DB_FILE);
+  my @db_keys = sort keys %DB_KEYS;
+  my $DB;
+
+  unless (open $DB, '>', $path) {
+    diag 'Save "%s" = 0 (%s)', $path, $! if DEBUG;
+    return $self;
+  }
+
+  diag 'Save "%s" = 1', $path if DEBUG;
+  for my $url (sort keys %$db) {
+    for my $key (sort keys %{$db->{$url}}) {
+      Carp::confess("Invalid key '$key'. Need to be [a-z-].") unless $key =~ /^[\w-]+$/;
+      printf $DB "[%s:%s]\n", $key, $url;
+      for my $attr (@db_keys) {
+        next unless defined $db->{$url}{$key}{$attr};
+        printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
+      }
+    }
+  }
+
+  return $self;
+}
+
 sub save {
   my ($self, $ref, $attrs) = @_;
   my $path = path($self->paths->[0], $self->_cache_path($attrs));
@@ -94,8 +122,9 @@ sub save {
 
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $$ref)
     unless -w $dir;
-  $self->_db_set($attrs);
+
   $path->spurt($$ref);
+  $self->_db_set(%$attrs);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
 }
 
@@ -116,14 +145,11 @@ sub _already_downloaded {
   my $attrs = $self->_db_get({key => 'original', url => $url}) or return undef;
   my $asset;
 
-  if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
-    $asset->{url} = $url;
-    $asset->{format} ||= $attrs->{format} if $attrs->{format};
-    diag 'Already downloaded: %s', $asset->url if DEBUG;
-    return $asset;
-  }
-
-  return undef;
+  return undef unless $attrs->{rel} and $asset = $self->asset($attrs->{rel});
+  $asset->{url} = $url;
+  $asset->{format} ||= $attrs->{format} if $attrs->{format};
+  diag 'Already downloaded: %s', $asset->url if DEBUG;
+  return $asset;
 }
 
 sub _cache_path {
@@ -146,30 +172,10 @@ sub _db_get {
 }
 
 sub _db_set {
-  my ($self, $attrs) = @_;
-  my $db   = $self->_db;
-  my $path = $self->_files(DB_FILE_NAME)->[0];
-  my $data = $db->{$attrs->{url}}{$attrs->{key}} ||= {};
-
-  %$data = %$attrs;
-  if (open my $DB, '>', $path) {
-    diag 'Save "%s" = 1', $path if DEBUG;
-    for my $url (sort keys %$db) {
-      for my $key (sort keys %{$db->{$url}}) {
-        delete $db->{$url}{$key}{$_} for qw(key name url);
-        next unless my @attrs = keys %{$db->{$url}{$key}};
-        Carp::confess("Invalid key '$key'. Need to be [a-z-].") unless $key =~ /^[\w-]+$/;
-        printf $DB "[%s:%s]\n", $key, $url;
-        for my $attr (sort @attrs) {
-          next unless defined $db->{$url}{$key}{$attr};
-          printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
-        }
-      }
-    }
-  }
-  else {
-    diag 'Save "%s" = 0 (%s)', $path, $! if DEBUG;
-  }
+  my ($self, %attrs) = @_;
+  my ($key,  $url)   = @attrs{qw(key url)};
+  return if $ENV{MOJO_ASSETPACK_LAZY} and $key ne 'original';
+  $self->_db->{$url}{$key} = {%attrs};
 }
 
 sub _download {
@@ -208,16 +214,9 @@ sub _download {
 
   $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
   @$attrs{qw(key rel url)} = ('original', $rel, $url);
-  $self->_db_set($attrs);
+  $self->_db_set(%$attrs);
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path) if $path;
   return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs)->content($tx->res->body);
-}
-
-sub _files {
-  my ($self, $name, $check) = @_;
-  my @files = map { path($_, split '/', $name) } @{$self->paths};
-  return [grep $check, @files] if $check;
-  return \@files;
 }
 
 sub _rel {
@@ -336,6 +335,14 @@ L<minified|Mojolicious::Plugin::AssetPack::Asset/minified> and rather use
 the value from C<%attr>:
 
   $bool = $self->load($asset, {minified => $bool});
+
+=head2 persist
+
+  $self = $self->persist;
+
+Used to save the internal state of the store to disk.
+
+This method is EXPERIMENTAL, and may change without warning.
 
 =head2 save
 

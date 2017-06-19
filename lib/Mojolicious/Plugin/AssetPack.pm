@@ -171,6 +171,7 @@ sub _process {
   $self->_app->log->debug(qq(Processed asset "$topic". [@checksum])) if DEBUG;
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
+  $self->store->persist;
   $self;
 }
 

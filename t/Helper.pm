@@ -7,7 +7,7 @@ use Mojo::Loader;
 use Mojolicious::Plugin::AssetPack::Util;
 use Mojolicious;
 use Test::Mojo;
-use Test::More;
+use Test::More ();
 
 $ENV{MOJO_LOG_LEVEL} = $ENV{HARNESS_IS_VERBOSE} ? 'debug' : 'error';
 $ENV{TEST_HOME} = path(__FILE__)->to_abs->dirname;
