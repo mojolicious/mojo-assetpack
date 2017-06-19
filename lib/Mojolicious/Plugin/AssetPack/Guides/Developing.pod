@@ -1,0 +1,126 @@
+=head1 NAME
+
+Mojolicious::Plugin::AssetPack::Guides::Developing - Developing with AssetPack
+
+=head1 OVERVIEW
+
+This guide will provide a setup for effective development with
+L<Mojolicious::Plugin::AssetPack>.
+
+=head1 GUIDE
+
+=head2 Environment variables
+
+It is possible to set environment variables to change the behavior of AssetPack:
+
+=over 2
+
+=item * MOJO_ASSETPACK_DEBUG
+
+Set this environment variable to get more debug to STDERR. Currently you can
+set it to a value between 0 and 3, where 3 provides the most debug.
+
+=item * MOJO_ASSETPACK_LAZY
+
+Set this environment variable if you want to delay processing the assets until
+they are requested. This can be very useful while developing when the assets
+are changed frequently.
+
+=back
+
+=head2 Faster development cycle
+
+For a faster development cycle, you can use
+L<Mojolicious::Plugin::AssetPack::Pipe::Reloader>, and L<MOJO_ASSETPACK_LAZY>.
+The combination of the two will result in a webpage that reload itself when
+a change is found in either an asset or the perl code.
+
+Example application:
+
+  use Mojolicious::Lite;
+  plugin "AssetPack" => {pipes => [qw(Css Reloader)]};
+  app->asset->process;
+  get "/" => "example";
+  app->start;
+
+  __DATA__
+  @@ assetpack.def
+  ! myapp.css
+  < main.css
+
+  @@ main.css
+  body { background: pink; }
+
+  @@ example.html.ep
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>This page will reload when changes are made</title>
+
+      %# Some asset you have defined:
+      %= asset "myapp.css"
+
+      %# See Reloader pipe for details
+      %= asset "reloader.js" if app->mode eq "development"
+    </head>
+    <body>
+      This is a reload test page!
+    </body>
+  </html>
+
+How to run the application:
+
+  $ MOJO_ASSETPACK_LAZY=1 morbo myapp.pl
+
+=head2 Enforcing production assets
+
+To be sure that production assets are built correctly, you can add a unit test
+like the one below. This is especially important if you are using
+L</MOJO_ASSETPACK_LAZY>.
+
+  use Test::Mojo;
+  use Test::More;
+
+  $ENV{MOJO_MODE} = "production";
+  my $t = Test::Mojo->new("MyApp");
+
+  $t->get_ok("/")
+    ->element_exists(q(head link[href$="/app.css"]))
+    ->element_exists(q(body script[src$="/app.js"]));
+
+  done_testing;
+
+The C<element_exists()> tests should match the topics defined when defining the
+different assets.
+
+=head1 Optional modules
+
+There are some optional modules you might want to install:
+
+=over 2
+
+=item * L<CSS::Minifier::XS>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
+
+=item * L<CSS::Sass>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::Sass>.
+
+=item * L<IO::Socket::SSL>
+
+Required if you want to download assets served over SSL.
+
+=item * L<JavaScript::Minifier::XS>
+
+Used by L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
+
+=back
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack>,
+L<Mojolicious::Plugin::AssetPack::Guides::Cookbook> and
+L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>.
+
+=cut

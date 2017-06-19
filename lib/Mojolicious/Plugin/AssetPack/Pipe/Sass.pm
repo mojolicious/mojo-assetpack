@@ -225,9 +225,9 @@ See also L<http://thesassway.com/intermediate/using-source-maps-with-sass> and
 L<https://robots.thoughtbot.com/sass-source-maps-chrome-magic> for more
 information about the usefulness.
 
-See also L<Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_LAZY> and
-L<Mojolicious::Plugin::AssetPack::Pipe::Reloader> for how to reload the page
-when changes are done inside the browser's dev tools.
+See also Mojolicious::Plugin::AssetPack::Guides::Developing/Faster development
+cycle> for how to reload the page when changes are done inside the browser's
+dev tools.
 
 =head1 METHODS
 

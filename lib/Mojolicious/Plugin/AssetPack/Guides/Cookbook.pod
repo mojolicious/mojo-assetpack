@@ -213,29 +213,10 @@ The file "_variables.scss" should also be copied to "assets/sass".
 
 (Note that the rest of the example file above is truncated)
 
-=head1 BUILDING PRODUCTION ASSETS
-
-To be sure that production assets are alwasy built, you can add a unit test
-like the one below:
-
-  use Test::Mojo;
-  use Test::More;
-
-  $ENV{MOJO_MODE} = "production";
-  my $t = Test::Mojo->new("MyApp");
-
-  $t->get_ok("/")
-    ->element_exists(q(head link[href$="/app.css"]))
-    ->element_exists(q(body script[src$="/app.js"]));
-
-  done_testing;
-
-The C<element_exists()> tests should match the topics defined when defining the
-different assets.
-
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::AssetPack> and
+L<Mojolicious::Plugin::AssetPack>,
+L<Mojolicious::Plugin::AssetPack::Guides::Developing> and
 L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>.
 
 =cut

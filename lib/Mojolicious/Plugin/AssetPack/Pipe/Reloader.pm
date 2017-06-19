@@ -119,7 +119,7 @@ developing.
   $bool = $self->enabled;
 
 This pipe is only enabled if either
-L<Mojolicious::Plugin::AssetPack/MOJO_ASSETPACK_LAZY> is
+L<Mojolicious::Plugin::AssetPack::Guides::Developing/MOJO_ASSETPACK_LAZY> is
 set or L<Mojolicious/mode> is "development".
 
 =head1 METHODS

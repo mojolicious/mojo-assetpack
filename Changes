@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 1.45 Not Released
+ - Add Developing guide
  - Removed MOJO_ASSETPACK_CLEANUP (only used in test suite)
  - Removed deprecated method end_range() from AssetPack::Asset
  - Removed deprecated method get_chunk() from AssetPack::Asset

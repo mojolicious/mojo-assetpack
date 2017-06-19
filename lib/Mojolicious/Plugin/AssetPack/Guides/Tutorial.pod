@@ -325,7 +325,8 @@ be defined in the application startup process. Examples:
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::AssetPack> and
+L<Mojolicious::Plugin::AssetPack>,
+L<Mojolicious::Plugin::AssetPack::Guides::Developing> and
 L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>.
 
 =cut

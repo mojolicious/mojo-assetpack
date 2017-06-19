@@ -323,52 +323,14 @@ L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
 
 The tutorial will give an introduction to how AssetPack can be used.
 
+=item * L<Mojolicious::Plugin::AssetPack::Guides::Developing>
+
+The "developing" guide will give insight on how to do effective development with
+AssetPack and more details about the internals in this plugin.
+
 =item * L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>
 
 The cookbook has various receipes on how to cook with AssetPack.
-
-=back
-
-=head1 ENVIRONMENT
-
-It is possible to set environment variables to change the behavior of AssetPack:
-
-=over 2
-
-=item * MOJO_ASSETPACK_DEBUG
-
-Set this environment variable to get more debug to STDERR. Currently you can
-set it to a value between 0 and 3, where 3 provides the most debug.
-
-=item * MOJO_ASSETPACK_LAZY
-
-Set this environment variable if you want to delay processing the assets until
-they are requested. This can be very useful while developing when the assets
-are changed frequently.
-
-=back
-
-=head1 OPTIONAL MODULES
-
-There are some optional modules you might want to install:
-
-=over 2
-
-=item * L<CSS::Minifier::XS>
-
-Used by L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
-
-=item * L<CSS::Sass>
-
-Used by L<Mojolicious::Plugin::AssetPack::Pipe::Sass>.
-
-=item * L<IO::Socket::SSL>
-
-Required if you want to download assets served over SSL.
-
-=item * L<JavaScript::Minifier::XS>
-
-Used by L<Mojolicious::Plugin::AssetPack::Pipe::JavaScript>.
 
 =back
 
