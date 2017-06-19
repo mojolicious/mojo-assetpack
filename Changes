@@ -1,17 +1,16 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.45 Not Released
+1.45 2017-06-19T23:49:30+0200
  - Add Developing guide
- - Removed MOJO_ASSETPACK_CLEANUP (only used in test suite)
  - Removed deprecated method end_range() from AssetPack::Asset
  - Removed deprecated method get_chunk() from AssetPack::Asset
  - Removed deprecated method is_range() from AssetPack::Asset
  - Removed deprecated method mtime() from AssetPack::Asset
  - Removed deprecated method start_range() from AssetPack::Asset
  - Removed deprecated method tag_helper() from AssetPack::Asset
+ - Removed MOJO_ASSETPACK_CLEANUP (only used in test suite)
  - Can prevent AssetPack::Store from writing assetpack.db while developing
    with MOJO_ASSETPACK_LAZY=1 (EXPERIMENTAL)
- - Will not store "mtime" in assetpack.db
 
 1.44 2017-05-21T23:02:46+0200
  - Improved documentation #125

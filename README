@@ -3,7 +3,7 @@ NAME
     javascript and coffeescript files
 
 VERSION
-    1.44
+    1.45
 
 SYNOPSIS
   Application
@@ -33,17 +33,6 @@ SYNOPSIS
         <body><%= content %></body>
       </html>
 
-FOR EXISTING USERS
-    Are you already using AssetPack? You can still do so without any change.
-    This new version was written to make it easier to maintain and also
-    easier to extend. The new code will be "activated" by loadind this
-    plugin with a list of pipes:
-
-      $app->plugin(AssetPack => {pipes => [...]});
-
-    The old API require Mojolicious::Plugin::AssetPack::Backcompat to be
-    installed.
-
 DESCRIPTION
     Mojolicious::Plugin::AssetPack is Mojolicious plugin for processing
     static assets. The idea is that JavaScript and CSS files should be
@@ -65,44 +54,15 @@ GUIDES
 
       The tutorial will give an introduction to how AssetPack can be used.
 
+    * Mojolicious::Plugin::AssetPack::Guides::Developing
+
+      The "developing" guide will give insight on how to do effective
+      development with AssetPack and more details about the internals in
+      this plugin.
+
     * Mojolicious::Plugin::AssetPack::Guides::Cookbook
 
       The cookbook has various receipes on how to cook with AssetPack.
-
-ENVIRONMENT
-    It is possible to set environment variables to change the behavior of
-    AssetPack:
-
-    * MOJO_ASSETPACK_DEBUG
-
-      Set this environment variable to get more debug to STDERR. Currently
-      you can set it to a value between 0 and 3, where 3 provides the most
-      debug.
-
-    * MOJO_ASSETPACK_LAZY
-
-      Set this environment variable if you want to delay processing the
-      assets until they are requested. This can be very useful while
-      developing when the assets are changed frequently.
-
-OPTIONAL MODULES
-    There are some optional modules you might want to install:
-
-    * CSS::Minifier::XS
-
-      Used by Mojolicious::Plugin::AssetPack::Pipe::Css.
-
-    * CSS::Sass
-
-      Used by Mojolicious::Plugin::AssetPack::Pipe::Sass.
-
-    * IO::Socket::SSL
-
-      Required if you want to download assets served over SSL.
-
-    * JavaScript::Minifier::XS
-
-      Used by Mojolicious::Plugin::AssetPack::Pipe::JavaScript.
 
 HELPERS
   asset
