@@ -119,7 +119,6 @@ sub _already_downloaded {
   if ($attrs->{rel} and $asset = $self->asset($attrs->{rel})) {
     $asset->{url} = $url;
     $asset->{format} ||= $attrs->{format} if $attrs->{format};
-    $asset->{mtime}  ||= $attrs->{mtime}  if $attrs->{mtime};
     diag 'Already downloaded: %s', $asset->url if DEBUG;
     return $asset;
   }
@@ -202,9 +201,6 @@ sub _download {
     $path->spurt($tx->res->body);
   }
 
-  if (my $lm = $h->last_modified) {
-    $attrs->{mtime} = Mojo::Date->new($lm)->epoch;
-  }
   if (my $ct = $h->content_type) {
     $ct =~ s!;.*$!!;
     $attrs->{format} = $self->_types->detect($ct)->[0] unless $ct eq 'text/plain';
