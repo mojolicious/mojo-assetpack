@@ -1,5 +1,13 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.45 Not Released
+ - Removed deprecated method end_range() from AssetPack::Asset
+ - Removed deprecated method get_chunk() from AssetPack::Asset
+ - Removed deprecated method is_range() from AssetPack::Asset
+ - Removed deprecated method mtime() from AssetPack::Asset
+ - Removed deprecated method start_range() from AssetPack::Asset
+ - Removed deprecated method tag_helper() from AssetPack::Asset
+
 1.44 2017-05-21T23:02:46+0200
  - Improved documentation #125
    Contributor: William Lindley

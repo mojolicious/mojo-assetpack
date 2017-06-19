@@ -4,7 +4,6 @@ use Mojo::Base -base;
 use Mojo::Asset::Memory;
 use Mojo::URL;
 use Mojo::File;
-use Mojo::Util 'deprecated';
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
@@ -19,8 +18,6 @@ has format => sub {
 };
 
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
-
-sub tag_helper { warn "DEPRECATED in v1.17! This attribute does nothing." }
 
 has _asset => sub {
   my $self = shift;
@@ -81,20 +78,10 @@ sub content {
   return $self->_asset(Mojo::Asset::Memory->new->add_chunk($_[0]));
 }
 
-sub end_range { deprecated 'end_range() is deprecated'; shift->_asset->end_range(@_) }
-sub get_chunk { deprecated 'get_chunk() is deprecated'; shift->_asset->get_chunk(@_) }
-sub is_range  { deprecated 'is_range() is deprecated';  shift->_asset->is_range }
-sub mtime     { deprecated 'mtime() is deprecated';     shift->_asset->mtime }
-
 sub path {
   $_[0]->_asset->isa('Mojo::Asset::File') ? Mojo::File->new($_[0]->_asset->path) : undef;
 }
 sub size { $_[0]->_asset->size }
-
-sub start_range {
-  deprecated 'start_range() is deprecated';
-  shift->_asset->start_range(@_);
-}
 
 sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
