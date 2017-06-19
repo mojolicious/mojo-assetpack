@@ -5,6 +5,8 @@ $ENV{HTTP_PROXY} = 'example.com';
 $ENV{NO_PROXY}   = 'mojolicious.org';
 $ENV{no_proxy}   = '';
 
+ok !eval '$undeclared_variable=123', 'strict is enabled';
+
 my $t = Test::Mojo->new(Mojolicious->new);
 delete $t->app->log->{$_} for qw(path handle);
 $t->app->plugin(AssetPack => {helper => 'foo', pipes => ['Css']});

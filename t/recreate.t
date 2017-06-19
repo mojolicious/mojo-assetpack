@@ -5,8 +5,6 @@ use Mojo::File 'path';
 use Mojo::Loader 'data_section';
 use Mojolicious::Plugin::AssetPack::Util 'checksum';
 
-$ENV{MOJO_ASSETPACK_CLEANUP} = 0;
-
 # simulate minify()
 no warnings 'once';
 $INC{'CSS/Minifier/XS.pm'} = 'mocked';
@@ -40,7 +38,6 @@ $tr->get_ok($tr->tx->res->dom->at('link')->{href})->status_is(200)
 
 # reset asset
 $recreate->spurt(".recreate { color: #aaa }\n");
-$ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 
 done_testing;
 __DATA__

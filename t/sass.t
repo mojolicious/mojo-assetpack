@@ -33,12 +33,10 @@ if (-e '.test-everything') {
 }
 
 Mojo::Util::monkey_patch('CSS::Sass', sass2scss => sub { die 'Nope!' });
-$ENV{MOJO_ASSETPACK_CLEANUP} = 0;
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
 ok eval { $t->app->asset->process('app.css' => ('sass-one.sass', 'sass-two.scss')) },
   'using cached assets'
   or diag $@;
-$ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 
 # Assets from disk
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);

@@ -1,8 +1,7 @@
 use lib '.';
 use t::Helper;
 
-$ENV{MOJO_MODE} = 'development';
-$ENV{MOJO_ASSETPACK_CLEANUP} //= 1;    # remove generated assets
+$ENV{MOJO_MODE}              = 'development';
 $ENV{MOJO_ASSETPACK_DB_FILE} = 'mount.db';
 
 my $app = Mojolicious->new;

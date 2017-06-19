@@ -16,8 +16,6 @@ ok + (grep {/Caching/} @message), 'cached assets' or diag join ',', @message;
 ok + (grep {/Unable to download.*_layout\.scss/} @message), 'unable to download'
   or map { diag $_ } @message;
 
-$ENV{MOJO_ASSETPACK_CLEANUP} = 0;
-
 @message = ();
 $t = t::Helper->t(pipes => [qw(Sass Css)]);
 $t->app->log->on(message => sub { shift; push @message, @_ });
@@ -29,8 +27,6 @@ $t->get_ok($t->tx->res->dom->at('link[href]')->{href} || '/nope')->status_is(200
 ok !(grep {/Caching/} @message), 'assets are already cached' or diag join ',', @message;
 ok !(grep {/Unable to download.*_layout\.scss/} @message), 'assets are already downloaded'
   or diag join ',', @message;
-
-$ENV{MOJO_ASSETPACK_CLEANUP} = 1;
 
 done_testing;
 

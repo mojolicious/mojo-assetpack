@@ -1,4 +1,3 @@
-BEGIN { $ENV{TEST_DIAG} = 1 }
 use Mojo::Base -strict;
 use Test::Mojo;
 use Test::More;

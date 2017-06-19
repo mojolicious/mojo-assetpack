@@ -215,25 +215,6 @@ sub _render_tags {
     ->map($self->tag_for, $c, \%args, @attrs)->join("\n");
 }
 
-sub _reset {
-  my ($self, $args) = @_;
-
-  diag "Reset $self." if DEBUG;
-
-  if ($args->{unlink}) {
-    for (@{$self->{asset_paths} || []}) {
-      next unless /\bcache\b/;
-      next unless -e;
-      local $! = 0;
-      unlink;
-      diag 'unlink %s = %s', $_, $! || '1' if DEBUG;
-    }
-  }
-
-  $self->store->_reset($args);
-  delete $self->{$_} for qw(by_checksum by_topic);
-}
-
 sub _serve {
   my $c        = shift;
   my $checksum = $c->stash('checksum');
@@ -260,11 +241,6 @@ sub _static_asset {
   my $assets = Mojo::Collection->new($asset);
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   return $assets;
-}
-
-sub DESTROY {
-  my $self = shift;
-  $self->_reset({unlink => 1}) if $ENV{MOJO_ASSETPACK_CLEANUP} and $self->{store};
 }
 
 1;

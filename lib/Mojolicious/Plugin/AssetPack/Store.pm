@@ -228,15 +228,6 @@ sub _rel {
   "cache/$_";
 }
 
-sub _reset {
-  my ($self, $args) = @_;
-  return unless $args->{unlink};
-  local $! = 0;
-  my $file = $self->_files(DB_FILE_NAME)->[0];
-  unlink $file;
-  diag 'unlink %s = %s', $file, $! || '1' if DEBUG;
-}
-
 1;
 
 =encoding utf8
