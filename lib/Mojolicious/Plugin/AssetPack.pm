@@ -287,17 +287,6 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
     <body><%= content %></body>
   </html>
 
-=head1 FOR EXISTING USERS
-
-Are you already using AssetPack? You can still do so without any change. This
-new version was written to make it easier to maintain and also easier to
-extend. The new code will be "activated" by loadind this plugin with a list of
-pipes:
-
-  $app->plugin(AssetPack => {pipes => [...]});
-
-The old API require L<Mojolicious::Plugin::AssetPack::Backcompat> to be installed.
-
 =head1 DESCRIPTION
 
 L<Mojolicious::Plugin::AssetPack> is L<Mojolicious plugin|Mojolicious::Plugin>
