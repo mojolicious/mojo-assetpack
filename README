@@ -152,7 +152,7 @@ METHODS
       $self = $self->process($definition_file);
 
     Used to process assets. A $definition_file can be used to define $topic
-    and @assets in a seperate file. See "Process assets" in
+    and @assets in a separate file. See "Process assets" in
     Mojolicious::Plugin::AssetPack::Guides::Tutorial for more details.
 
     $definition_file defaults to "assetpack.def".
@@ -190,7 +190,7 @@ METHODS
       that should bypass the proxy (if any proxy is detected). Default is to
       bypass all requests to localhost.
 
-      See "detect" in Mojo::UserAgent::Proxy for more infomation.
+      See "detect" in Mojo::UserAgent::Proxy for more information.
 
 SEE ALSO
     "GUIDES", Mojolicious::Plugin::AssetPack::Asset,

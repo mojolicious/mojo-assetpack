@@ -304,7 +304,7 @@ L<Mojolicious::Static> implements the following new ones.
 
   $asset = $self->asset($url, $paths);
 
-Retuns a L<Mojolicious::Plugin::AssetPack::Asset> object or undef unless
+Returns a L<Mojolicious::Plugin::AssetPack::Asset> object or undef unless
 C<$url> can be found in C<$paths>. C<$paths> default to
 L<Mojolicious::Static/paths>. C<$paths> and C<$url> can be...
 

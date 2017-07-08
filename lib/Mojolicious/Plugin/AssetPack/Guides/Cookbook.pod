@@ -170,7 +170,7 @@ can be included. Here is just one example:
 
 =head2 jQuery
 
-L<http://jquery.com> can easily be included by refering to a CDN:
+L<http://jquery.com> can easily be included by referring to a CDN:
 
   $app->asset->process(
     "app.js" => (

@@ -226,7 +226,7 @@ while developing, but switch to a smaller version without debug in production.
 
 =head2 Using assets
 
-Any processed asset can be accessed by refering to a topic.
+Any processed asset can be accessed by referring to a topic.
 
 =head3 Template
 

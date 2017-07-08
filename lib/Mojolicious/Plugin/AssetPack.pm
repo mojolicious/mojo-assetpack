@@ -423,7 +423,7 @@ Will return a registered pipe by C<$name> or C<undef> if none could be found.
   $self = $self->process($definition_file);
 
 Used to process assets. A C<$definition_file> can be used to define C<$topic>
-and C<@assets> in a seperate file. See
+and C<@assets> in a separate file. See
 L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Process assets> for more
 details.
 
@@ -466,7 +466,7 @@ Currently only "no_proxy" is supported, which will set which requests that
 should bypass the proxy (if any proxy is detected). Default is to bypass all
 requests to localhost.
 
-See L<Mojo::UserAgent::Proxy/detect> for more infomation.
+See L<Mojo::UserAgent::Proxy/detect> for more information.
 
 =back
 
