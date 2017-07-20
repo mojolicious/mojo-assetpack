@@ -38,7 +38,7 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Css> will minify your "css" assets
 if L<Mojolicious::Plugin::AssetPack/minify> is true and the asset is not
 already minified.
 
-This module require the optional module L<CSS::Minifier::XS> to minify.
+This module requires the optional module L<CSS::Minifier::XS> to minify.
 
 =head1 METHODS
 
