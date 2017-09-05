@@ -10,6 +10,7 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
 our %DB_KEYS = map { $_ => 1 } qw(checksum format minified rel);
 
+has asset_class => 'Mojolicious::Plugin::AssetPack::Asset';
 has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
 
 has _types => sub {
@@ -64,7 +65,7 @@ sub asset {
         local $self->{paths} = [$path];
         next unless $asset = $self->file($url);
         my $attrs = $self->_db_get({key => 'original', url => $url}) || {url => $url};
-        return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $asset);
+        return $self->asset_class->new(%$attrs, content => $asset);
       }
     }
   }
@@ -120,12 +121,11 @@ sub save {
   mkdir $dir if !-d $dir and -w $dir->dirname;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, content => $$ref)
-    unless -w $dir;
+  return $self->asset_class->new(%$attrs, content => $$ref) unless -w $dir;
 
   $path->spurt($$ref);
   $self->_db_set(%$attrs);
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path);
+  return $self->asset_class->new(%$attrs, path => $path);
 }
 
 sub serve_asset {
@@ -215,8 +215,8 @@ sub _download {
   $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
   @$attrs{qw(key rel url)} = ('original', $rel, $url);
   $self->_db_set(%$attrs);
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs, path => $path) if $path;
-  return Mojolicious::Plugin::AssetPack::Asset->new(%$attrs)->content($tx->res->body);
+  return $self->asset_class->new(%$attrs, path => $path) if $path;
+  return $self->asset_class->new(%$attrs)->content($tx->res->body);
 }
 
 sub _rel {
@@ -274,6 +274,13 @@ it can be looked up later as a unique item using L</load>.
 
 L<Mojolicious::Plugin::AssetPack::Store> inherits all attributes from
 L<Mojolicious::Static> implements the following new ones.
+
+=head2 asset_class
+
+  $str = $self->asset_class;
+  $self = $self->asset_class("Mojolicious::Plugin::AssetPack::Asset");
+
+Holds the classname of which new assets will be constructed from.
 
 =head2 default_headers
 

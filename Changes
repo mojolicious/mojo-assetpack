@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+1.46 Not Released
+ - Add "asset_class" attribute to AssetPack::Store
+
 1.45 2017-06-19T23:49:30+0200
  - Add Developing guide
  - Removed deprecated method end_range() from AssetPack::Asset
