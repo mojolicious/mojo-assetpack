@@ -1,11 +1,15 @@
 package Mojolicious::Plugin::AssetPack::Pipe;
 use Mojo::Base -base;
-use Mojo::File 'path';
-use Mojolicious::Plugin::AssetPack::Asset;
-use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
+
 use File::Temp ();
 use IPC::Run3  ();
 use List::Util 'first';
+use Mojo::File 'path';
+use Mojo::JSON;
+use Mojolicious::Plugin::AssetPack::Asset;
+use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
+
+my $REQUIRE_JS = path(__FILE__)->dirname->child(qw(Pipe require.js));
 
 $ENV{PATH} ||= '';
 
@@ -49,6 +53,19 @@ sub _find_app {
   diag 'Calling %s->_install_%s() ...', ref $self, $apps->[-1] if DEBUG > 1;
   return $self->{apps}{$apps->[-1]} = $self->$code if $code;
   return '';
+}
+
+sub _install_node_modules {
+  my $self = shift;
+
+  $self->run([$self->_find_app([qw(nodejs node)]), $REQUIRE_JS, @_], \undef, \my $status);
+  $status = Mojo::JSON::decode_json($status);
+
+  for my $plugin ('rollup', @{$self->modules}, @{$self->plugins}) {
+    next unless $status->{$plugin};
+    $self->app->log->warn("Installing $plugin... Please wait. (npm install $plugin)");
+    $self->run([npm => install => $plugin]);
+  }
 }
 
 sub _install_gem  { shift->_i('https://rubygems.org/pages/download') }

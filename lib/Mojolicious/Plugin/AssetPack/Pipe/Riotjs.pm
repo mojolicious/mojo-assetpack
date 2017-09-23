@@ -3,14 +3,9 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
 use Mojo::File 'path';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
-use Cwd ();
 
-has _riotjs => sub {
-  my $self = shift;
-
-  return [$self->_find_app([qw(nodejs node)]), path(__FILE__)->dirname->child('riot.js'),
-  ];
-};
+has _riotjs =>
+  sub { [shift->_find_app([qw(nodejs node)]), path(__FILE__)->dirname->child('riot.js')] };
 
 sub process {
   my ($self, $assets) = @_;

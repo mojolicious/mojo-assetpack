@@ -1,4 +1,3 @@
-#!start included /home/jhthorsen/.perlbrew/perls/perl-5.18.2/lib/5.18.2/ExtUtils/MANIFEST.SKIP
 # Avoid version control files.
 \bRCS\b
 \bCVS\b
@@ -65,3 +64,4 @@
 node_modules
 .sass-cache
 .test-everything
+package-lock.json
