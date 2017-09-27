@@ -9,7 +9,7 @@ use Mojo::JSON;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro DEBUG);
 
-my $REQUIRE_JS = path(__FILE__)->dirname->child(qw(Pipe require.js));
+my $REQUIRE_JS = path(__FILE__)->dirname->child(qw(Pipe require.js))->realpath;
 
 $ENV{PATH} ||= '';
 
@@ -39,10 +39,10 @@ sub _find_app {
 
   $apps = [$apps] unless ref $apps eq 'ARRAY';
   for my $name (@$apps) {
+    return $self->{apps}{$name} if $self->{apps}{$name};    # Already found
     my $key = uc "MOJO_ASSETPACK_${name}_APP";
     diag 'Looking for "%s" in $%s', $name, $key if DEBUG > 1;
     return $ENV{$key} if $ENV{$key};                        # MOJO_ASSETPACK_FOO_APP wins
-    return $self->{apps}{$name} if $self->{apps}{$name};    # Already found
 
     diag 'Looking for "%s" in $PATH.', $name if DEBUG > 1;
     $path = first {-e} map { path($_, $name) } File::Spec->path;
