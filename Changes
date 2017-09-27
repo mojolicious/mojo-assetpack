@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.46 Not Released
+1.46 2017-09-27T21:35:33+0200
  - Add "asset_class" attribute to AssetPack::Store
  - Add rollupjs pipe - https://rollupjs.org/
 
