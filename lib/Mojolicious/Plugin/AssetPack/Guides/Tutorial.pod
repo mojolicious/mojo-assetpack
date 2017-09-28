@@ -26,7 +26,7 @@ you need to process your assets. Example:
   $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]});
 
 Loading the plugin with the list above will enable AssetPack to process Sass
-and Css files, minify them and combine them into a aingle asset in production.
+and Css files, minify them and combine them into a single asset in production.
 
 =head2 Optional dependencies
 
@@ -189,7 +189,7 @@ following are the source files which will make up the final asset.
 Moving the definition to an external file can be useful for keeping the
 application code tidy. The definition file should be located in the
 L<assets|Mojolicious::Plugin::AssetPack::Store/paths> directory, or optionally
-defined it in the "DATA" section.  section. The default file is called
+defined it in the "DATA" section. The default file is called
 "assetpack.def" and will be looked up if
 L<Mojolicious::Plugin::AssetPack/process> is called without arguments. Example
 file:
