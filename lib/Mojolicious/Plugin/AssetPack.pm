@@ -162,7 +162,6 @@ sub _process {
       local $pipe->{topic} = $topic;
       diag '%s->%s("%s")', ref $pipe, $method, $topic if DEBUG;
       $pipe->$method($assets);
-      push @{$self->{asset_paths}}, $_->path->to_string for grep { $_->path } @$assets;
     }
   }
 
