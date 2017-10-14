@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-1.47 Not Released
+1.47 2017-10-14T18:58:55+0200
  - Dropping "original" from assetpack.db
 
 1.46 2017-09-27T21:35:33+0200
