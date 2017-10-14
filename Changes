@@ -3,6 +3,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 2.00 Not Released
  - load_module() confess on error
  - Removed EXPERIMENTAL Reloader pipe
+ - Removed EXPERIMENTAL clone() method in AssetPack::Asset
 
 1.47 2017-10-14T18:58:55+0200
  - Dropping "original" from assetpack.db

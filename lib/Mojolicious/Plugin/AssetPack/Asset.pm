@@ -63,13 +63,6 @@ sub asset {
   return $clone;
 }
 
-sub clone {
-  my $self  = shift;
-  my $clone = (ref $self)->new(%{$self});
-  delete $clone->{$_} for qw(checksum minified);
-  return $clone;
-}
-
 sub content {
   my $self = shift;
   return $self->_asset->slurp unless @_;
@@ -160,14 +153,6 @@ Returns the location of the asset.
 
 Returns a new L<Mojo::Asset::File> or L<Mojo::Asset::Memory> object, with the
 content or path from this object.
-
-This method is EXPERIMENTAL.
-
-=head2 clone
-
-  $clone = $self->clone;
-
-Makes a shallow clone of the object.
 
 This method is EXPERIMENTAL.
 

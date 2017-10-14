@@ -208,7 +208,7 @@ this "materialize.scss" file locally available to be imported in
 "sass/main.scss".  If you want to include a remote file in your output asset,
 use '<' insteaf of '<<'.
 
-It is also possible to add (EXPERIMENTAL) conditions:
+It is also possible to add conditions:
 
   ! app.css
   < development.css [mode==development] [minify==0]
