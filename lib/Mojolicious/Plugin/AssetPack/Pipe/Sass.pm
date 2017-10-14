@@ -50,7 +50,7 @@ sub process {
       $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
       diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
-      if ($self->{has_module} //= load_module 'CSS::Sass') {
+      if ($self->{has_module} //= eval { load_module 'CSS::Sass'; 1 }) {
         $opts{output_style} = _output_style($attrs->{minified});
         $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
         my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);

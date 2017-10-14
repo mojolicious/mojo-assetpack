@@ -3,7 +3,6 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
 use Mojo::DOM;
 use Mojo::Util;
-use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 
 # this should be considered private
 our $URL = 'http://realfavicongenerator.net/api/favicon';

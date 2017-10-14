@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Jpeg;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
-use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
+use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 
 has app      => 'jpegoptim';
 has app_args => sub {

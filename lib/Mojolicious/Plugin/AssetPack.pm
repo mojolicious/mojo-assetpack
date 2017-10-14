@@ -135,7 +135,6 @@ sub _pipes {
     map {
       my $class = load_module /::/ ? $_ : "Mojolicious::Plugin::AssetPack::Pipe::$_";
       diag 'Loading pipe "%s".', $class if DEBUG;
-      die qq(Unable to load "$_": $@) unless $class;
       my $pipe = $class->new(assetpack => $self);
       Scalar::Util::weaken($pipe->{assetpack});
       $pipe;

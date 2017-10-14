@@ -17,8 +17,7 @@ sub process {
       return if $asset->format ne 'js' or $asset->minified;
       return $asset->content($file)->minified(1) if $file = $store->load($attrs);
       return unless length(my $js = $asset->content);
-      load_module 'JavaScript::Minifier::XS'
-        or die qq(Could not load "JavaScript::Minifier::XS": $@);
+      load_module 'JavaScript::Minifier::XS';
       diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
       $js = JavaScript::Minifier::XS::minify($js);
       $asset->content($store->save(\$js, $attrs))->minified(1);

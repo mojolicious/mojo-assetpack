@@ -1,5 +1,7 @@
 package Mojolicious::Plugin::AssetPack::Util;
 use Mojo::Base 'Exporter';
+
+use Carp 'confess';
 use Mojo::Util;
 
 use constant DEBUG   => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
@@ -7,7 +9,7 @@ use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
 our @EXPORT  = qw(checksum diag dumper has_ro load_module $CWD DEBUG);
 our $SUM_LEN = 10;
-our $TOPIC;
+our ($TOPIC, %LOADED);
 
 tie our ($CWD), 'Mojolicious::Plugin::AssetPack::Util::_chdir' or die q(Can't tie $CWD);
 
@@ -29,11 +31,11 @@ sub has_ro {
   my ($name, $builder) = @_;
   my $caller = caller;
 
-  $builder ||= sub { Carp::confess(qq("$name" is required in constructor')) };
+  $builder ||= sub { confess qq("$name" is required in constructor') };
 
   Mojo::Util::monkey_patch(
     $caller => $name => sub {
-      Carp::confess(qq("$name" is read-only")) if @_ > 1;
+      confess qq("$name" is read-only") if @_ > 1;
       $_[0]->{$name} //= $_[0]->$builder();
     }
   );
@@ -41,8 +43,9 @@ sub has_ro {
 
 sub load_module {
   my $module = shift;
-  eval "require $module;1";
-  return $@ ? '' : $module;
+  confess qq(Invalid module name "$module") if ($module || '') !~ /^\w(?:[\w:']*\w)?$/;
+  return $module if $LOADED{$module} ||= eval "require $module; 1";
+  confess qq(Could not load "$module": $@);
 }
 
 package Mojolicious::Plugin::AssetPack::Util::_chdir;
@@ -107,8 +110,7 @@ Same as L<Mojo::Base/has>, but creates a read-only attribute.
 
   $module = load_module $module;
 
-Used to load C<$module>. Echo back C<$module> on success and returns empty
-string on failure. C<$@> holds the error message on failure.
+Used to load a C<$module>. Will confess on failure.
 
 =head1 SEE ALSO
 
