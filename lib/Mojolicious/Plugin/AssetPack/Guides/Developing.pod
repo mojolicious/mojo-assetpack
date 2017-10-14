@@ -30,45 +30,9 @@ are changed frequently.
 
 =head2 Faster development cycle
 
-For a faster development cycle, you can use
-L<Mojolicious::Plugin::AssetPack::Pipe::Reloader>, and L<MOJO_ASSETPACK_LAZY>.
-The combination of the two will result in a webpage that reload itself when
-a change is found in either an asset or the perl code.
-
-Example application:
-
-  use Mojolicious::Lite;
-  plugin "AssetPack" => {pipes => [qw(Css Reloader)]};
-  app->asset->process;
-  get "/" => "example";
-  app->start;
-
-  __DATA__
-  @@ assetpack.def
-  ! myapp.css
-  < main.css
-
-  @@ main.css
-  body { background: pink; }
-
-  @@ example.html.ep
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>This page will reload when changes are made</title>
-
-      %# Some asset you have defined:
-      %= asset "myapp.css"
-
-      %# See Reloader pipe for details
-      %= asset "reloader.js" if app->mode eq "development"
-    </head>
-    <body>
-      This is a reload test page!
-    </body>
-  </html>
-
-How to run the application:
+For a faster development cycle, you can use L<MOJO_ASSETPACK_LAZY>. This
+environment variable will make AssetPack only rebuild the asset that is in use
+on the current web page.
 
   $ MOJO_ASSETPACK_LAZY=1 morbo myapp.pl
 

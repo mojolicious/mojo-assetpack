@@ -123,7 +123,6 @@ SEARCH:
     if ($imported->path) {
       diag '@import "%s" (%s)', $rel_path, $imported->path if DEBUG >= 2;
       local $paths->[0] = _include_path($imported);
-      push @{$asset->{dependencies}}, $imported->path;    # hack for Reloader
       push @c, $self->_checksum(\$imported->content, $imported, $paths);
     }
     else {

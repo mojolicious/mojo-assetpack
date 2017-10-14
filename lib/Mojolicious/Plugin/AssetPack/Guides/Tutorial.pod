@@ -102,10 +102,6 @@ L<Mojolicious::Plugin::AssetPack::Pipe::Css>.
 
 Used to crush "png" image files.
 
-=item * L<Mojolicious::Plugin::AssetPack::Pipe::Reloader>
-
-EXPERIMENTAL pipe for reloading the page when the assets change.
-
 =item * L<Mojolicious::Plugin::AssetPack::Pipe::Riotjs>
 
 Process L<http://riotjs.com/> tag files. Should be loaded before
