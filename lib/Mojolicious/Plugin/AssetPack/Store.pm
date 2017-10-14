@@ -1,10 +1,13 @@
 package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
+
 use Mojo::File 'path';
 use Mojo::URL;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
+
+use constant CACHE_DIR => 'cache';
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
 use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
@@ -64,8 +67,7 @@ sub asset {
       else {
         local $self->{paths} = [$path];
         next unless $asset = $self->file($url);
-        my $attrs = $self->_db_get({key => 'original', url => $url}) || {url => $url};
-        return $self->asset_class->new(%$attrs, content => $asset);
+        return $self->asset_class->new(url => $url, content => $asset);
       }
     }
   }
@@ -142,20 +144,30 @@ sub serve_asset {
 
 sub _already_downloaded {
   my ($self, $url) = @_;
-  my $attrs = $self->_db_get({key => 'original', url => $url}) or return undef;
-  my $asset;
+  my $asset = $self->asset_class->new(url => "$url");
+  my @dirname = $self->_url2path($url, '');
+  my $basename = pop @dirname;
 
-  return undef unless $attrs->{rel} and $asset = $self->asset($attrs->{rel});
-  $asset->{url} = $url;
-  $asset->{format} ||= $attrs->{format} if $attrs->{format};
-  diag 'Already downloaded: %s', $asset->url if DEBUG;
-  return $asset;
+  for my $path (map { path $_, @dirname } @{$self->paths}) {
+
+    # URL with extension
+    my $file = $path->child($basename);
+    return $asset->format($1)->path($file) if -e $file and $file =~ m!\.(\w+)$!;
+
+    # URL without extension - https://fonts.googleapis.com/css?family=Roboto
+    for my $file ($path->list->each) {
+      next unless $file->basename =~ /^$basename(\w+)$/;
+      return $asset->format($1)->path($file);
+    }
+  }
+
+  return undef;
 }
 
 sub _cache_path {
   my ($self, $attrs) = @_;
   return (
-    'cache', sprintf '%s-%s.%s%s',
+    CACHE_DIR, sprintf '%s-%s.%s%s',
     $attrs->{name},
     checksum($attrs->{url}),
     $attrs->{minified} ? 'min.' : '',
@@ -172,59 +184,67 @@ sub _db_get {
 }
 
 sub _db_set {
+  return if $ENV{MOJO_ASSETPACK_LAZY};
   my ($self, %attrs) = @_;
   my ($key,  $url)   = @attrs{qw(key url)};
-  return if $ENV{MOJO_ASSETPACK_LAZY} and $key ne 'original';
   $self->_db->{$url}{$key} = {%attrs};
 }
 
 sub _download {
   my ($self, $url) = @_;
-  my $req_url = $url;
-  my ($asset, $attrs, $path);
+  my %attrs = (url => $url->clone);
+  my ($asset, $path);
 
-  if ($req_url->host eq 'local') {
+  if ($attrs{url}->host eq 'local') {
     my $base = $self->ua->server->url;
-    $req_url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
+    $url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
   }
 
-  return $asset if $asset = $self->_already_downloaded($url);
+  return $asset
+    if $attrs{url}->host ne 'local' and $asset = $self->_already_downloaded($url);
 
-  my $rel = _rel($url);
-  my $tx  = $self->ua->get($req_url);
-  my $h   = $tx->res->headers;
+  my $tx = $self->ua->get($url);
+  my $h  = $tx->res->headers;
 
-  if ($tx->res->is_error or $tx->error) {
-    $self->ua->server->app->log->warn(
-      "[AssetPack] Unable to download $req_url: @{[$tx->error->{message}]}");
+  if (my $err = $tx->error) {
+    $self->_log->warn("[AssetPack] Unable to download $url: $err->{message}");
     return undef;
   }
 
-  if ($url->host ne 'local') {
-    $path = path($self->paths->[0], split '/', $rel);
-    $self->ua->server->app->log->info(qq(Caching "$req_url" to "$path".));
+  my $ct = $h->content_type || '';
+  if ($ct ne 'text/plain') {
+    $ct =~ s!;.*$!!;
+    $attrs{format} = $self->_types->detect($ct)->[0];
+  }
+
+  $attrs{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : 'bin';
+
+  if ($attrs{url}->host ne 'local') {
+    $path = path($self->paths->[0], $self->_url2path($attrs{url}, $attrs{format}));
+    $self->_log->info(qq(Caching "$url" to "$path".));
     $path->dirname->make_path unless -d $path->dirname;
     $path->spurt($tx->res->body);
   }
 
-  if (my $ct = $h->content_type) {
-    $ct =~ s!;.*$!!;
-    $attrs->{format} = $self->_types->detect($ct)->[0] unless $ct eq 'text/plain';
-  }
-
-  $attrs->{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : undef;
-  @$attrs{qw(key rel url)} = ('original', $rel, $url);
-  $self->_db_set(%$attrs);
-  return $self->asset_class->new(%$attrs, path => $path) if $path;
-  return $self->asset_class->new(%$attrs)->content($tx->res->body);
+  $attrs{url} = "$attrs{url}";
+  return $self->asset_class->new(%attrs, path => $path) if $path;
+  return $self->asset_class->new(%attrs)->content($tx->res->body);
 }
 
-sub _rel {
-  local $_ = shift->clone->scheme(undef)->to_string;
-  s![^\w\.\/-]!_!g;
-  s!^\/+!!;
-  s!\/+$!!;
-  "cache/$_";
+sub _log { shift->ua->server->app->log }
+
+sub _url2path {
+  my ($self, $url, $format) = @_;
+  my $query = $url->query->to_string;
+  my @path;
+
+  push @path, $url->host;
+  push @path, @{$url->path};
+
+  $query =~ s!\W!_!g;
+  $path[-1] .= "_$query.$format" if $query;
+
+  return CACHE_DIR, @path;
 }
 
 1;

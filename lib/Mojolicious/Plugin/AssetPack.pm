@@ -304,6 +304,16 @@ name).  The process of building actual assets from their components is
 delegated to "pipe objects". Please see
 L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
 
+=head1 BREAKING CHANGES
+
+=head2 assetpack.db (v1.47)
+
+C<assetpack.db> no longer track files downloaded from the internet. It will
+mostly "just work", but in some cases version 1.47 might download assets that
+have already been downloaded with AssetPack version 1.46 and earlier.
+
+The goal is to remove C<assetpack.db> completely.
+
 =head1 GUIDES
 
 =over 2

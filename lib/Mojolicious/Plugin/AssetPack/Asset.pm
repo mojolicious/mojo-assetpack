@@ -79,8 +79,12 @@ sub content {
 }
 
 sub path {
-  $_[0]->_asset->isa('Mojo::Asset::File') ? Mojo::File->new($_[0]->_asset->path) : undef;
+  my $self = shift;
+  return $self->_asset(Mojo::Asset::File->new(path => $_[0])) if $_[0];
+  return Mojo::File->new($self->_asset->path) if $self->_asset->isa('Mojo::Asset::File');
+  return undef;
 }
+
 sub size { $_[0]->_asset->size }
 
 sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
