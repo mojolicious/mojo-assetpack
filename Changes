@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-2.00 Not Released
+2.00 2017-10-29T10:08:37+0800
  - Fix RollupJs package name #130
  - load_module() confess on error
  - Removed EXPERIMENTAL Reloader pipe
