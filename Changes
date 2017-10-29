@@ -1,6 +1,7 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 2.00 Not Released
+ - Fix RollupJs package name #130
  - load_module() confess on error
  - Removed EXPERIMENTAL Reloader pipe
  - Removed EXPERIMENTAL clone() method in AssetPack::Asset
