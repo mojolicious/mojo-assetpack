@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-2.02 Not Released
+2.02 2018-01-28T13:12:59+0100
  - Add EXPERIMENTAL support for fetching assets from helpers
 
 2.01 2017-11-06T13:02:45+0100
