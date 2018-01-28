@@ -46,6 +46,7 @@ sub asset {
   my $asset;
 
   for my $url (ref $urls eq 'ARRAY' ? @$urls : ($urls)) {
+    return $self->_asset_from_helper(Mojo::URL->new($url)) if $url =~ m!^helper://!;
     for my $path (@{$paths || $self->paths}) {
       next unless $path =~ m!^https?://!;
       my $abs = Mojo::URL->new($path);
@@ -162,6 +163,21 @@ sub _already_downloaded {
   }
 
   return undef;
+}
+
+sub _asset_from_helper {
+  my ($self, $url) = @_;
+  my $app    = $self->ua->server->app;
+  my $args   = $url->query->to_hash;
+  my $helper = $app->renderer->helpers->{$url->host};
+  my $output = $app->build_controller->$helper($url->path->[0], $args);
+
+  die "[AssetPack] Unknown helper @{[$url->host]}" unless $helper;
+  my $asset
+    = $self->asset_class->new(url => $url, ref $output ? %$output : (content => $output));
+
+  $asset->format($args->{format}) if $args->{format};
+  $asset;
 }
 
 sub _cache_path {
@@ -336,6 +352,21 @@ C<$url> can be found in C<$paths>. C<$paths> default to
 L<Mojolicious::Static/paths>. C<$paths> and C<$url> can be...
 
 =over 2
+
+=item * helper://some.mojo.helper/some_identifier?format=css
+
+Will call a helper registered under the name C<csome.mojo.helper>, with the
+query parameters as arguments. Example:
+
+  $output = $c->some->mojo->helper(some_identifier => {format => "css"});
+
+C<$output> can be a scalar containing the asset content or a hash-ref with
+arguments passed on to L<Mojolicious::Plugin::AssetPack::Asset>. Note that
+C<format> need to be present in the URL or the returning hash-ref for this
+to work.
+
+This feature is currently EXPERIMENTAL. Let me know if you use it/find it
+interesting.
 
 =item * http://example.com/foo/bar
 
