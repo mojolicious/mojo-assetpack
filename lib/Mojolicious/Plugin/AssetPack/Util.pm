@@ -13,7 +13,7 @@ our ($TOPIC, %LOADED);
 
 tie our ($CWD), 'Mojolicious::Plugin::AssetPack::Util::_chdir' or die q(Can't tie $CWD);
 
-sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
+sub checksum { substr Mojo::Util::sha1_sum(Mojo::Util::encode('UTF-8', $_[0])), 0, $SUM_LEN }
 
 sub diag {
   my $f = @_ > 1 ? shift : '%s';
