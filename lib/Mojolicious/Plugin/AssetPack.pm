@@ -77,7 +77,8 @@ sub process {
 
 sub processed {
   my ($self, $topic) = @_;
-  $self->_process($topic => $self->{input}{$topic}); # Ensure asset is processed
+  $self->_process($topic => $self->{input}{$topic})
+    unless $self->{by_topic}{$topic};    # Ensure asset is processed
   return $self->{by_topic}{$topic};
 }
 
