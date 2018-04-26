@@ -5,7 +5,7 @@ use Mojo::DOM;
 use Mojo::Util;
 
 # this should be considered private
-our $URL = 'http://realfavicongenerator.net/api/favicon';
+use constant API_URL => $ENV{MOJO_ASSETPACK_FAVICON_API_URL} || 'https://realfavicongenerator.net/api/favicon';
 
 has api_key  => sub { die 'api_key() must be set' };
 has design   => sub { +{desktop_browser => {}} };
@@ -67,7 +67,8 @@ sub render {
 
 sub _fetch {
   my ($self, $assets) = @_;
-  my $res = $self->assetpack->ua->post($URL, json => $self->_request($assets))->res;
+  $self->assetpack->ua->inactivity_timeout(60);
+  my $res = $self->assetpack->ua->post(API_URL, json => $self->_request($assets))->res;
 
   unless ($res->code eq '200') {
     my $json = $res->json || {};

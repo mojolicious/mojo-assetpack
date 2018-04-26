@@ -75,7 +75,11 @@ sub process {
   return $self->_process($topic => $assets);
 }
 
-sub processed { $_[0]->{by_topic}{$_[1]} }
+sub processed {
+  my ($self, $topic) = @_;
+  $self->_process($topic => $self->{input}{$topic}); # Ensure asset is processed
+  return $self->{by_topic}{$topic};
+}
 
 sub register {
   my ($self, $app, $config) = @_;
