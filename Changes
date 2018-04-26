@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-2.03 Not Released
+2.03 2018-04-26T10:22:06+0200
  - Ensure asset is processed when calling processed
  - Update favicon generator URL to use https
  - Set higher inactivity timeout for favicon generator
