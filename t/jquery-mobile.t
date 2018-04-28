@@ -9,7 +9,7 @@ $t->app->asset->process(
 $t->get_ok('/')->status_is(200);
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{\Qurl(../../asset/2edfb2ffe3/ajax-loader.gif)\E});
+  ->content_like(qr{\Qurl(../../asset/b066a0df42/ajax-loader.gif)\E});
 
 done_testing;
 

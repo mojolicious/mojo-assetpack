@@ -5,7 +5,7 @@ use t::Helper;
 my $t = t::Helper->t(pipes => [qw(Png Combine)]);
 $t->app->asset->process('test.png' => '/image/sample.png');
 $t->get_ok('/')->status_is(200)
-  ->element_exists(qq(img[src="/asset/348b799a81/sample.png"]));
+  ->element_exists(qq(img[src="/asset/2a8f882eec/sample.png"]));
 $t->get_ok($t->tx->res->dom->at('img')->{src})->status_is(200)
   ->header_is('Content-Type' => 'image/png');
 
@@ -20,7 +20,7 @@ if ($ENV{TEST_PNG}) {
     $t->app->asset->pipe('Png')->app($app);
     $t->app->asset->process('test.png' => '/image/sample.png');
     $t->get_ok('/')->status_is(200)
-      ->element_exists(qq(img[src="/asset/348b799a81/sample.png"]));
+      ->element_exists(qq(img[src="/asset/2a8f882eec/sample.png"]));
     $t->get_ok($t->tx->res->dom->at('img')->{src})->status_is(200)
       ->header_is('Content-Type' => 'image/png')->header_isnt('Content-Length' => $len);
     my $len2 = $t->tx->res->headers->content_length;
