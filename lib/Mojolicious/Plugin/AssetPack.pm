@@ -33,13 +33,12 @@ has store => sub {
 
 has tag_for => sub {
   my $self = shift;
-  my $favicon = $self->pipe('Favicon') ? 1 : 0;
 
   Scalar::Util::weaken($self);
   return sub {
     my ($asset, $c, $args, @attrs) = @_;
-    return $self->pipe('Favicon')->render($c)
-      if $args->{topic} eq 'favicon.ico' and $favicon;
+    my $renderer = $asset->renderer;
+    return $asset->$renderer($c) if $renderer;
     my $url = $asset->url_for($c);
     my @template = @{$TAG_TEMPLATE{$_->format} || $TAG_TEMPLATE{css}};
     splice @template, 1, 0, type => $c->app->types->type($asset->format)

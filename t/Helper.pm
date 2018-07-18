@@ -28,7 +28,7 @@ unless ($ENV{TEST_KEEP_FILES}) {
 
 sub cleanup {
   $CREATED_FILES{path($ENV{TEST_HOME}, 'assets', $ENV{MOJO_ASSETPACK_DB_FILE})} = 1
-    if $ENV{MOJO_ASSETPACK_DB_FILE};
+    if $ENV{MOJO_ASSETPACK_DB_FILE} and !$ENV{TEST_KEEP_FILES};
   unlink $_ for keys %CREATED_FILES;
 }
 

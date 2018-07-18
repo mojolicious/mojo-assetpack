@@ -18,6 +18,7 @@ has format => sub {
 };
 
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
+has renderer => undef;
 
 has _asset => sub {
   my $self = shift;
@@ -138,6 +139,36 @@ minified L</content>.
   $str = $self->name;
 
 Returns the basename of L</url>, without extension.
+
+=head2 renderer
+
+  $code = $self->renderer;
+  $self = $self->renderer(sub { my ($c, \%args, @attrs) = @_; return Mojo::Bytestream->new("...") });
+
+Used to register a custom renderer for this asset. The return value need to
+be a L<Mojo::Bytestream> object, or the text will be escaped. The arguments
+passed in are:
+
+=over 2
+
+=item * C<$c>
+
+The L<Mojolicious::Controller> object used for this request.
+
+=item * C<%args>
+
+A hash-ref with "base_url" and
+L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic>. See
+L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
+of example "base_url".
+
+=item * C<@attrs>
+
+The HTML attributes passed in from the template.
+
+=item
+
+=back
 
 =head2 url
 
