@@ -2,6 +2,7 @@ Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
 2.04 Not Released
  - Add support for generating manifest with Favicon pipe
+ - Marked AssetPack::tag_for() as deprecated
 
 2.03 2018-04-26T10:22:06+0200
  - Ensure asset is processed when calling processed

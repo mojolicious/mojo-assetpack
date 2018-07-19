@@ -1,5 +1,8 @@
 use lib '.';
 use t::Helper;
+
+plan skip_all => 'cpanm JavaScript::Minifier::XS'
+  unless eval 'require JavaScript::Minifier::XS;1';
 plan skip_all => 'TEST_RIOTJS=1' unless $ENV{TEST_RIOTJS} or -e '.test-everything';
 
 my $t = t::Helper->t(pipes => [qw(Riotjs JavaScript)]);

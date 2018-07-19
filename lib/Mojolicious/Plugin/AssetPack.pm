@@ -1,19 +1,12 @@
 package Mojolicious::Plugin::AssetPack;
 use Mojo::Base 'Mojolicious::Plugin';
 
-use Mojo::Util 'trim';
+use Mojo::Util qw(deprecated trim);
 use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
 our $VERSION = '2.03';
-
-my %TAG_TEMPLATE;
-$TAG_TEMPLATE{css} = [qw(link rel stylesheet href)];
-$TAG_TEMPLATE{ico} = [qw(link rel icon href)];
-$TAG_TEMPLATE{js}  = [qw(script src)];
-$TAG_TEMPLATE{$_} = [qw(img src)]    for qw(gif jpg jpeg png svg);
-$TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
@@ -29,22 +22,6 @@ has store => sub {
     paths   => [$self->_app->home->rel_file('assets')],
     ua      => $self->ua,
   );
-};
-
-has tag_for => sub {
-  my $self = shift;
-
-  Scalar::Util::weaken($self);
-  return sub {
-    my ($asset, $c, $args, @attrs) = @_;
-    my $renderer = $asset->renderer;
-    return $asset->$renderer($c) if $renderer;
-    my $url = $asset->url_for($c);
-    my @template = @{$TAG_TEMPLATE{$_->format} || $TAG_TEMPLATE{css}};
-    splice @template, 1, 0, type => $c->app->types->type($asset->format)
-      if $template[0] eq 'source';
-    return $c->tag(@template, Mojo::URL->new("$args->{base_url}$url"), @attrs);
-  };
 };
 
 has_ro ua => sub { Mojo::UserAgent->new->max_redirects(3) };
@@ -117,6 +94,15 @@ sub register {
   }
 }
 
+sub tag_for {
+  my $self = shift;
+  deprecated
+    'tag_for() is DEPRECATED in favor of Mojolicious::Plugin::AssetPack::Asset::renderer()';
+  return $self->{tag_for} unless @_;
+  $self->{tag_for} = shift;
+  return $self;
+}
+
 sub _app { shift->ua->server->app }
 
 sub _correct_mode {
@@ -169,6 +155,10 @@ sub _process {
     }
   }
 
+  if (my $renderer = $self->{tag_for}) {
+    $_->{renderer} or $_->{renderer} = $renderer for @$assets;
+  }
+
   my @checksum = map { $_->checksum } @$assets;
   $self->_app->log->debug(qq(Processed asset "$topic". [@checksum])) if DEBUG;
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
@@ -214,8 +204,11 @@ sub _render_tags {
   my %args = (base_url => $route->pattern->defaults->{base_url} || '', topic => $topic);
   $args{base_url} =~ s!/+$!!;
 
-  return $assets->grep(sub { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') })
-    ->map($self->tag_for, $c, \%args, @attrs)->join("\n");
+  return Mojo::ByteStream->new(
+    join "\n",
+    map { $_->renderer->($_, $c, \%args, @attrs) }
+      grep { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') } @$assets
+  );
 }
 
 sub _serve {
@@ -391,27 +384,7 @@ and serve assets.
 
 =head2 tag_for
 
-  $self = $self->tag_for(sub { my ($asset, $c, \%args, @attrs) = @_; });
-  $code = $self->tag_for;
-
-Holds a sub reference that returns a L<Mojo::Bytestream> object containing the
-markup required to render an asset.
-
-C<$asset> is a L<Mojolicious::Plugin::AssetPack::Asset> object, C<$c> is an
-L<Mojolicious::Controller> object and C<@attrs> can contain a list of
-HTML attributes. C<%args> currently contains:
-
-=over 4
-
-=item * base_url
-
-See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>.
-
-=item * topic
-
-Name of the current topic.
-
-=back
+Deprecated. Use L<Mojolicious::Plugin::AssetPack::Asset/renderer> instead.
 
 =head2 ua
 

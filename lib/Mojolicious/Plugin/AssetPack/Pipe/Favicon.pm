@@ -47,11 +47,8 @@ sub process {
   $asset->renderer(
     sub {
       my ($asset, $c, $args, @attrs) = @_;
-      return Mojo::ByteStream->new(
-        $markup
-          =~ s!href="(/?)([^"]+)"!sprintf 'href="%s"', $sub_assets{$2} ? $sub_assets{$2}->url_for($c) : "$1$2"!ger
-
-      );
+      $markup
+        =~ s!href="(/?)([^"]+)"!sprintf 'href="%s"', $sub_assets{$2} ? $sub_assets{$2}->url_for($c) : "$1$2"!ger;
     }
   );
 }
