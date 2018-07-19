@@ -79,19 +79,8 @@ sub register {
     $self->ua->proxy->detect;
   }
 
-  if ($config->{pipes}) {
-    $self->_pipes($config->{pipes});
-    $app->helper($helper => sub { @_ == 1 ? $self : $self->_render_tags(@_) });
-  }
-  else {
-    $app->log->warn(
-      'https://metacpan.org/release/Mojolicious-Plugin-AssetPack-Backcompat is required');
-    Test::More::diag("Loading DEPRECATED Mojolicious::Plugin::AssetPack::Backcompat.")
-      if $ENV{HARNESS_ACTIVE} and UNIVERSAL::can(qw(Test::More diag));
-    require Mojolicious::Plugin::AssetPack::Backcompat;
-    @Mojolicious::Plugin::AssetPack::ISA = ('Mojolicious::Plugin::AssetPack::Backcompat');
-    return $self->SUPER::register($app, $config);
-  }
+  $self->_pipes($config->{pipes} || []);
+  $app->helper($helper => sub { @_ == 1 ? $self : $self->_render_tags(@_) });
 }
 
 sub tag_for {
