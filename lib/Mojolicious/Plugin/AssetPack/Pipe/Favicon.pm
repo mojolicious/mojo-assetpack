@@ -17,7 +17,7 @@ has settings => sub { +{error_on_image_too_small => Mojo::JSON->true} };
 
 sub process {
   my ($self, $assets) = @_;
-  return unless $self->topic eq 'favicon.ico';
+  return unless $self->topic =~ m!^favicon(\.\w+)?\.ico$!;
 
   my $store = $self->assetpack->store;
   my $asset = $assets->first;
@@ -32,7 +32,7 @@ sub process {
     $urls = [grep {/\w/} split /\n/, $urls];
   }
   else {
-    ($urls, $markup) = $self->_fetch($assets);
+    ($urls, $markup) = $self->_fetch($asset);
     $db = join "\n", @$urls, __MARKUP__ => $markup;
     $store->save(\$db, $attrs);
   }
@@ -101,9 +101,9 @@ sub _build_design {
 }
 
 sub _fetch {
-  my ($self, $assets) = @_;
+  my ($self, $asset) = @_;
   $self->assetpack->ua->inactivity_timeout(60);
-  my $res = $self->assetpack->ua->post(API_URL, json => $self->_request($assets))->res;
+  my $res = $self->assetpack->ua->post(API_URL, json => $self->_request($asset))->res;
 
   unless ($res->code eq '200') {
     my $json = $res->json || {};
@@ -120,7 +120,7 @@ sub _fetch {
 }
 
 sub _request {
-  my ($self, $assets) = @_;
+  my ($self, $asset) = @_;
 
   return {
     favicon_generation => {
@@ -129,7 +129,7 @@ sub _request {
       settings       => $self->settings,
       files_location => {type => 'path', path => '/'},
       master_picture =>
-        {content => Mojo::Util::b64_encode($assets->first->content), type => 'inline'}
+        {content => Mojo::Util::b64_encode($asset->content), type => 'inline'}
     }
   };
 }
@@ -150,9 +150,13 @@ Mojolicious::Plugin::AssetPack::Pipe::Favicon - Generate favicons
   app->asset->pipe("Favicon")->api_key("fd27cc5654345678765434567876545678765556");
   app->asset->process("favicon.ico" => "images/favicon.png");
 
-Note that the topic must be "favicon.ico".
+  # Can also register variations of the favicon:
+  app->asset->process("favicon.variant1.ico" => "images/favicon1.png");
+  app->asset->process("favicon.variant2.ico" => "images/favicon2.png");
 
-The input image file should be 260x260 for optimal results.
+Note that the topic must be either "favicon.ico" or "favicon.some_identifier.ico".
+
+The input image file should be a 260x260 PNG file for optimal results.
 
 =head2 Template
 

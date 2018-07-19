@@ -7,6 +7,7 @@ plan skip_all => 'TEST_REALFAVICONGENERATOR_API_KEY=is_not_set'
 my $t = t::Helper->t(pipes => [qw(Favicon)]);
 $t->app->asset->pipe('Favicon')->api_key($ENV{TEST_REALFAVICONGENERATOR_API_KEY});
 $t->app->asset->process('favicon.ico' => '/image/master_favicon_thumbnail.png');
+
 $t->get_ok('/')->status_is(200)
   ->element_exists('[href$="114x114.png"][rel="apple-touch-icon"][sizes="114x114"]')
   ->element_exists('[href$="120x120.png"][rel="apple-touch-icon"][sizes="120x120"]')
@@ -27,6 +28,14 @@ $t->tx->res->dom->find("[href]")->each(
     like $_->{href}, qr{^/asset/\w+/\w+.*$}, "href $_->{href}";
   }
 );
+
+{
+  no warnings 'redefine';
+  local *Mojolicious::Plugin::AssetPack::Pipe::Favicon::_request = sub { die $_[1] };
+  eval { $t->app->asset->process('favicon.cool_beans.ico' => '/image/sample.png') };
+  like "$@", qr{Mojolicious::Plugin::AssetPack::Asset},
+    'will also process variants of the favicon';
+}
 
 done_testing;
 
