@@ -201,19 +201,19 @@ sub _render_tags {
 }
 
 sub _serve {
-  my $c        = shift;
-  my $checksum = $c->stash('checksum');
-  my $helper   = $c->stash('assetpack.helper');
-  my $self     = $c->$helper;
+  my $c      = shift;
+  my $helper = $c->stash('assetpack.helper');
+  my $self   = $c->$helper;
 
-  if (my $f = $self->{by_checksum}{$checksum}) {
-    $self->store->serve_asset($c, $f);
+  my $checksum = $c->stash('checksum');
+  if (my $asset = $self->{by_checksum}{$checksum}) {
+    $self->store->serve_asset($c, $asset);
     return $c->rendered;
   }
 
   my $topic = $c->stash('name');
-  if ($self->{by_topic}{$topic}) {
-    return $c->render(text => "// Invalid checksum for topic '$topic'\n", status => 404);
+  if (my $assets = $self->{by_topic}{$topic}) {
+    return $self->store->serve_fallback_for_assets($c, $topic, $assets);
   }
 
   $c->render(text => "// No such asset '$topic'\n", status => 404);

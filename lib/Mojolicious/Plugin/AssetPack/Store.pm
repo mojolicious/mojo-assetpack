@@ -2,6 +2,8 @@ package Mojolicious::Plugin::AssetPack::Store;
 use Mojo::Base 'Mojolicious::Static';
 
 use Mojo::File 'path';
+use Mojo::Loader 'data_section';
+use Mojo::Template;
 use Mojo::URL;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
@@ -12,9 +14,19 @@ use constant CACHE_DIR => 'cache';
 # MOJO_ASSETPACK_DB_FILE is used in tests
 use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
 our %DB_KEYS = map { $_ => 1 } qw(checksum format minified rel);
+our %FALLBACK_TEMPLATES = %{data_section(__PACKAGE__)};
 
-has asset_class => 'Mojolicious::Plugin::AssetPack::Asset';
-has default_headers => sub { +{"Cache-Control" => "max-age=31536000"} };
+for my $name (keys %FALLBACK_TEMPLATES) {
+  my $text = delete $FALLBACK_TEMPLATES{$name};
+  $name =~ m!(\w+)\.ep$!;
+  $FALLBACK_TEMPLATES{$1}
+    = Mojo::Template->new->parse($text)->prepend('my ($c, $assets) = @_;');
+}
+
+has asset_class        => 'Mojolicious::Plugin::AssetPack::Asset';
+has default_headers    => sub { +{"Cache-Control" => "max-age=31536000"} };
+has fallback_headers   => sub { +{"Cache-Control" => "max-age=60"} };
+has fallback_templates => sub { +{%FALLBACK_TEMPLATES} };
 
 has _types => sub {
   my $t = Mojolicious::Types->new;
@@ -133,18 +145,41 @@ sub save {
 
 sub serve_asset {
   my ($self, $c, $asset) = @_;
-  my $d  = $self->default_headers;
+  my $dh = $self->default_headers;
   my $h  = $c->res->headers;
-  my $ct = $self->_types->type($asset->format) || 'application/octet-stream';
 
-  $h->header($_ => $d->{$_}) for keys %$d;
-  $h->content_type($ct);
+  $h->header($_ => $dh->{$_}) for keys %$dh;
+  $h->content_type($self->_types->type($asset->format) || 'application/octet-stream');
 
   if (my $renderer = $asset->renderer) {
     $renderer->($asset, $c);
   }
   else {
     $self->SUPER::serve_asset($c, $asset->can('asset') ? $asset->asset : $asset);
+  }
+
+  return $self;
+}
+
+sub serve_fallback_for_assets {
+  my ($self, $c, $topic, $assets) = @_;
+  my $fh     = $self->fallback_headers;
+  my $format = $topic =~ m!\.(\w+)$! ? $1 : 'css';
+  my $h      = $c->res->headers;
+
+  $h->header($_ => $fh->{$_}) for keys %$fh;
+  $h->content_type($self->_types->type($format) || 'application/octet-stream');
+
+  if (my $template = $self->fallback_templates->{$format}) {
+    $c->render(data => $template->process($c, $assets));
+  }
+  elsif (@$assets == 1) {
+    my $url = $assets->[0]->url_for($c);
+    $url->path->[-1] = $topic;
+    $c->redirect_to($url);
+  }
+  else {
+    $c->render(text => "// Invalid checksum for topic '$topic'\n", status => 404);
   }
 
   return $self;
@@ -330,7 +365,25 @@ Holds the classname of which new assets will be constructed from.
   $hash_ref = $self->default_headers;
   $self = $self->default_headers({"Cache-Control" => "max-age=31536000"});
 
-Used to set default headers used by L</serve_asset>.
+Used to set headers used by L</serve_asset>.
+
+=head2 fallback_headers
+
+  $hash_ref = $self->fallback_headers;
+  $self = $self->fallback_headers({"Cache-Control" => "max-age=300"});
+
+Used to set headers used by L</serve_fallback_for_assets>.
+
+This is currently an EXPERIMENTAL feature.
+
+=head2 fallback_templates
+
+  $hash_ref = $self->fallback_templates;
+  $self = $self->fallback_templates->{"css"} = Mojo::Template->new;
+
+Used to set up templates used by L</serve_fallback_for_assets>.
+
+This is currently an EXPERIMENTAL feature.
 
 =head2 paths
 
@@ -427,8 +480,38 @@ response headers first, from L</default_headers>.
 Will call L<Mojolicious::Plugin::AssetPack::Asset/render> if available, after
 setting Content-Type header and other L</default_headers>.
 
+=head2 serve_fallback_for_assets
+
+  $self = $self->serve_fallback_for_assets($c, $topic, $assets);
+
+Used to serve a fallback response for given C<$topic> and a
+L<Mojo::Collection> of C<Mojolicious::Plugin::AssetPack::Asset> objects.
+
+Will set the headers in L</fallback_headers> and then either render either a
+template matching the extension from C<$topic> from L</fallback_templates>, a
+302 redirect to the actual asset, or a 404 Not Found.
+
+This is currently an EXPERIMENTAL feature.
+
 =head1 SEE ALSO
 
 L<Mojolicious::Plugin::AssetPack>.
 
 =cut
+
+__DATA__
+@@ fallback.css.ep
+% for my $asset (@$assets) {
+@import "<%= $asset->url_for($c) %>";
+% }
+@@ fallback.js.ep
+% use Mojo::JSON 'to_json';
+(function(w,d,a,b){
+var c=function(){
+var t=d.createElement("script");
+t.src=b.shift();
+if(b.length) t.addEventListener("load",c);
+a.parentNode.insertBefore(t,a);
+};
+c();
+})(window,document,document.getElementsByTagName("script")[0],<%= to_json([map { $_->url_for($c) } @$assets]) %>);
