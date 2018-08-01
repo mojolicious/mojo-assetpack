@@ -1,8 +1,9 @@
 sudo: false
 language: perl
 perl:
-  - "5.20"
+  - "5.26"
   - "5.16"
+  - "5.10"
 addons:
   apt:
     packages:

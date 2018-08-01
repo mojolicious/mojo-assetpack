@@ -47,8 +47,10 @@ sub process {
   $asset->renderer(
     sub {
       my ($asset, $c, $args, @attrs) = @_;
-      $markup
-        =~ s!href="(/?)([^"]+)"!sprintf 'href="%s"', $sub_assets{$2} ? $sub_assets{$2}->url_for($c) : "$1$2"!ger;
+      my $tmp = "$markup";
+      $tmp
+        =~ s!href="(/?)([^"]+)"!sprintf 'href="%s"', $sub_assets{$2} ? $sub_assets{$2}->url_for($c) : "$1$2"!ge;
+      return $tmp;
     }
   );
 }
