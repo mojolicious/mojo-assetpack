@@ -25,7 +25,8 @@ has format => sub {
 };
 
 has minified => sub { shift->url =~ /\bmin\b/ ? 1 : 0 };
-has renderer => sub { \&_default_renderer };
+has renderer => undef;
+has tag_for  => sub { \&_default_tag_for };
 
 has _asset => sub {
   my $self = shift;
@@ -90,7 +91,7 @@ sub size { $_[0]->_asset->size }
 
 sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
-sub _default_renderer {
+sub _default_tag_for {
   my ($asset, $c, $args, @attrs) = @_;
   my $url = $asset->url_for($c);
   my @template = @{$TAG_TEMPLATE{$asset->format} || $TAG_TEMPLATE{css}};
@@ -159,10 +160,18 @@ Returns the basename of L</url>, without extension.
 =head2 renderer
 
   $code = $self->renderer;
-  $self = $self->renderer(sub { my ($c, \%args, @attrs) = @_; return qq(<link rel="...">) });
+  $self = $self->renderer(sub { my ($self, $c) = @_; $c->render(data => "...""); })
 
-Used to register a custom renderer for this asset. The arguments passed in
-are:
+Can be used to register a custom render method for this asset. This is called
+by L<Mojolicious::Plugin::AssetPack::Store/serve_asset>.
+
+=head2 tag_for
+
+  $code = $self->tag_for;
+  $self = $self->tag_for(sub { my ($c, \%args, @attrs) = @_; return qq(<link rel="...">) });
+
+Used to register a custom tag renderer for this asset. The arguments passed
+in are:
 
 =over 2
 

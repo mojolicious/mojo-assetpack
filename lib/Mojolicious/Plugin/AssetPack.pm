@@ -86,7 +86,7 @@ sub register {
 sub tag_for {
   my $self = shift;
   deprecated
-    'tag_for() is DEPRECATED in favor of Mojolicious::Plugin::AssetPack::Asset::renderer()';
+    'tag_for() is DEPRECATED in favor of Mojolicious::Plugin::AssetPack::Asset::tag_for()';
   return $self->{tag_for} unless @_;
   $self->{tag_for} = shift;
   return $self;
@@ -144,8 +144,8 @@ sub _process {
     }
   }
 
-  if (my $renderer = $self->{tag_for}) {
-    $_->{renderer} or $_->{renderer} = $renderer for @$assets;
+  if (my $tag_for = $self->{tag_for}) {
+    $_->{tag_for} or $_->{tag_for} = $tag_for for @$assets;
   }
 
   my @checksum = map { $_->checksum } @$assets;
@@ -195,7 +195,7 @@ sub _render_tags {
 
   return Mojo::ByteStream->new(
     join "\n",
-    map { $_->renderer->($_, $c, \%args, @attrs) }
+    map { $_->tag_for->($_, $c, \%args, @attrs) }
       grep { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') } @$assets
   );
 }

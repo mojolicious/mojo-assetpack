@@ -139,8 +139,15 @@ sub serve_asset {
 
   $h->header($_ => $d->{$_}) for keys %$d;
   $h->content_type($ct);
-  $self->SUPER::serve_asset($c, $asset->can('asset') ? $asset->asset : $asset);
-  $self;
+
+  if (my $renderer = $asset->renderer) {
+    $renderer->($asset, $c);
+  }
+  else {
+    $self->SUPER::serve_asset($c, $asset->can('asset') ? $asset->asset : $asset);
+  }
+
+  return $self;
 }
 
 sub _already_downloaded {
@@ -412,8 +419,13 @@ about the C<$asset> so it can be looked up using L</load>.
 
 =head2 serve_asset
 
+  $self = $self->serve_asset($c, $asset);
+
 Override L<Mojolicious::Static/serve_asset> with the functionality to set
 response headers first, from L</default_headers>.
+
+Will call L<Mojolicious::Plugin::AssetPack::Asset/render> if available, after
+setting Content-Type header and other L</default_headers>.
 
 =head1 SEE ALSO
 

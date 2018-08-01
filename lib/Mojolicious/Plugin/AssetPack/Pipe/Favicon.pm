@@ -37,22 +37,29 @@ sub process {
     $store->save(\$db, $attrs);
   }
 
+  my $renderer = sub {
+    my ($asset, $c, $args, @attrs) = @_;
+    my $content = $asset->content;
+    $content
+      =~ s!"/([^.]+\.\w{3,})"!sprintf '"%s"', $sub_assets{$1} ? $sub_assets{$1}->url_for($c) : $1!ge;
+    return $content if $args;
+    return $c->render(data => $content);
+  };
+
   for my $url (@$urls) {
     my $asset = $store->asset($url)
       or die "AssetPack was unable to fetch icons/assets asset $url";
     $sub_assets{join '.', $asset->name, $asset->format} = $asset;
+    $asset->renderer($renderer) if $asset->format =~ m!(manifest|xml|webapp)$!;
     $self->assetpack->{by_checksum}{$asset->checksum} = $asset;
   }
 
-  $asset->renderer(
-    sub {
-      my ($asset, $c, $args, @attrs) = @_;
-      my $tmp = "$markup";
-      $tmp
-        =~ s!href="(/?)([^"]+)"!sprintf 'href="%s"', $sub_assets{$2} ? $sub_assets{$2}->url_for($c) : "$1$2"!ge;
-      return $tmp;
-    }
-  );
+  unless ($markup =~ m!msapplication-config!) {
+    $markup =~ s![\r\n]+$!!;
+    $markup .= qq(\n<meta name="msapplication-config" content="/browserconfig.xml">);
+  }
+
+  $asset->content($markup)->tag_for($renderer);
 }
 
 sub _build_design {
