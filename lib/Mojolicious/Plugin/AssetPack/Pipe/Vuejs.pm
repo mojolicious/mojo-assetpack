@@ -5,34 +5,32 @@ sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
 
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      return unless $asset->format eq 'vue';
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
+    return unless $asset->format eq 'vue';
 
-      my $vue = sprintf 'Vue.component("%s", {', $asset->name;
-      my ($script, $template);
+    my $vue = sprintf 'Vue.component("%s", {', $asset->name;
+    my ($script, $template);
 
-      if ($asset->content =~ m!<script[^>]*>(.+)</script>!s) {
-        $script = $1;
-        $vue = "$1$vue" if $script =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
-        $script =~ s!\s*\}\s*;?\s*$!!s;
-        $vue .= $script;
-      }
-
-      if ($asset->content =~ m!<template[^>]*>(.+)</template>!s) {
-        $template = $1;
-        $template =~ s!"!\\"!g;    # escape all double quotes
-        $template =~ s!^\s*!!s;
-        $template =~ s!\r?\n!\\n!g;
-        $vue .= qq',\n' if $script;
-        $vue .= qq'  template: "$template"';
-      }
-
-      $vue = Mojo::Util::encode('UTF-8', "(function(){$vue})})();");
-      $asset->content($vue)->format('js');
+    if ($asset->content =~ m!<script[^>]*>(.+)</script>!s) {
+      $script = $1;
+      $vue = "$1$vue" if $script =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
+      $script =~ s!\s*\}\s*;?\s*$!!s;
+      $vue .= $script;
     }
-  );
+
+    if ($asset->content =~ m!<template[^>]*>(.+)</template>!s) {
+      $template = $1;
+      $template =~ s!"!\\"!g;    # escape all double quotes
+      $template =~ s!^\s*!!s;
+      $template =~ s!\r?\n!\\n!g;
+      $vue .= qq',\n' if $script;
+      $vue .= qq'  template: "$template"';
+    }
+
+    $vue = Mojo::Util::encode('UTF-8', "(function(){$vue})})();");
+    $asset->content($vue)->format('js');
+  });
 }
 
 1;

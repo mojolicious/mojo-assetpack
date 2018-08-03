@@ -19,8 +19,7 @@ for my $ext (sort keys %expected_element) {
 
   $t->get_ok('/')->status_is(200)->element_exists($expected_element{$ext}, $ext);
   next unless my $elem = $t->tx->res->dom->at($expected_element{$ext});
-  $t->get_ok($elem->{$attr})->status_is(200)
-    ->header_is('Content-Type' => $t->app->types->type($ext));
+  $t->get_ok($elem->{$attr})->status_is(200)->header_is('Content-Type' => $t->app->types->type($ext));
 }
 
 done_testing;

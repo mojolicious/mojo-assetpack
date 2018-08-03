@@ -6,8 +6,8 @@ use Mojo::File;
 use Mojo::JSON qw(decode_json encode_json);
 use Mojo::Util;
 
-my $FORMAT_RE = qr{^s[ac]ss$};
-my $IMPORT_RE = qr{ (?:^|[\n\r]+) ([^\@\r\n]*) (\@import \s+ (["']) (.*?) \3 \s* ;)}sx;
+my $FORMAT_RE              = qr{^s[ac]ss$};
+my $IMPORT_RE              = qr{ (?:^|[\n\r]+) ([^\@\r\n]*) (\@import \s+ (["']) (.*?) \3 \s* ;)}sx;
 my $SOURCE_MAP_PLACEHOLDER = sprintf '__%s__', __PACKAGE__;
 
 $SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
@@ -31,54 +31,49 @@ sub process {
     $opts{source_map_file_urls} = $self->app->mode eq 'development' ? 1 : 0;
   }
 
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
 
-      return if $asset->format !~ $FORMAT_RE;
-      my ($attrs, $content) = ($asset->TO_JSON, $asset->content);
-      local $self->{checksum_for_file} = {};
-      local $opts{include_paths}[0] = _include_path($asset);
-      $attrs->{minified} = $self->assetpack->minify;
-      $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
-      $attrs->{format}   = 'css';
-      $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
+    return if $asset->format !~ $FORMAT_RE;
+    my ($attrs, $content) = ($asset->TO_JSON, $asset->content);
+    local $self->{checksum_for_file} = {};
+    local $opts{include_paths}[0] = _include_path($asset);
+    $attrs->{minified} = $self->assetpack->minify;
+    $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
+    $attrs->{format}   = 'css';
+    $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
-      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-      return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
-      $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
-      $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
-      diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+    return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
+    $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
+    $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
+    diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
 
-      if ($self->{has_module} //= eval { load_module 'CSS::Sass'; 1 }) {
-        $opts{output_style} = _output_style($attrs->{minified});
-        $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
-        my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
-        if ($err) {
-          die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s',
-            $asset->url, dumper(\%opts), $err;
-        }
-        $css = Mojo::Util::encode('UTF-8', $css);
-        $self->_add_source_map_asset($asset, \$css, $stats)
-          if $stats->{source_map_string};
-        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
+    if ($self->{has_module} //= eval { load_module 'CSS::Sass'; 1 }) {
+      $opts{output_style} = _output_style($attrs->{minified});
+      $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
+      my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
+      if ($err) {
+        die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s', $asset->url, dumper(\%opts), $err;
       }
-      else {
-        my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
-        push @args, '--scss'          if $asset->format eq 'scss';
-        push @args, qw(-t compressed) if $attrs->{minified};
-        $self->run(\@args, \$content, \my $css, undef);
-        $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
-      }
+      $css = Mojo::Util::encode('UTF-8', $css);
+      $self->_add_source_map_asset($asset, \$css, $stats) if $stats->{source_map_string};
+      $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
     }
-  );
+    else {
+      my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
+      push @args, '--scss'          if $asset->format eq 'scss';
+      push @args, qw(-t compressed) if $attrs->{minified};
+      $self->run(\@args, \$content, \my $css, undef);
+      $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
+    }
+  });
 }
 
 sub _add_source_map_asset {
   my ($self, $asset, $css, $stats) = @_;
-  my $data       = decode_json $stats->{source_map_string};
-  my $source_map = Mojolicious::Plugin::AssetPack::Asset->new(
-    url => sprintf('%s.css.map', $asset->name));
+  my $data = decode_json $stats->{source_map_string};
+  my $source_map = Mojolicious::Plugin::AssetPack::Asset->new(url => sprintf('%s.css.map', $asset->name));
 
   # override "stdin" with real file
   $data->{file} = sprintf 'file://%s', $asset->path if $asset->path;
@@ -90,7 +85,7 @@ sub _add_source_map_asset {
 
   # TODO
   $self->assetpack->{by_checksum}{$source_map->checksum} = $source_map;
-  $self->assetpack->{by_topic}{$source_map->url} = Mojo::Collection->new($source_map);
+  $self->assetpack->{by_topic}{$source_map->url}         = Mojo::Collection->new($source_map);
 }
 
 sub _checksum {
@@ -129,8 +124,7 @@ SEARCH:
     else {
       diag '@import "%s" (memory)', $rel_path if DEBUG >= 2;
       pos($$ref) = $start;
-      substr $$ref, $start, $mlen,
-        $imported->content;    # replace "@import ..." with content of asset
+      substr $$ref, $start, $mlen, $imported->content;    # replace "@import ..." with content of asset
       push @c, $imported->checksum;
     }
   }
@@ -151,8 +145,7 @@ sub _install_sass {
   chomp $base;
   my $path = Mojo::File->new($base, qw(bin sass));
   return $path if -e $path;
-  $self->app->log->warn(
-    'Installing sass... Please wait. (gem install --user-install sass)');
+  $self->app->log->warn('Installing sass... Please wait. (gem install --user-install sass)');
   $self->run([qw(gem install --user-install sass)]);
   return $path;
 }

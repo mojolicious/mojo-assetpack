@@ -19,8 +19,7 @@ our %FALLBACK_TEMPLATES = %{data_section(__PACKAGE__)};
 for my $name (keys %FALLBACK_TEMPLATES) {
   my $text = delete $FALLBACK_TEMPLATES{$name};
   $name =~ m!(\w+)\.ep$!;
-  $FALLBACK_TEMPLATES{$1}
-    = Mojo::Template->new->parse($text)->prepend('my ($c, $assets) = @_;');
+  $FALLBACK_TEMPLATES{$1} = Mojo::Template->new->parse($text)->prepend('my ($c, $assets) = @_;');
 }
 
 has asset_class        => 'Mojolicious::Plugin::AssetPack::Asset';
@@ -68,8 +67,7 @@ sub asset {
   }
 
   for my $url (ref $urls eq 'ARRAY' ? @$urls : ($urls)) {
-    return $asset
-      if $url =~ m!^https?://! and $asset = $self->_download(Mojo::URL->new($url));
+    return $asset if $url =~ m!^https?://! and $asset = $self->_download(Mojo::URL->new($url));
 
     for my $path (@{$paths || $self->paths}) {
       if ($path =~ m!^https?://!) {
@@ -215,8 +213,7 @@ sub _asset_from_helper {
   my $output = $app->build_controller->$helper($url->path->[0], $args);
 
   die "[AssetPack] Unknown helper @{[$url->host]}" unless $helper;
-  my $asset
-    = $self->asset_class->new(url => $url, ref $output ? %$output : (content => $output));
+  my $asset = $self->asset_class->new(url => $url, ref $output ? %$output : (content => $output));
 
   $asset->format($args->{format}) if $args->{format};
   $asset;
@@ -258,8 +255,7 @@ sub _download {
     $url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
   }
 
-  return $asset
-    if $attrs{url}->host ne 'local' and $asset = $self->_already_downloaded($url);
+  return $asset if $attrs{url}->host ne 'local' and $asset = $self->_already_downloaded($url);
 
   my $tx = $self->ua->get($url);
   my $h  = $tx->res->headers;

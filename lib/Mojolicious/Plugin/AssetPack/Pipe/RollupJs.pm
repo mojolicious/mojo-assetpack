@@ -49,33 +49,28 @@ sub process {
   my $store  = $self->assetpack->store;
   my $file;
 
-  $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      my $attrs = $asset->TO_JSON;
-      return unless $asset->format eq 'js';
-      return unless $asset->path and -r $asset->path;
-      return unless $asset->content =~ /\bimport\s.*\bfrom\b/s;
+  $assets->each(sub {
+    my ($asset, $index) = @_;
+    my $attrs = $asset->TO_JSON;
+    return unless $asset->format eq 'js';
+    return unless $asset->path and -r $asset->path;
+    return unless $asset->content =~ /\bimport\s.*\bfrom\b/s;
 
-      $attrs->{key}      = 'rollup';
-      $attrs->{minified} = $minify;
-      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+    $attrs->{key}      = 'rollup';
+    $attrs->{minified} = $minify;
+    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
 
-      local $CWD            = $self->app->home->to_string;
-      local $ENV{NODE_ENV}  = $self->app->mode;
-      local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
-      local $ENV{ROLLUP_EXTERNAL} = join ',', @{$self->external};
-      local $ENV{ROLLUP_GLOBALS}  = join ',', @{$self->globals};
-      local $ENV{ROLLUP_SOURCEMAP} = $self->app->mode eq 'development' ? 1 : 0
-        if 0;    # TODO
+    local $CWD            = $self->app->home->to_string;
+    local $ENV{NODE_ENV}  = $self->app->mode;
+    local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
+    local $ENV{ROLLUP_EXTERNAL} = join ',', @{$self->external};
+    local $ENV{ROLLUP_GLOBALS}  = join ',', @{$self->globals};
+    local $ENV{ROLLUP_SOURCEMAP} = $self->app->mode eq 'development' ? 1 : 0 if 0;    # TODO
 
-      $self->_install_node_modules('rollup', @{$self->modules}, @{$self->plugins})
-        unless $self->{installed}++;
-      $self->run([@{$self->_rollupjs}, $asset->path, _module_name($asset->name)],
-        undef, \my $js);
-      $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
-    }
-  );
+    $self->_install_node_modules('rollup', @{$self->modules}, @{$self->plugins}) unless $self->{installed}++;
+    $self->run([@{$self->_rollupjs}, $asset->path, _module_name($asset->name)], undef, \my $js);
+    $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+  });
 }
 
 sub _module_name { local $_ = $_[0]; s!\W!_!g; lcfirst(Mojo::Util::camelize($_)) }

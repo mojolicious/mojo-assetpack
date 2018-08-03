@@ -1,5 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Fetch;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
 use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 use Mojo::URL;
 
@@ -29,45 +30,41 @@ sub process {
   my $route = $self->assetpack->route;
   my %related;
 
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      return unless $asset->url =~ /^https?:/;
-      return unless my $format = $FORMATS{$asset->format};
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
+    return unless $asset->url =~ /^https?:/;
+    return unless my $format = $FORMATS{$asset->format};
 
-      my $base    = Mojo::URL->new($asset->url);
-      my $content = $asset->content;
-      my $re      = $format->{re};
+    my $base    = Mojo::URL->new($asset->url);
+    my $content = $asset->content;
+    my $re      = $format->{re};
 
-      while ($content =~ /$re/g) {
-        my @matches = ($2, $1);
-        my $url = $matches[0];
+    while ($content =~ /$re/g) {
+      my @matches = ($2, $1);
+      my $url = $matches[0];
 
-        next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
+      next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 
-        $url = Mojo::URL->new($url);
-        $url = $url->base($base)->to_abs->fragment(undef) unless $url->is_abs;
+      $url = Mojo::URL->new($url);
+      $url = $url->base($base)->to_abs->fragment(undef) unless $url->is_abs;
 
-        unless ($related{$url}) {
-          diag "Fetch resource $url" if DEBUG;
-          my $related = $store->asset($url)
-            or die "AssetPack was unable to fetch related asset $url";
-          $self->assetpack->process($related->name, $related);
-          my $path = $route->render($related->TO_JSON);
-          $path =~ s!^/!!;
-          my $up = join '', map {'../'} $path =~ m!\/!g;
-          $related{$url} = "$up$path";
-        }
-
-        my ($start, $len) = $format->{pos}->(pos($content), @matches);
-        substr $content, $start, $len,
-          Mojo::URL->new($related{$url})->query(Mojo::Parameters->new);
-        pos($content) = $start + $len;
+      unless ($related{$url}) {
+        diag "Fetch resource $url" if DEBUG;
+        my $related = $store->asset($url) or die "AssetPack was unable to fetch related asset $url";
+        $self->assetpack->process($related->name, $related);
+        my $path = $route->render($related->TO_JSON);
+        $path =~ s!^/!!;
+        my $up = join '', map {'../'} $path =~ m!\/!g;
+        $related{$url} = "$up$path";
       }
 
-      $asset->content($content);
+      my ($start, $len) = $format->{pos}->(pos($content), @matches);
+      substr $content, $start, $len, Mojo::URL->new($related{$url})->query(Mojo::Parameters->new);
+      pos($content) = $start + $len;
     }
-  );
+
+    $asset->content($content);
+  });
 }
 
 1;

@@ -19,8 +19,7 @@ $t->get_ok('/asset/e270d1889a/a.css')->status_is(200)->content_like(qr{aaa});
 
 {
   local $TODO = $^O eq 'MSWin32' ? 'Proxy test fail on windows' : undef;
-  is_deeply $t->app->foo->ua->proxy->not, [qw(mojolicious.org 127.0.0.1 ::1 localhost)],
-    'proxy not';
+  is_deeply $t->app->foo->ua->proxy->not, [qw(mojolicious.org 127.0.0.1 ::1 localhost)], 'proxy not';
 }
 
 $t = Test::Mojo->new(Mojolicious->new);

@@ -8,16 +8,13 @@ isa_ok($sass, 'Mojolicious::Plugin::AssetPack::Pipe::Sass');
 $sass->{has_module} = '';    # make sure CSS::Sass is not used
 
 $t->app->asset->process('app.css' => ('sass.sass', 'sass/sass-1.scss'));
-$t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/8d347a7a6f/sass.css"]))
+$t->get_ok('/')->status_is(200)->element_exists(qq(link[href="/asset/8d347a7a6f/sass.css"]))
   ->element_exists(qq(link[href="/asset/71dcf0669a/sass-1.css"]));
 
 my $html = $t->tx->res->dom;
-$t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)
-  ->content_like(qr{\.sass\W+color:\s+\#aaa}s);
+$t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)->content_like(qr{\.sass\W+color:\s+\#aaa}s);
 
-$t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)
-  ->content_like(qr{footer.*\#aaa.*body.*\#222}s);
+$t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)->content_like(qr{footer.*\#aaa.*body.*\#222}s);
 
 $ENV{MOJO_MODE} = 'Test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);

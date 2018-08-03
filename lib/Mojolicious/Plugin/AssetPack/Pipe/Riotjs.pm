@@ -4,29 +4,26 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 use Mojo::File 'path';
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
-has _riotjs =>
-  sub { [shift->_find_app([qw(nodejs node)]), path(__FILE__)->dirname->child('riot.js')] };
+has _riotjs => sub { [shift->_find_app([qw(nodejs node)]), path(__FILE__)->dirname->child('riot.js')] };
 
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
   my $file;
 
-  $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      my $attrs = $asset->TO_JSON;
-      $attrs->{key}    = 'riot';
-      $attrs->{format} = 'js';
-      return unless $asset->format eq 'tag';
-      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-      local $CWD = $self->app->home->to_string;
-      local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
-      $self->run([qw(riot --version)], undef, \undef) unless $self->{installed}++;
-      $self->run($self->_riotjs, \$asset->content, \my $js);
-      $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
-    }
-  );
+  $assets->each(sub {
+    my ($asset, $index) = @_;
+    my $attrs = $asset->TO_JSON;
+    $attrs->{key}    = 'riot';
+    $attrs->{format} = 'js';
+    return unless $asset->format eq 'tag';
+    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+    local $CWD = $self->app->home->to_string;
+    local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
+    $self->run([qw(riot --version)], undef, \undef) unless $self->{installed}++;
+    $self->run($self->_riotjs, \$asset->content, \my $js);
+    $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+  });
 }
 
 sub _install_riot {

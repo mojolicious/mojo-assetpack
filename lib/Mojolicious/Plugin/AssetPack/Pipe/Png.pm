@@ -1,12 +1,12 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Png;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
 use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 
 has app      => 'pngquant';
 has app_args => sub {
   my $self = shift;
-  return [DEBUG ? () : ('-quiet'), qw(-clobber -preserve $input)]
-    if $self->app eq 'optipng';
+  return [DEBUG ? () : ('-quiet'), qw(-clobber -preserve $input)] if $self->app eq 'optipng';
   return [DEBUG ? ('-v') : (), qw(--speed 2 -)] if $self->app eq 'pngquant';
   return [];
 };
@@ -16,19 +16,17 @@ sub process {
   my $store = $self->assetpack->store;
   my $file;
 
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      my $attrs = $asset->TO_JSON;
-      $attrs->{key} = sprintf '%s-min', $self->app;
-      $attrs->{minified} = 1;
-      return if $asset->format ne 'png' or $asset->minified;
-      return unless $self->assetpack->minify;
-      return $asset->content($file)->minified(1) if $file = $store->load($attrs);
-      diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-      $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
-    }
-  );
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
+    my $attrs = $asset->TO_JSON;
+    $attrs->{key} = sprintf '%s-min', $self->app;
+    $attrs->{minified} = 1;
+    return if $asset->format ne 'png' or $asset->minified;
+    return unless $self->assetpack->minify;
+    return $asset->content($file)->minified(1) if $file = $store->load($attrs);
+    diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
+  });
 }
 
 sub _install_optipng {

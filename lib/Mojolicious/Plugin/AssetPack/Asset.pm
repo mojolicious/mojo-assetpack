@@ -16,10 +16,7 @@ $TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
 has format => sub {
   my $self = shift;
-  my $name
-    = $self->url =~ /^https?:/
-    ? Mojo::URL->new($self->url)->path->[-1]
-    : (split m!(\\|/)!, $self->url)[-1];
+  my $name = $self->url =~ /^https?:/ ? Mojo::URL->new($self->url)->path->[-1] : (split m!(\\|/)!, $self->url)[-1];
 
   return $name =~ /\.(\w+)$/ ? lc $1 : '';
 };
@@ -95,8 +92,7 @@ sub _default_tag_for {
   my ($asset, $c, $args, @attrs) = @_;
   my $url = $asset->url_for($c);
   my @template = @{$TAG_TEMPLATE{$asset->format} || $TAG_TEMPLATE{css}};
-  splice @template, 1, 0, type => $c->app->types->type($asset->format)
-    if $template[0] eq 'source';
+  splice @template, 1, 0, type => $c->app->types->type($asset->format) if $template[0] eq 'source';
   return $c->tag(@template, Mojo::URL->new("$args->{base_url}$url"), @attrs);
 }
 

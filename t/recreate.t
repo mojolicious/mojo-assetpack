@@ -33,8 +33,7 @@ my $tr = t::Helper->t(pipes => [qw(Css Combine)]);
 $tr->app->asset->process('app.css' => @assets);
 $tr->get_ok('/')->status_is(200);
 isnt $tr->tx->res->dom->at('link')->{href}, $link, 'changed link href';
-$tr->get_ok($tr->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{color:\#bbb});
+$tr->get_ok($tr->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{color:\#bbb});
 
 # reset asset
 $recreate->spurt(".recreate { color: #aaa }\n");

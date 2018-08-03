@@ -20,10 +20,7 @@ if (!eval 'use Test::CPAN::Changes; 1') {
   };
 }
 
-find(
-  {wanted => sub { /\.pm$/ and push @files, $File::Find::name }, no_chdir => 1},
-  -e 'blib' ? 'blib' : 'lib',
-);
+find({wanted => sub { /\.pm$/ and push @files, $File::Find::name }, no_chdir => 1}, -e 'blib' ? 'blib' : 'lib',);
 
 plan tests => @files * 3 + 4;
 

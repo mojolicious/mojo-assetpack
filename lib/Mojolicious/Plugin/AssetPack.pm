@@ -11,8 +11,7 @@ our $VERSION = '2.05';
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
 has route => sub {
-  shift->_app->routes->route('/asset/:checksum/*name')->via(qw(HEAD GET))
-    ->name('assetpack')->to(cb => \&_serve);
+  shift->_app->routes->route('/asset/:checksum/*name')->via(qw(HEAD GET))->name('assetpack')->to(cb => \&_serve);
 };
 
 has store => sub {
@@ -53,8 +52,7 @@ sub process {
 
 sub processed {
   my ($self, $topic) = @_;
-  $self->_process($topic => $self->{input}{$topic})
-    unless $self->{by_topic}{$topic};    # Ensure asset is processed
+  $self->_process($topic => $self->{input}{$topic}) unless $self->{by_topic}{$topic};    # Ensure asset is processed
   return $self->{by_topic}{$topic};
 }
 
@@ -73,8 +71,8 @@ sub register {
   Scalar::Util::weaken($self->ua->server->{app});
 
   if (my $proxy = $config->{proxy} // {}) {
-    local $ENV{NO_PROXY} = $proxy->{no_proxy} || join ',', grep {$_} $ENV{NO_PROXY},
-      $ENV{no_proxy}, '127.0.0.1', '::1', 'localhost';
+    local $ENV{NO_PROXY} = $proxy->{no_proxy} || join ',', grep {$_} $ENV{NO_PROXY}, $ENV{no_proxy}, '127.0.0.1',
+      '::1', 'localhost';
     diag 'Detecting proxy settings. (NO_PROXY=%s)', $ENV{NO_PROXY} if DEBUG;
     $self->ua->proxy->detect;
   }
@@ -85,8 +83,7 @@ sub register {
 
 sub tag_for {
   my $self = shift;
-  deprecated
-    'tag_for() is DEPRECATED in favor of Mojolicious::Plugin::AssetPack::Asset::tag_for()';
+  deprecated 'tag_for() is DEPRECATED in favor of Mojolicious::Plugin::AssetPack::Asset::tag_for()';
   return $self->{tag_for} unless @_;
   $self->{tag_for} = shift;
   return $self;
@@ -221,8 +218,7 @@ sub _serve {
 
 sub _static_asset {
   my ($self, $topic) = @_;
-  my $asset = $self->store->asset($topic)
-    or die qq(No assets registered by topic "$topic".);
+  my $asset = $self->store->asset($topic) or die qq(No assets registered by topic "$topic".);
   my $assets = Mojo::Collection->new($asset);
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   return $assets;

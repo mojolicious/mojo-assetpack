@@ -58,8 +58,7 @@ sub STORE {
   defined $_[1] or return;
   my $dir = File::Spec->rel2abs($_[1]);
   chdir $dir or die "chdir $dir: $!";
-  Mojolicious::Plugin::AssetPack::Util::diag("chdir $dir")
-    if Mojolicious::Plugin::AssetPack::Util::DEBUG >= 3;
+  Mojolicious::Plugin::AssetPack::Util::diag("chdir $dir") if Mojolicious::Plugin::AssetPack::Util::DEBUG >= 3;
   $_[0]->[0] = $dir;
 }
 

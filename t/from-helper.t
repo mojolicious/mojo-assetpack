@@ -15,9 +15,8 @@ $t->app->helper(
 
 $t->app->asset->process;
 $t->get_ok('/')->status_is(200)->element_count_is('link', 1);
-$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{border:1px;})->content_like(qr{color:red;})
-  ->content_like(qr{font:monospace;});
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{border:1px;})
+  ->content_like(qr{color:red;})->content_like(qr{font:monospace;});
 
 done_testing;
 

@@ -5,11 +5,10 @@ plan skip_all => 'TEST_LESS=1' unless $ENV{TEST_LESS} or -e '.test-everything';
 my $t = t::Helper->t(pipes => [qw(Less Css Combine)]);
 
 $t->app->asset->process('app.css' => 'foo.less');
-$t->get_ok('/')->status_is(200)
-  ->element_exists(qq(link[href="/asset/fd1bf3a731/foo.css"]));
+$t->get_ok('/')->status_is(200)->element_exists(qq(link[href="/asset/fd1bf3a731/foo.css"]));
 
-$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_like(qr{-webkit-box-shadow:})->content_like(qr{color:\s*\#fe33ac});
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{-webkit-box-shadow:})
+  ->content_like(qr{color:\s*\#fe33ac});
 
 done_testing;
 

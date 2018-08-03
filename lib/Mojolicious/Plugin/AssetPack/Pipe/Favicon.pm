@@ -8,8 +8,7 @@ use Mojo::Util;
 use Mojolicious::Plugin::AssetPack::Util 'checksum';
 
 # this should be considered private
-use constant API_URL => $ENV{MOJO_ASSETPACK_FAVICON_API_URL}
-  || 'https://realfavicongenerator.net/api/favicon';
+use constant API_URL => $ENV{MOJO_ASSETPACK_FAVICON_API_URL} || 'https://realfavicongenerator.net/api/favicon';
 
 has api_key  => sub { die 'api_key() must be set' };
 has design   => sub { shift->_build_design };
@@ -40,15 +39,13 @@ sub process {
   my $renderer = sub {
     my ($asset, $c, $args, @attrs) = @_;
     my $content = $asset->content;
-    $content
-      =~ s!"/([^.]+\.\w{3,})"!sprintf '"%s"', $sub_assets{$1} ? $sub_assets{$1}->url_for($c) : $1!ge;
+    $content =~ s!"/([^.]+\.\w{3,})"!sprintf '"%s"', $sub_assets{$1} ? $sub_assets{$1}->url_for($c) : $1!ge;
     return $content if $args;
     return $c->render(data => $content);
   };
 
   for my $url (@$urls) {
-    my $asset = $store->asset($url)
-      or die "AssetPack was unable to fetch icons/assets asset $url";
+    my $asset = $store->asset($url) or die "AssetPack was unable to fetch icons/assets asset $url";
     $sub_assets{join '.', $asset->name, $asset->format} = $asset;
     $asset->renderer($renderer) if $asset->format =~ m!(manifest|xml|webapp)$!;
     $self->assetpack->{by_checksum}{$asset->checksum} = $asset;
@@ -71,7 +68,7 @@ sub _build_design {
   return {
     desktop_browser => {},
     android_chrome  => {
-      manifest => {display => 'standalone', name => $name, orientation => 'portrait'},
+      manifest       => {display => 'standalone', name => $name, orientation => 'portrait'},
       picture_aspect => 'shadow',
       theme_color    => $theme_color,
     },
@@ -80,30 +77,16 @@ sub _build_design {
       circle_inner_margin    => '5',
       keep_picture_in_circle => 'true',
       picture_aspect         => 'circle',
-      manifest               => {
-        app_description => '',
-        app_name        => $name,
-        developer_name  => '',
-        developer_url   => '',
-      }
+      manifest               => {app_description => '', app_name => $name, developer_name => '', developer_url => '',}
     },
-    ios => {
-      background_color => $bg_color,
-      margin           => '4',
-      picture_aspect   => 'background_and_margin',
-    },
-    safari_pinned_tab => {
-      picture_aspect => 'black_and_white',
-      threshold      => 60,
-      theme_color    => $theme_color,
-    },
-    windows => {
+    ios => {background_color => $bg_color, margin => '4', picture_aspect => 'background_and_margin',},
+    safari_pinned_tab => {picture_aspect => 'black_and_white', threshold => 60, theme_color => $theme_color,},
+    windows           => {
       background_color => $theme_color,
       picture_aspect   => "white_silhouette",
       assets           => {
-        windows_80_ie_10_tile => true,
-        windows_10_ie_11_edge_tiles =>
-          {big => true, medium => true, rectangle => false, small => false},
+        windows_80_ie_10_tile       => true,
+        windows_10_ie_11_edge_tiles => {big => true, medium => true, rectangle => false, small => false},
       }
     },
   };
@@ -122,8 +105,7 @@ sub _fetch {
 
   my $data   = $res->json->{favicon_generation_result}{favicon};
   my $files  = $data->{files_urls} || [];
-  my $markup = $data->{html_code}
-    or die qq|[AssetPack] No html_code generated. Invalid pipe("Favicon")->design({})..?|;
+  my $markup = $data->{html_code} or die qq|[AssetPack] No html_code generated. Invalid pipe("Favicon")->design({})..?|;
   return ($files, $markup) if @$files;
   die qq|[AssetPack] No favicons generated. Invalid pipe("Favicon")->design({})..?|;
 }
@@ -137,8 +119,7 @@ sub _request {
       favicon_design => $self->design,
       settings       => $self->settings,
       files_location => {type => 'path', path => '/'},
-      master_picture =>
-        {content => Mojo::Util::b64_encode($asset->content), type => 'inline'}
+      master_picture => {content => Mojo::Util::b64_encode($asset->content), type => 'inline'}
     }
   };
 }

@@ -1,5 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 sub process {
@@ -7,18 +8,16 @@ sub process {
   my $store = $self->assetpack->store;
   my $file;
 
-  $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      return if $asset->format ne 'coffee';
-      my $attrs = $asset->TO_JSON;
-      @$attrs{qw(format key)} = qw(js coffee);
-      return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-      diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-      $self->run([qw(coffee --compile --stdio)], \$asset->content, \my $js);
-      $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
-    }
-  );
+  $assets->each(sub {
+    my ($asset, $index) = @_;
+    return if $asset->format ne 'coffee';
+    my $attrs = $asset->TO_JSON;
+    @$attrs{qw(format key)} = qw(js coffee);
+    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+    diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    $self->run([qw(coffee --compile --stdio)], \$asset->content, \my $js);
+    $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+  });
 }
 
 sub _install_coffee {
@@ -26,8 +25,7 @@ sub _install_coffee {
   my $path = $self->app->home->rel_file('node_modules/.bin/coffee');
   return $path if -e $path;
   local $CWD = $self->app->home->to_string;
-  $self->app->log->warn(
-    'Installing coffee-script... Please wait. (npm install coffee-script)');
+  $self->app->log->warn('Installing coffee-script... Please wait. (npm install coffee-script)');
   $self->run([qw(npm install coffee-script)]);
   return $path;
 }

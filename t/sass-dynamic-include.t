@@ -13,8 +13,8 @@ $t->app->routes->get(
 
 $t->app->asset->process('app.css' => 'dynamic.scss');
 $t->get_ok('/')->status_is(200);
-$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)
-  ->content_unlike(qr{\@import})->content_like(qr{body.*black}s);
+$t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_unlike(qr{\@import})
+  ->content_like(qr{body.*black}s);
 
 done_testing;
 

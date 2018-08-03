@@ -1,5 +1,6 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Jpeg;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
+
 use Mojolicious::Plugin::AssetPack::Util qw(diag DEBUG);
 
 has app      => 'jpegoptim';
@@ -14,19 +15,17 @@ sub process {
   my $store = $self->assetpack->store;
   my $file;
 
-  return $assets->each(
-    sub {
-      my ($asset, $index) = @_;
-      my $attrs = $asset->TO_JSON;
-      $attrs->{key} = sprintf '%s-min', $self->app;
-      $attrs->{minified} = 1;
-      return if $asset->format !~ /^jpe?g$/ or $asset->minified;
-      return unless $self->assetpack->minify;
-      return $asset->content($file)->minified(1) if $file = $store->load($attrs);
-      diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-      $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
-    }
-  );
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
+    my $attrs = $asset->TO_JSON;
+    $attrs->{key} = sprintf '%s-min', $self->app;
+    $attrs->{minified} = 1;
+    return if $asset->format !~ /^jpe?g$/ or $asset->minified;
+    return unless $self->assetpack->minify;
+    return $asset->content($file)->minified(1) if $file = $store->load($attrs);
+    diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
+  });
 }
 
 sub _install_jpegoptim {
