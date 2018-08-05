@@ -6,20 +6,17 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
-  my $file;
 
-  return unless $self->assetpack->minify;
+  return $assets unless $self->assetpack->minify;
   return $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON;
-    $attrs->{key}      = 'css-min';
-    $attrs->{minified} = 1;
+    my $attrs = $asset->TO_JSON(key => 'css-min', minified => 1);
     return if $asset->format ne 'css' or $asset->minified;
-    return $asset->content($file)->minified(1) if $file = $store->load($attrs);
+    return if $store->load($asset, $attrs);
     load_module 'CSS::Minifier::XS';
     diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
     my $css = CSS::Minifier::XS::minify($asset->content);
-    $asset->content($store->save(\$css, $attrs))->minified(1);
+    $store->save($asset, \$css, $attrs);
   });
 }
 

@@ -47,18 +47,14 @@ sub process {
   my ($self, $assets) = @_;
   my $minify = $self->assetpack->minify;
   my $store  = $self->assetpack->store;
-  my $file;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON;
+    my $attrs = $asset->TO_JSON(minified => $minify, key => 'rollup');
     return unless $asset->format eq 'js';
     return unless $asset->path and -r $asset->path;
     return unless $asset->content =~ /\bimport\s.*\bfrom\b/s;
-
-    $attrs->{key}      = 'rollup';
-    $attrs->{minified} = $minify;
-    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
+    return if $store->load($asset, $attrs);
 
     local $CWD            = $self->app->home->to_string;
     local $ENV{NODE_ENV}  = $self->app->mode;
@@ -69,7 +65,7 @@ sub process {
 
     $self->_install_node_modules('rollup', @{$self->modules}, @{$self->plugins}) unless $self->{installed}++;
     $self->run([@{$self->_rollupjs}, $asset->path, _module_name($asset->name)], undef, \my $js);
-    $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+    $store->save($asset, \$js, $attrs);
   });
 }
 

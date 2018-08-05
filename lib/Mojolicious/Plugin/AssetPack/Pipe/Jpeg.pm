@@ -13,18 +13,14 @@ has app_args => sub {
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
-  my $file;
 
   return $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON;
-    $attrs->{key} = sprintf '%s-min', $self->app;
-    $attrs->{minified} = 1;
-    return if $asset->format !~ /^jpe?g$/ or $asset->minified;
-    return unless $self->assetpack->minify;
-    return $asset->content($file)->minified(1) if $file = $store->load($attrs);
-    diag 'Process "%s", with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
-    $asset->content($store->save($self->_run_app($asset), $attrs))->FROM_JSON($attrs);
+    my $attrs = $asset->TO_JSON(minified => 1, key => sprintf '%s-min', $self->app);
+    return if $asset->format !~ /^jpe?g$/ or $asset->minified or !$self->assetpack->minify;
+    return if $store->load($asset, $attrs);
+    diag 'Process "%s", with checksum %s.', $asset->url, $asset->checksum if DEBUG;
+    $store->save($asset, $self->_run_app($asset), $attrs);
   });
 }
 

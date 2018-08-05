@@ -20,20 +20,16 @@ sub process {
 
   my $store = $self->assetpack->store;
   my $asset = $assets->first;
-  my $attrs = $asset->TO_JSON;
+  my $attrs = $asset->TO_JSON(key => checksum(Mojo::JSON::encode_json($self->design)));
   my ($urls, $markup, %sub_assets);
 
-  $attrs->{key} = checksum(Mojo::JSON::encode_json($self->design))
-    or die '[AssetPack] Invalid pipe("Favicon")->design({})';
-
-  if (my $db = $store->load($attrs)) {
-    ($urls, $markup) = split /__MARKUP__/, $db->content;
+  if ($store->load($asset, $attrs)) {
+    ($urls, $markup) = split /__MARKUP__/, $asset->content;
     $urls = [grep {/\w/} split /\n/, $urls];
   }
   else {
     ($urls, $markup) = $self->_fetch($asset);
-    $db = join "\n", @$urls, __MARKUP__ => $markup;
-    $store->save(\$db, $attrs);
+    $store->save($asset, \join("\n", @$urls, __MARKUP__ => $markup), $attrs);
   }
 
   my $renderer = sub {

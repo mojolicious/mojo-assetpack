@@ -6,17 +6,15 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
-  my $file;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
+    my $attrs = $asset->TO_JSON(format => 'js', key => 'coffee');
     return if $asset->format ne 'coffee';
-    my $attrs = $asset->TO_JSON;
-    @$attrs{qw(format key)} = qw(js coffee);
-    return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
-    diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    return if $store->load($asset, $attrs);
+    diag 'Process "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
     $self->run([qw(coffee --compile --stdio)], \$asset->content, \my $js);
-    $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
+    $store->save($asset, \$js, $attrs);
   });
 }
 

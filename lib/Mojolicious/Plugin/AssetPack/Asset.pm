@@ -89,9 +89,8 @@ sub content {
 
 sub path {
   my $self = shift;
-  return $self->_asset(Mojo::Asset::File->new(path => $_[0])) if $_[0];
-  return Mojo::File->new($self->_asset->path) if $self->_asset->isa('Mojo::Asset::File');
-  return undef;
+  return $self->_asset(Mojo::Asset::File->new(path => $_[0])) if @_;
+  return $self->_asset->isa('Mojo::Asset::File') ? Mojo::File->new($self->_asset->path) : undef;
 }
 
 sub size { $_[0]->_asset->size }
@@ -106,14 +105,9 @@ sub _default_tag_for {
   return $c->tag(@template, Mojo::URL->new("$args->{base_url}$url"), @attrs);
 }
 
-sub FROM_JSON {
-  my ($self, $attrs) = @_;
-  $self->$_($attrs->{$_}) for grep { defined $attrs->{$_} } qw(format minified);
-  $self;
-}
-
 sub TO_JSON {
-  return {map { ($_ => $_[0]->$_) } qw(checksum format minified name url)};
+  my $self = shift;
+  return {(map { ($_ => $self->$_) } qw(checksum format minified name url)), @_};
 }
 
 1;
@@ -253,19 +247,6 @@ Returns the size of the asset in bytes.
 
 Returns a L<Mojo::URL> object for this asset. C<$c> need to be a
 L<Mojolicious::Controller>.
-
-=head2 FROM_JSON
-
-  $self = $self->FROM_JSON($hash_ref);
-
-The opposite of L</TO_JSON>. Will set the read/write L</ATTRIBUTES> from the
-values in C<$hash_ref>.
-
-=head2 TO_JSON
-
-  $hash_ref = $self->FROM_JSON;
-
-The opposite of L</FROM_JSON>. Will generate a hash ref from L</ATTRIBUTES>.
 
 =head1 SEE ALSO
 

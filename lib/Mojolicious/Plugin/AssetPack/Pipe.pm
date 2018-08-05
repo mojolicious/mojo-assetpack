@@ -133,21 +133,19 @@ Mojolicious::Plugin::AssetPack::Pipe - Base class for a pipe
         return if $asset->format ne "css";
 
         # Change $attr if this pipe will modify $asset attributes
-        my $attr    = $asset->TO_JSON;
+        my $attrs   = $asset->TO_JSON;
         my $content = $asset->content;
 
         # Private name to load/save meta data under
-        $attr->{key} = "coolpipe";
+        $attrs->{key} = "coolpipe";
 
         # Return asset if already processed
-        if ($content !~ /white/ and $file = $store->load($attr)) {
-          return $asset->content($file);
-        }
+        return if $content !~ /white/ and $store->load($asset, $attrs);
 
         # Process asset content
         diag q(Replace white with red in "%s".), $asset->url if DEBUG;
         $content =~ s!white!red!g;
-        $asset->content($store->save(\$content, $attr))->minified(1);
+        $store->save($asset, \$content, $attrs);
       }
     );
   }

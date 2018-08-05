@@ -87,14 +87,18 @@ sub asset {
 }
 
 sub load {
-  my ($self, $attrs) = @_;
+  my $self    = shift;
+  my $asset   = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : undef;
+  my $attrs   = shift;
   my $db_attr = $self->_db_get($attrs) or return undef;
   my @rel     = $self->_cache_path($attrs);
-  my $asset   = $self->asset(join '/', @rel);
+  my $loaded  = $self->asset(join '/', @rel);
 
-  return undef unless $asset;
+  return undef unless $loaded;
   return undef unless $db_attr->{checksum} eq $attrs->{checksum};
-  diag 'Load "%s" = 1', $asset->path || $asset->url if DEBUG;
+  diag 'Load "%s" = 1', $loaded->path || $loaded->url if DEBUG;
+  local $attrs->{content} = $loaded;
+  map { defined $attrs->{$_} and $asset->$_($attrs->{$_}) } qw(content format minified) if $asset;
   return $asset;
 }
 
@@ -126,19 +130,27 @@ sub persist {
 }
 
 sub save {
-  my ($self, $ref, $attrs) = @_;
-  my $path = path($self->paths->[0], $self->_cache_path($attrs));
-  my $dir = $path->dirname;
+  my $self  = shift;
+  my $asset = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : $self->asset_class->new;
+  my $ref   = shift;
+  my $attrs = shift;
+  my $path  = path($self->paths->[0], $self->_cache_path($attrs));
+  my $dir   = $path->dirname;
 
   # Do not care if this fail. Can fallback to temp files.
   mkdir $dir if !-d $dir and -w $dir->dirname;
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
-  return $self->asset_class->new(%$attrs, content => $$ref) unless -w $dir;
+  if (-w $dir) {
+    $asset->path($path->spurt($$ref));
+    $self->_db_set(%$attrs);
+  }
+  else {
+    $asset->content($$ref);
+  }
 
-  $path->spurt($$ref);
-  $self->_db_set(%$attrs);
-  return $self->asset_class->new(%$attrs, path => $path);
+  map { defined $attrs->{$_} and $asset->$_($attrs->{$_}) } qw(format minified);
+  return $asset;
 }
 
 sub serve_asset {
@@ -282,7 +294,7 @@ sub _download {
 
   $attrs{url} = "$attrs{url}";
   return $self->asset_class->new(%attrs, path => $path) if $path;
-  return $self->asset_class->new(%attrs)->content($tx->res->body);
+  return $self->asset_class->new(%attrs, content => $tx->res->body);
 }
 
 sub _log { shift->ua->server->app->log }
@@ -441,12 +453,12 @@ delete the files on disk to download a new version.
 
 =head2 load
 
-  $bool = $self->load($asset, \%attr);
+  $bool = $self->load($asset, \%attrs);
 
-Used to load an existing asset from disk. C<%attr> will override the
+Used to load an existing asset from disk. C<%attrs> will override the
 way an asset is looked up. The example below will ignore
 L<minified|Mojolicious::Plugin::AssetPack::Asset/minified> and rather use
-the value from C<%attr>:
+the value from C<%attrs>:
 
   $bool = $self->load($asset, {minified => $bool});
 
@@ -460,9 +472,9 @@ This method is EXPERIMENTAL, and may change without warning.
 
 =head2 save
 
-  $bool = $self->save($asset, \%attr);
+  $bool = $self->save($asset, \$content, \%attrs);
 
-Used to save an asset to disk. C<%attr> are usually the same as
+Used to save C<$content> to asset to disk. C<%attrs> are usually the same as
 L<Mojolicious::Plugin::AssetPack::Asset/TO_JSON> and used to document metadata
 about the C<$asset> so it can be looked up using L</load>.
 
