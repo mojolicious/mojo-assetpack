@@ -9,7 +9,7 @@ sub process {
   return $assets unless $self->assetpack->minify;
   return $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON(key => 'css-min', minified => 1);
+    my $attrs = $asset->TO_JSON(minified => 1, key => 'min');
     return if $asset->format ne 'css' or $asset->minified;
     return if $self->store->load($asset, $attrs);
     load_module 'CSS::Minifier::XS';

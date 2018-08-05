@@ -27,8 +27,6 @@ unless ($ENV{TEST_KEEP_FILES}) {
 }
 
 sub cleanup {
-  $CREATED_FILES{path($ENV{TEST_HOME}, 'assets', $ENV{MOJO_ASSETPACK_DB_FILE})} = 1
-    if $ENV{MOJO_ASSETPACK_DB_FILE} and !$ENV{TEST_KEEP_FILES};
   unlink $_ for keys %CREATED_FILES;
 }
 
@@ -37,7 +35,6 @@ sub t {
   my $args  = ref $_[0] ? shift : {@_};
   my $app   = Mojolicious->new;
 
-  $ENV{MOJO_ASSETPACK_DB_FILE} = sprintf '%s.db', path($0)->basename;
   $class->cleanup unless state $cleaned_up++;
   ${$app->home} = $ENV{TEST_HOME};
   delete $app->log->{$_} for qw(handle path);

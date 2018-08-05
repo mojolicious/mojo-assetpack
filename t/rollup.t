@@ -9,7 +9,7 @@ $t->get_ok('/')->status_is(200)->element_exists(qq(script[src="/asset/693887ef13
 $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(qr{someLib\s=\sfunction});
 
 # Production mode
-$ENV{MOJO_MODE} = 'Test_minify_from_here';
+$ENV{MOJO_MODE} = 'test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(RollupJs Combine)]);
 $t->app->asset->process('app.js' => 'js/some-lib.js');
 $t->get_ok('/')->status_is(200)->element_exists(qq(script[src="/asset/96b3f18ab2/app.js"]));

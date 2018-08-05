@@ -14,10 +14,9 @@
 .sass-cache
 *.old
 *.swp
+.*.meta
 ~$
 /Mojolicious-Plugin-AssetPack*tar.gz
-/public/packed/
-/t/public/packed/
 t/package-lock.json
 node_modules
 .sass-cache

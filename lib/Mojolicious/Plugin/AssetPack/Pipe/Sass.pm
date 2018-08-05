@@ -48,7 +48,7 @@ sub process {
 
     my ($attrs, $content) = ($asset->TO_JSON(format => 'css'), $asset->content);
     $attrs->{minified} = $self->assetpack->minify;
-    $attrs->{key} = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
+    $attrs->{key} = $attrs->{minified} ? 'min' : 'sass';
 
     return if $self->store->load($asset, $attrs);
     return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');

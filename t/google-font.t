@@ -21,11 +21,6 @@ $t2->get_ok('/');
 $t2->get_ok($t2->tx->res->dom->at('link')->{href})->status_is(200)->header_is('Content-Type', 'text/css')
   ->content_like(qr{font-family:\W*Roboto});
 
-my $t3 = t::Helper->t(pipes => [qw(Css Fetch)]);
-
-is_deeply($t2->app->asset->store->_db, {}, 'nothing stored in db file (t2)');
-is_deeply($t3->app->asset->store->_db, {}, 'nothing stored in db file (t3)');
-
 done_testing;
 
 __DATA__

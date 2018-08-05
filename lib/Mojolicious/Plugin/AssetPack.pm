@@ -151,7 +151,6 @@ sub _process {
   $self->_app->log->debug(qq(Processed asset "$topic". [@checksum])) if DEBUG;
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   $self->{by_topic}{$topic} = $assets;
-  $self->store->persist;
   $self;
 }
 
@@ -285,16 +284,6 @@ Your application creates and refers to an asset by its topic (virtual asset
 name).  The process of building actual assets from their components is
 delegated to "pipe objects". Please see
 L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
-
-=head1 BREAKING CHANGES
-
-=head2 assetpack.db (v1.47)
-
-C<assetpack.db> no longer track files downloaded from the internet. It will
-mostly "just work", but in some cases version 1.47 might download assets that
-have already been downloaded with AssetPack version 1.46 and earlier.
-
-The goal is to remove C<assetpack.db> completely.
 
 =head1 GUIDES
 

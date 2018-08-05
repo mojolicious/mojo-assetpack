@@ -7,7 +7,15 @@ $t->app->asset->process('app.js' => 'foo.coffee');
 $t->get_ok('/')->status_is(200)->element_exists(qq(script[src="/asset/e4c4b04389/foo.js"]));
 
 $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)
-  ->content_like(qr{console.log\('hello from foo coffee'\)});
+  ->content_like(qr{\sconsole.log\('hello from foo coffee'\)});
+
+$ENV{MOJO_MODE} = 'test_minify_from_here';
+$t = t::Helper->t(pipes => [qw(CoffeeScript JavaScript)]);
+Mojo::Util::monkey_patch('Mojolicious::Plugin::AssetPack::Pipe::CoffeeScript', run => sub { die 'Not cached!' });
+$t->app->asset->process('app.js' => 'foo.coffee');
+$t->get_ok('/')->status_is(200)->element_exists(qq(script[src="/asset/e4c4b04389/foo.js"]));
+$t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)
+  ->content_like(qr/\{console.log\('hello from foo coffee'\)/);
 
 done_testing;
 

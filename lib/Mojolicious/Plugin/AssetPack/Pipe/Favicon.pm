@@ -10,16 +10,24 @@ use Mojolicious::Plugin::AssetPack::Util 'checksum';
 # this should be considered private
 use constant API_URL => $ENV{MOJO_ASSETPACK_FAVICON_API_URL} || 'https://realfavicongenerator.net/api/favicon';
 
+my $TOPIC_RE = qr!^favicon(\.\w+)?\.ico$!;
+
 has api_key  => sub { die 'api_key() must be set' };
 has design   => sub { shift->_build_design };
 has settings => sub { +{error_on_image_too_small => Mojo::JSON->true} };
 
+sub before_process {
+  my ($self, $assets) = @_;
+  return unless $self->topic =~ $TOPIC_RE;
+  return $assets->each(sub { shift->checksum(checksum Mojo::JSON::encode_json($self->design)) });
+}
+
 sub process {
   my ($self, $assets) = @_;
-  return unless $self->topic =~ m!^favicon(\.\w+)?\.ico$!;
+  return unless $self->topic =~ $TOPIC_RE;
 
   my $asset = $assets->first;
-  my $attrs = $asset->TO_JSON(key => checksum(Mojo::JSON::encode_json($self->design)));
+  my $attrs = $asset->TO_JSON(key => 'favicon');
   my ($urls, $markup, %sub_assets);
 
   if ($self->store->load($asset, $attrs)) {
@@ -194,6 +202,10 @@ Can be used to customize the different settings. Look for "settings" on
 L<http://realfavicongenerator.net/api/non_interactive_api> for details.
 
 =head1 METHODS
+
+=head2 before_process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
 
 =head2 process
 

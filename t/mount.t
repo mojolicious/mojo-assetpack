@@ -1,8 +1,7 @@
 use lib '.';
 use t::Helper;
 
-$ENV{MOJO_MODE}              = 'development';
-$ENV{MOJO_ASSETPACK_DB_FILE} = 'mount.db';
+$ENV{MOJO_MODE} = 'development';
 
 my $app = Mojolicious->new;
 $app->plugin(AssetPack => {pipes => [qw(Css Combine)]});

@@ -27,9 +27,6 @@ $t->get_ok('/')->status_is(200)->element_exists(qq(link[href="/asset/5660087922/
 
 $t->get_ok('/asset/0dfb452e32/sass-two.css')->status_is(200)->content_like(qr{body\W+background:\s*black}s);
 
-$t = t::Helper->t(pipes => [qw(Css Fetch)]);
-is_deeply($t->app->asset->store->_db, {}, 'nothing was stored in db');
-
 done_testing;
 
 __DATA__
