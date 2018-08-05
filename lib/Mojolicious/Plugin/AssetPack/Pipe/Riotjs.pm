@@ -8,18 +8,17 @@ has _riotjs => sub { [shift->_find_app([qw(nodejs node)]), path(__FILE__)->dirna
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON(format => 'js', key => 'riot');
     return if $asset->format ne 'tag';
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
     local $CWD = $self->app->home->to_string;
     local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
     $self->run([qw(riot --version)], undef, \undef) unless $self->{installed}++;
     $self->run($self->_riotjs, \$asset->content, \my $js);
-    $store->save($asset, \$js, $attrs);
+    $self->store->save($asset, \$js, $attrs);
   });
 }
 

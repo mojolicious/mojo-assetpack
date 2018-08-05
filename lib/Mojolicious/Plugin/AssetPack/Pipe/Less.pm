@@ -5,20 +5,19 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON(format => 'css', key => 'less');
     return if $asset->format ne 'less';
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
     diag 'Process "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
     my @args = qw(lessc --no-color);
     my $file = $asset->path ? $asset : Mojo::Asset::File->new->add_chunk($asset->content);
     push @args, '--include-path=' . $asset->path->dirname if $asset->path;
     push @args, $file->path;
     $self->run(\@args, undef, \my $css);
-    $store->save($asset, \$css, $attrs);
+    $self->store->save($asset, \$css, $attrs);
   });
 }
 

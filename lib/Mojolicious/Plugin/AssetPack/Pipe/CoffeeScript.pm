@@ -5,16 +5,15 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON(format => 'js', key => 'coffee');
     return if $asset->format ne 'coffee';
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
     diag 'Process "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
     $self->run([qw(coffee --compile --stdio)], \$asset->content, \my $js);
-    $store->save($asset, \$js, $attrs);
+    $self->store->save($asset, \$js, $attrs);
   });
 }
 

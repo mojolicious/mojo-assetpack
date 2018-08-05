@@ -12,20 +12,19 @@ has _typescript => sub {
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON(format => 'js', key => 'ts');
     return if $asset->format ne 'ts';
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
 
     $self->_install_typescript unless $self->{installed}++;
     local $CWD = $self->app->home->to_string;
     local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
 
     $self->run($self->_typescript, \$asset->content, \my $js);
-    $store->save($asset, \$js, $attrs);
+    $self->store->save($asset, \$js, $attrs);
   });
 }
 

@@ -18,6 +18,8 @@ has_ro 'assetpack';
 
 sub app { shift->assetpack->ua->server->app }
 
+sub process { Carp::confess('Method "process" not implemented by subclass') }
+
 sub run {
   my ($self, $cmd, @args) = @_;
   my $name = path($cmd->[0])->basename;
@@ -31,7 +33,7 @@ sub run {
   };
 }
 
-sub process { Carp::confess('Method "process" not implemented by subclass') }
+sub store { shift->assetpack->store }
 
 sub _find_app {
   my ($self, $apps, $path) = @_;
@@ -222,6 +224,12 @@ See L<IPC::Run3/run3> for details about the arguments. This method will try to
 call C<_install_some_app()> unless "som_app" was found in
 L<PATH|File::Spec/path>. This method could then try to install the application
 and must return the path to the installed application.
+
+=head2 store
+
+  $store = $self->store;
+
+Returns L<Mojolicious::Plugin::AssetPack/store>.
 
 =head1 SEE ALSO
 

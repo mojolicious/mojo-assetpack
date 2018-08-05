@@ -18,18 +18,17 @@ sub process {
   my ($self, $assets) = @_;
   return unless $self->topic =~ m!^favicon(\.\w+)?\.ico$!;
 
-  my $store = $self->assetpack->store;
   my $asset = $assets->first;
   my $attrs = $asset->TO_JSON(key => checksum(Mojo::JSON::encode_json($self->design)));
   my ($urls, $markup, %sub_assets);
 
-  if ($store->load($asset, $attrs)) {
+  if ($self->store->load($asset, $attrs)) {
     ($urls, $markup) = split /__MARKUP__/, $asset->content;
     $urls = [grep {/\w/} split /\n/, $urls];
   }
   else {
     ($urls, $markup) = $self->_fetch($asset);
-    $store->save($asset, \join("\n", @$urls, __MARKUP__ => $markup), $attrs);
+    $self->store->save($asset, \join("\n", @$urls, __MARKUP__ => $markup), $attrs);
   }
 
   my $renderer = sub {
@@ -41,7 +40,7 @@ sub process {
   };
 
   for my $url (@$urls) {
-    my $asset = $store->asset($url) or die "AssetPack was unable to fetch icons/assets asset $url";
+    my $asset = $self->store->asset($url) or die "AssetPack was unable to fetch icons/assets asset $url";
     $sub_assets{join '.', $asset->name, $asset->format} = $asset;
     $asset->renderer($renderer) if $asset->format =~ m!(manifest|xml|webapp)$!;
     $self->assetpack->{by_checksum}{$asset->checksum} = $asset;

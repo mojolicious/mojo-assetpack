@@ -46,7 +46,6 @@ has _rollupjs => sub {
 sub process {
   my ($self, $assets) = @_;
   my $minify = $self->assetpack->minify;
-  my $store  = $self->assetpack->store;
 
   $assets->each(sub {
     my ($asset, $index) = @_;
@@ -54,7 +53,7 @@ sub process {
     return unless $asset->format eq 'js';
     return unless $asset->path and -r $asset->path;
     return unless $asset->content =~ /\bimport\s.*\bfrom\b/s;
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
 
     local $CWD            = $self->app->home->to_string;
     local $ENV{NODE_ENV}  = $self->app->mode;
@@ -65,7 +64,7 @@ sub process {
 
     $self->_install_node_modules('rollup', @{$self->modules}, @{$self->plugins}) unless $self->{installed}++;
     $self->run([@{$self->_rollupjs}, $asset->path, _module_name($asset->name)], undef, \my $js);
-    $store->save($asset, \$js, $attrs);
+    $self->store->save($asset, \$js, $attrs);
   });
 }
 

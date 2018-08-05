@@ -26,7 +26,6 @@ our %FORMATS = (
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
   my $route = $self->assetpack->route;
   my %related;
 
@@ -50,7 +49,7 @@ sub process {
 
       unless ($related{$url}) {
         diag "Fetch resource $url" if DEBUG;
-        my $related = $store->asset($url) or die "AssetPack was unable to fetch related asset $url";
+        my $related = $self->store->asset($url) or die "AssetPack was unable to fetch related asset $url";
         $self->assetpack->process($related->name, $related);
         my $path = $route->render($related->TO_JSON);
         $path =~ s!^/!!;

@@ -5,19 +5,18 @@ use Mojolicious::Plugin::AssetPack::Util qw(diag load_module DEBUG);
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   return unless $self->assetpack->minify;
   return $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON(minified => 1, key => 'js-min');
     return if $asset->format ne 'js' or $asset->minified;
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
     return if !length(my $js = $asset->content);
     load_module 'JavaScript::Minifier::XS';
     diag 'Minify "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
     $js = JavaScript::Minifier::XS::minify($js);
-    $store->save($asset, \$js, $attrs);
+    $self->store->save($asset, \$js, $attrs);
   });
 }
 

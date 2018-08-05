@@ -3,7 +3,6 @@ use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
 
   return $assets->each(sub {
     my ($asset, $index) = @_;

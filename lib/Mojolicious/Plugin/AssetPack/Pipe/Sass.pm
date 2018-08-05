@@ -30,8 +30,7 @@ sub before_process {
 
 sub process {
   my ($self, $assets) = @_;
-  my $store = $self->assetpack->store;
-  my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
+  my %opts = (include_paths => [undef, @{$self->store->paths}]);
 
   for my $name (keys %{$self->functions}) {
     my $cb = $self->functions->{$name};
@@ -51,7 +50,7 @@ sub process {
     $attrs->{minified} = $self->assetpack->minify;
     $attrs->{key} = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
 
-    return if $store->load($asset, $attrs);
+    return if $self->store->load($asset, $attrs);
     return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
     local $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
     local $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
@@ -64,14 +63,14 @@ sub process {
       $err and Carp::confess(qq/[Pipe::Sass] Could not compile "@{[$asset->url]}" with opts=@{[dumper(\%opts)]}: $err/);
       $css = Mojo::Util::encode('UTF-8', $css);
       $self->_add_source_map_asset($asset, \$css, $stats) if $stats->{source_map_string};
-      $store->save($asset, \$css, $attrs);
+      $self->store->save($asset, \$css, $attrs);
     }
     else {
       my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
       push @args, '--scss'          if $asset->format eq 'scss';
       push @args, qw(-t compressed) if $attrs->{minified};
       $self->run(\@args, \$content, \my $css, undef);
-      $store->save($asset, \$css, $attrs);
+      $self->store->save($asset, \$css, $attrs);
     }
   });
 }
@@ -96,9 +95,8 @@ sub _add_source_map_asset {
 
 sub _checksum {
   my ($self, $ref, $asset, $paths) = @_;
-  my $ext   = $asset->format;
-  my $store = $self->assetpack->store;
-  my @c     = (checksum $$ref);
+  my $ext = $asset->format;
+  my @c   = (checksum $$ref);
 
   while ($$ref =~ /$IMPORT_RE/gs) {
     my $pre      = $1;
