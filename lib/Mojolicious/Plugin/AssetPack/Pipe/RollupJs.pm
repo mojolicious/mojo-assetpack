@@ -49,7 +49,7 @@ sub process {
 
   $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON(minified => $minify, key => 'rollup');
+    my $attrs = $asset->TO_JSON(minified => $minify, key => $minify ? 'min' : 'rollup');
     return unless $asset->format eq 'js';
     return unless $asset->path and -r $asset->path;
     return unless $asset->content =~ /\bimport\s.*\bfrom\b/s;

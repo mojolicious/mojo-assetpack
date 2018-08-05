@@ -16,7 +16,7 @@ $t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)->content_l
 
 $t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)->content_like(qr{footer.*\#aaa.*body.*\#222}s);
 
-$ENV{MOJO_MODE} = 'Test_minify_from_here';
+$ENV{MOJO_MODE} = 'test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
 $t->app->asset->pipe('Sass')->{has_module} = '';    # make sure CSS::Sass is not used
 $t->app->asset->process('app.css' => ('sass.sass', 'sass/sass-1.scss'));

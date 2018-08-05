@@ -12,7 +12,7 @@ $t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)->content_l
 $t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)
   ->content_like(qr{body\W+background:.*\.scss \.nested\W+color:\s+\#9\d9\d9\d}s);
 
-$ENV{MOJO_MODE} = 'Test_minify_from_here';
+$ENV{MOJO_MODE} = 'test_minify_from_here';
 
 note 'Assets from __DATA__';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);

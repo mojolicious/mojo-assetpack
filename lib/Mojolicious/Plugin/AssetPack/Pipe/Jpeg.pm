@@ -15,7 +15,7 @@ sub process {
 
   return $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON(minified => 1, key => sprintf '%s-min', $self->app);
+    my $attrs = $asset->TO_JSON(minified => 1, key => 'min');
     return if $asset->format !~ /^jpe?g$/ or $asset->minified or !$self->assetpack->minify;
     return if $self->store->load($asset, $attrs);
     diag 'Process "%s", with checksum %s.', $asset->url, $asset->checksum if DEBUG;

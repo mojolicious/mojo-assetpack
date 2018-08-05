@@ -9,11 +9,6 @@ use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
 
-use constant CACHE_DIR => 'cache';
-
-# MOJO_ASSETPACK_DB_FILE is used in tests
-use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
-our %DB_KEYS = map { $_ => 1 } qw(checksum format minified rel);
 our %FALLBACK_TEMPLATES = %{data_section(__PACKAGE__)};
 
 for my $name (keys %FALLBACK_TEMPLATES) {
@@ -38,19 +33,6 @@ has _types => sub {
 };
 
 has_ro 'ua';
-
-has_ro _db => sub {
-  my $self = shift;
-  my ($db, $key, $url) = ({});
-  for my $path (reverse map { path($_, DB_FILE) } @{$self->paths}) {
-    open my $DB, '<', $path or next;
-    while (my $line = <$DB>) {
-      ($key, $url) = ($1, $2) if $line =~ /^\[([\w-]+):(.+)\]$/;
-      $db->{$url}{$key}{$1} = $2 if $key and $line =~ /^(\w+)=(.*)/ and $DB_KEYS{$1};
-    }
-  }
-  return $db;
-};
 
 sub asset {
   my ($self, $urls, $paths) = @_;
@@ -87,46 +69,20 @@ sub asset {
 }
 
 sub load {
-  my $self    = shift;
-  my $asset   = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : undef;
-  my $attrs   = shift;
-  my $db_attr = $self->_db_get($attrs) or return undef;
-  my @rel     = $self->_cache_path($attrs);
-  my $loaded  = $self->asset(join '/', @rel);
+  my $self  = shift;
+  my $asset = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : undef;
+  my $attrs = shift;
 
-  return undef unless $loaded;
-  return undef unless $db_attr->{checksum} eq $attrs->{checksum};
-  diag 'Load "%s" = 1', $loaded->path || $loaded->url if DEBUG;
-  local $attrs->{content} = $loaded;
+  my $cached = $self->asset(join '/', $self->_cache_path_parts_from_attrs($attrs));
+  return undef unless $cached;
+
+  $cached->stage('before_process')->checksum($self->_cached_checksum($cached));
+  return undef if $cached->checksum and $cached->checksum ne $asset->checksum;
+
+  diag 'Load "%s" = 1 (%s == %s)', $cached->path, $asset->checksum, $cached->checksum || 'unknown' if DEBUG;
+  local $attrs->{content} = $cached;
   map { defined $attrs->{$_} and $asset->$_($attrs->{$_}) } qw(content format minified) if $asset;
   return $asset;
-}
-
-sub persist {
-  my $self    = shift;
-  my $db      = $self->_db;
-  my $path    = path($self->paths->[0], DB_FILE);
-  my @db_keys = sort keys %DB_KEYS;
-  my $DB;
-
-  unless (open $DB, '>', $path) {
-    diag 'Save "%s" = 0 (%s)', $path, $! if DEBUG;
-    return $self;
-  }
-
-  diag 'Save "%s" = 1', $path if DEBUG;
-  for my $url (sort keys %$db) {
-    for my $key (sort keys %{$db->{$url}}) {
-      Carp::confess("Invalid key '$key'. Need to be [a-z-].") unless $key =~ /^[\w-]+$/;
-      printf $DB "[%s:%s]\n", $key, $url;
-      for my $attr (@db_keys) {
-        next unless defined $db->{$url}{$key}{$attr};
-        printf $DB "%s=%s\n", $attr, $db->{$url}{$key}{$attr};
-      }
-    }
-  }
-
-  return $self;
 }
 
 sub save {
@@ -134,16 +90,15 @@ sub save {
   my $asset = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : $self->asset_class->new;
   my $ref   = shift;
   my $attrs = shift;
-  my $path  = path($self->paths->[0], $self->_cache_path($attrs));
+  my $path  = path($self->paths->[0], $self->_cache_path_parts_from_attrs($attrs));
   my $dir   = $path->dirname;
 
-  # Do not care if this fail. Can fallback to temp files.
-  mkdir $dir if !-d $dir and -w $dir->dirname;
+  mkdir $dir if !-d $dir and -w $dir->dirname;    # Do not care if this fail
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
   if (-w $dir) {
     $asset->path($path->spurt($$ref));
-    $self->_db_set(%$attrs);
+    $self->_cached_checksum($asset => $asset->checksum);
   }
   else {
     $asset->content($$ref);
@@ -198,7 +153,7 @@ sub serve_fallback_for_assets {
 sub _already_downloaded {
   my ($self, $url) = @_;
   my $asset = $self->asset_class->new(url => "$url");
-  my @dirname = $self->_url2path($url, '');
+  my @dirname = $self->_cache_path_parts_from_url($url, '');
   my $basename = pop @dirname;
 
   for my $path (map { path $_, @dirname } @{$self->paths}) {
@@ -214,6 +169,7 @@ sub _already_downloaded {
     }
   }
 
+  # Could not find cached asset
   return undef;
 }
 
@@ -231,53 +187,58 @@ sub _asset_from_helper {
   $asset;
 }
 
-sub _cache_path {
+sub _cache_path_parts { shift; return cache => @_ }
+
+sub _cache_path_parts_from_attrs {
   my ($self, $attrs) = @_;
-  return (
-    CACHE_DIR, sprintf '%s-%s.%s%s',
-    $attrs->{name},
-    checksum($attrs->{url}),
-    $attrs->{minified} ? 'min.' : '',
-    $attrs->{format}
-  );
+  $self->_cache_path_parts(sprintf '%s-%s.%s.%s', $attrs->{name}, checksum($attrs->{url}), @$attrs{qw(key format)});
 }
 
-sub _db_get {
-  my ($self, $attrs) = @_;
-  my $db = $self->_db;
-  return undef unless my $data = $db->{$attrs->{url}};
-  return undef unless $data = $data->{$attrs->{key}};
-  return {%$attrs, %$data};
+sub _cache_path_parts_from_url {
+  my ($self, $url, $format) = @_;
+  my $query = $url->query->to_string;
+  my @path;
+
+  push @path, $url->host if $url->host;
+  push @path, @{$url->path};
+
+  $query =~ s!\W!_!g;
+  $path[-1] .= "_$query.$format" if $query;
+
+  return $self->_cache_path_parts(@path);
 }
 
-sub _db_set {
-  return if $ENV{MOJO_ASSETPACK_LAZY};
-  my ($self, %attrs) = @_;
-  my ($key,  $url)   = @attrs{qw(key url)};
-  $self->_db->{$url}{$key} = {%attrs};
+sub _cached_checksum {
+  my ($self, $asset, $checksum) = @_;
+  my $path = path $asset->path;
+
+  $path = path $path->dirname, sprintf '.%s.meta', $path->basename;
+
+  return $path->spurt("checksum:$checksum\n")   if $checksum;    # Write
+  return +($path->slurp =~ /checksum:(\w+)/)[0] if -r $path;     # Read
+  return '';
 }
 
 sub _download {
   my ($self, $url) = @_;
   my %attrs = (url => $url->clone);
-  my ($asset, $path);
+  my $path;
 
   if ($attrs{url}->host eq 'local') {
     my $base = $self->ua->server->url;
     $url = $url->clone->scheme($base->scheme)->host_port($base->host_port);
   }
-
-  return $asset if $attrs{url}->host ne 'local' and $asset = $self->_already_downloaded($url);
+  elsif (my $asset = $self->_already_downloaded($url)) {
+    return $asset;
+  }
 
   my $tx = $self->ua->get($url);
-  my $h  = $tx->res->headers;
-
   if (my $err = $tx->error) {
-    $self->_log->warn("[AssetPack] Unable to download $url: $err->{message}");
+    $self->ua->server->app->log->warn("[AssetPack] Unable to download $url: $err->{message}");
     return undef;
   }
 
-  my $ct = $h->content_type || '';
+  my $ct = $tx->res->headers->content_type || '';
   if ($ct ne 'text/plain') {
     $ct =~ s!;.*$!!;
     $attrs{format} = $self->_types->detect($ct)->[0];
@@ -286,8 +247,8 @@ sub _download {
   $attrs{format} ||= $tx->req->url->path->[-1] =~ /\.(\w+)$/ ? $1 : 'bin';
 
   if ($attrs{url}->host ne 'local') {
-    $path = path($self->paths->[0], $self->_url2path($attrs{url}, $attrs{format}));
-    $self->_log->info(qq(Caching "$url" to "$path".));
+    $path = path($self->paths->[0], $self->_cache_path_parts_from_url($attrs{url}, $attrs{format}));
+    $self->ua->server->app->log->info(qq(Caching "$url" to "$path".));
     $path->dirname->make_path unless -d $path->dirname;
     $path->spurt($tx->res->body);
   }
@@ -295,22 +256,6 @@ sub _download {
   $attrs{url} = "$attrs{url}";
   return $self->asset_class->new(%attrs, path => $path) if $path;
   return $self->asset_class->new(%attrs, content => $tx->res->body);
-}
-
-sub _log { shift->ua->server->app->log }
-
-sub _url2path {
-  my ($self, $url, $format) = @_;
-  my $query = $url->query->to_string;
-  my @path;
-
-  push @path, $url->host;
-  push @path, @{$url->path};
-
-  $query =~ s!\W!_!g;
-  $path[-1] .= "_$query.$format" if $query;
-
-  return CACHE_DIR, @path;
 }
 
 1;
@@ -455,28 +400,36 @@ delete the files on disk to download a new version.
 
   $bool = $self->load($asset, \%attrs);
 
-Used to load an existing asset from disk. C<%attrs> will override the
-way an asset is looked up. The example below will ignore
-L<minified|Mojolicious::Plugin::AssetPack::Asset/minified> and rather use
-the value from C<%attrs>:
+Used to load content from an existing asset from disk. C<%attrs> will
+override the way an asset is looked up. The cached file will look something
+like this:
 
-  $bool = $self->load($asset, {minified => $bool});
+  cache/${basename}-${checksum}.${key}.${format}
 
-=head2 persist
+Note that the C<checksum> above is the checksum of
+L<Mojolicious::Plugin::AssetPack::Asset/url> and not the value from
+L<Mojolicious::Plugin::AssetPack::Asset/checksum>.
 
-  $self = $self->persist;
+If a cached asset exists then C<load()> will check if there is a checksum
+file stored on disk. If such a file exists, then C<load()> will check if the
+checksum matches the L<Mojolicious::Plugin::AssetPack::Asset/checksum> of
+C<$asset>. If the there is a checksum mismatch, then the cached asset will be
+discarded. Note: The checksum check will not be done, if the checksum file
+does not exist. The checksum files does not need to be tracked in revision
+control. To ignore the files, you can add the line below to C<.gitignore>:
 
-Used to save the internal state of the store to disk.
-
-This method is EXPERIMENTAL, and may change without warning.
+  cache/.*.meta
 
 =head2 save
 
   $bool = $self->save($asset, \$content, \%attrs);
 
-Used to save C<$content> to asset to disk. C<%attrs> are usually the same as
+Used to save C<$content> for C<$asset> to disk. C<%attrs> are usually the same as
 L<Mojolicious::Plugin::AssetPack::Asset/TO_JSON> and used to document metadata
 about the C<$asset> so it can be looked up using L</load>.
+
+A checksum file will also be created if possible. This checksum will later be
+used by L</load> to check if there have been any changes in the input files.
 
 =head2 serve_asset
 

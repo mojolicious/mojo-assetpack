@@ -12,7 +12,7 @@ $t->get_ok('/')->status_is(200)->element_exists(qq(link[href="/asset/d508287fc7/
 
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{aaa});
 
-$ENV{MOJO_MODE} = 'Test_minify_from_here';
+$ENV{MOJO_MODE} = 'test_minify_from_here';
 my @assets       = qw(d/x.css d/y.css d/already-min.css);
 my $url_checksum = checksum 'd/x.css';
 

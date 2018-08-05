@@ -9,7 +9,7 @@ sub process {
   return unless $self->assetpack->minify;
   return $assets->each(sub {
     my ($asset, $index) = @_;
-    my $attrs = $asset->TO_JSON(minified => 1, key => 'js-min');
+    my $attrs = $asset->TO_JSON(minified => 1, key => 'min');
     return if $asset->format ne 'js' or $asset->minified;
     return if $self->store->load($asset, $attrs);
     return if !length(my $js = $asset->content);
