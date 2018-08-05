@@ -15,6 +15,19 @@ $SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
 has functions => sub { +{} };
 has generate_source_map => sub { shift->app->mode eq 'development' ? 1 : 0 };
 
+sub before_process {
+  my ($self, $assets) = @_;
+
+  return $assets->each(sub {
+    my ($asset, $index) = @_;
+    return if $asset->format !~ $FORMAT_RE;
+    my @paths = (_include_path_for_asset($asset), @{$self->store->paths});
+    my $content = $asset->content;
+    $asset->checksum($self->_checksum(\$content, $asset, [grep {$_} @paths]));
+    $asset->content($content) unless $asset->path;
+  });
+}
+
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
@@ -33,29 +46,24 @@ sub process {
 
   return $assets->each(sub {
     my ($asset, $index) = @_;
-
     return if $asset->format !~ $FORMAT_RE;
+
     my ($attrs, $content) = ($asset->TO_JSON, $asset->content);
-    local $self->{checksum_for_file} = {};
-    local $opts{include_paths}[0] = _include_path($asset);
     $attrs->{minified} = $self->assetpack->minify;
     $attrs->{key}      = sprintf 'sass%s', $attrs->{minified} ? '-min' : '';
     $attrs->{format}   = 'css';
-    $attrs->{checksum} = $self->_checksum(\$content, $asset, $opts{include_paths});
 
     return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
     return if $asset->isa('Mojolicious::Plugin::AssetPack::Asset::Null');
-    $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
-    $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
-    diag 'Process "%s" with checksum %s.', $asset->url, $attrs->{checksum} if DEBUG;
+    local $opts{include_paths}[0] = $asset->path ? $asset->path->dirname : undef;
+    local $opts{include_paths} = [grep {$_} @{$opts{include_paths}}];
+    diag 'Process "%s" with checksum %s.', $asset->url, $asset->checksum if DEBUG;
 
     if ($self->{has_module} //= eval { load_module 'CSS::Sass'; 1 }) {
       $opts{output_style} = _output_style($attrs->{minified});
       $content = CSS::Sass::sass2scss($content) if $asset->format eq 'sass';
       my ($css, $err, $stats) = CSS::Sass::sass_compile($content, %opts);
-      if ($err) {
-        die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s', $asset->url, dumper(\%opts), $err;
-      }
+      $err and Carp::confess(qq/[Pipe::Sass] Could not compile "@{[$asset->url]}" with opts=@{[dumper(\%opts)]}: $err/);
       $css = Mojo::Util::encode('UTF-8', $css);
       $self->_add_source_map_asset($asset, \$css, $stats) if $stats->{source_map_string};
       $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
@@ -94,7 +102,6 @@ sub _checksum {
   my $store = $self->assetpack->store;
   my @c     = (checksum $$ref);
 
-SEARCH:
   while ($$ref =~ /$IMPORT_RE/gs) {
     my $pre      = $1;
     my $rel_path = $4;
@@ -113,12 +120,12 @@ SEARCH:
     next if $rel_path =~ m!^https?://! and !$dynamic;
 
     unshift @basename, "_$name.$ext", "$name.$ext" unless $name =~ /\.$ext$/;
-    my $imported = $store->asset([map { join '/', @rel, $_ } @basename], $paths)
-      or die qq([Pipe::Sass] Could not find "$rel_path" file in @$paths);
+    my $imported = $self->store->asset([map { join '/', @rel, $_ } @basename], $paths)
+      or Carp::confess(qq([Pipe::Sass] Could not find "$rel_path" file in [@{[join ', ', @$paths]}].));
 
     if ($imported->path) {
       diag '@import "%s" (%s)', $rel_path, $imported->path if DEBUG >= 2;
-      local $paths->[0] = _include_path($imported);
+      local $paths->[0] = _include_path_for_asset($imported);
       push @c, $self->_checksum(\$imported->content, $imported, $paths);
     }
     else {
@@ -132,7 +139,7 @@ SEARCH:
   return checksum join ':', @c;
 }
 
-sub _include_path {
+sub _include_path_for_asset {
   my $asset = shift;
   return $asset->url if $asset->url =~ m!^https?://!;
   return $asset->path->dirname if $asset->path;
@@ -223,6 +230,10 @@ cycle> for how to reload the page when changes are done inside the browser's
 dev tools.
 
 =head1 METHODS
+
+=head2 before_process
+
+See L<Mojolicious::Plugin::AssetPack::Pipe/before_process>.
 
 =head2 process
 

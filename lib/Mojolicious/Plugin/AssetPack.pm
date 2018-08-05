@@ -132,12 +132,14 @@ sub _process {
     $asset->checksum;
   }
 
-  for my $method (qw(before_process process after_process)) {
+  for my $stage (qw(before_process process after_process)) {
+    $assets->map(stage => $stage);
+
     for my $pipe (@{$self->{pipes}}) {
-      next unless $pipe->can($method);
+      next unless $pipe->can($stage);
       local $pipe->{topic} = $topic;
-      diag '%s->%s("%s")', ref $pipe, $method, $topic if DEBUG;
-      $pipe->$method($assets);
+      diag '%s->%s("%s")', ref $pipe, $stage, $topic if DEBUG;
+      $pipe->$stage($assets);
     }
   }
 

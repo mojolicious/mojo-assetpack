@@ -13,7 +13,8 @@ $TAG_TEMPLATE{js}  = [qw(script src)];
 $TAG_TEMPLATE{$_} = [qw(img src)]    for qw(gif jpg jpeg png svg);
 $TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 
-has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
+has stage => 'init';
+
 has format => sub {
   my $self = shift;
   my $name = $self->url =~ /^https?:/ ? Mojo::URL->new($self->url)->path->[-1] : (split m!(\\|/)!, $self->url)[-1];
@@ -69,6 +70,15 @@ sub asset {
   return $clone;
 }
 
+sub checksum {
+  my $self = shift;
+  return $self->{checksum} ||= Mojolicious::Plugin::AssetPack::Util::checksum($self->content) unless @_;
+  Carp::confess(qq(Cannot change checksum when stage is "@{[$self->stage]}")) unless $self->stage eq 'before_process';
+  $self->{checksum} = shift;
+  diag qq(checksum(@{[$self->url]}) = $self->{checksum}) if DEBUG;
+  return $self;
+}
+
 sub content {
   my $self = shift;
   return $self->_asset->slurp unless @_;
@@ -98,7 +108,7 @@ sub _default_tag_for {
 
 sub FROM_JSON {
   my ($self, $attrs) = @_;
-  $self->$_($attrs->{$_}) for grep { defined $attrs->{$_} } qw(checksum format minified);
+  $self->$_($attrs->{$_}) for grep { defined $attrs->{$_} } qw(format minified);
   $self;
 }
 
@@ -124,13 +134,6 @@ L<Mojolicious::Plugin::AssetPack::Asset> represents an asset.
   my $asset = Mojolicious::Plugin::AssetPack::Asset->new(url => "...");
 
 =head1 ATTRIBUTES
-
-=head2 checksum
-
-  $str = $self->checksum;
-  $self = $self->checksum($str);
-
-The L<checksum|Mojolicious::Plugin::AssetPack::Util/checksum> of L</content>.
 
 =head2 format
 
@@ -160,6 +163,13 @@ Returns the basename of L</url>, without extension.
 
 Can be used to register a custom render method for this asset. This is called
 by L<Mojolicious::Plugin::AssetPack::Store/serve_asset>.
+
+=head2 stage
+
+  $str = $self->stage;
+  $self = $self->stage("process");
+
+Contains the pipe stage name "before_process", "process" or "after_process".
 
 =head2 tag_for
 
@@ -206,6 +216,14 @@ Returns a new L<Mojo::Asset::File> or L<Mojo::Asset::Memory> object, with the
 content or path from this object.
 
 This method is EXPERIMENTAL.
+
+=head2 checksum
+
+  $str = $self->checksum;
+  $self = $self->checksum($str);
+
+The L<checksum|Mojolicious::Plugin::AssetPack::Util/checksum> of L</content>.
+The value can only be changed if L</stage> is "before_process".
 
 =head2 content
 

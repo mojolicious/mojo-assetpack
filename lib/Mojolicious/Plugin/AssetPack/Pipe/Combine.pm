@@ -31,9 +31,15 @@ sub process {
     my $checksum = checksum $combine->map('checksum')->join(':');
     my $content = $combine->map('content')->map(sub { /\n$/ ? $_ : "$_\n" })->join;
     diag 'Combining assets into "%s" with checksum %s.', $self->topic, $checksum if DEBUG;
-    push @$assets,
-      Mojolicious::Plugin::AssetPack::Asset->new(url => $self->topic)->checksum($checksum)->minified(1)
-      ->content($content);
+    push(
+      @$assets,
+      Mojolicious::Plugin::AssetPack::Asset->new(
+        checksum => $checksum,
+        content  => $content,
+        minified => 1,
+        url      => $self->topic,
+      )
+    );
   }
 }
 
