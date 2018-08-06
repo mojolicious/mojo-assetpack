@@ -1,5 +1,12 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+2.06 Not Released
+ - Replaced assetpack.db with .meta files for each topic #137
+ - Removed $asset->FROM_JSON #137
+ - Changed $asset->checksum need to be calculated in the before_process process step #137
+ - Changed $store->load API #137
+ - Changed $store->save API #137
+
 2.05 2018-08-01T14:19:35+0800
  - Fix s///r is not supported in older Perls #136
  - Fix Favicon rendering of manifest and browserconfig
