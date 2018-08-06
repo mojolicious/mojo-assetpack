@@ -69,9 +69,7 @@ sub asset {
 }
 
 sub load {
-  my $self  = shift;
-  my $asset = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : undef;
-  my $attrs = shift;
+  my ($self, $asset, $attrs) = @_;
 
   my $cached = $self->asset(join '/', $self->_cache_path_parts_from_attrs($attrs));
   return undef unless $cached;
@@ -86,22 +84,19 @@ sub load {
 }
 
 sub save {
-  my $self  = shift;
-  my $asset = UNIVERSAL::isa($_[0], 'Mojolicious::Plugin::AssetPack::Asset') ? shift : $self->asset_class->new;
-  my $ref   = shift;
-  my $attrs = shift;
-  my $path  = path($self->paths->[0], $self->_cache_path_parts_from_attrs($attrs));
-  my $dir   = $path->dirname;
+  my ($self, $asset, $content, $attrs) = @_;
+  my $path = path($self->paths->[0], $self->_cache_path_parts_from_attrs($attrs));
+  my $dir = $path->dirname;
 
   mkdir $dir if !-d $dir and -w $dir->dirname;    # Do not care if this fail
   diag 'Save "%s" = %s', $path, -d $dir ? 1 : 0 if DEBUG;
 
   if (-w $dir) {
-    $asset->path($path->spurt($$ref));
+    $asset->path($path->spurt($$content));
     $self->_cached_checksum($asset => $asset->checksum);
   }
   else {
-    $asset->content($$ref);
+    $asset->content($$content);
   }
 
   map { defined $attrs->{$_} and $asset->$_($attrs->{$_}) } qw(format minified);
