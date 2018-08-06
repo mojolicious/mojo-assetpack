@@ -68,6 +68,7 @@ sub register {
   $self->{lazy} ||= $ENV{MOJO_ASSETPACK_LAZY} // $config->{lazy} || 0;
   $app->defaults('assetpack.helper' => $helper);
   $self->ua->server->app($app);
+  $self->ua->inactivity_timeout(60) if $self->ua->inactivity_timeout < 60;    # Favicons takes a long time to generate
   Scalar::Util::weaken($self->ua->server->{app});
 
   if (my $proxy = $config->{proxy} // {}) {

@@ -22,3 +22,4 @@ t/package-lock.json
 node_modules
 .sass-cache
 .test-everything
+.*.meta

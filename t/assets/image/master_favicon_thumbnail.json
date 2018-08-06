@@ -1,0 +1,11 @@
+{
+  "android_chrome": {"manifest": {"orientation": "portrait"}},
+  "desktop_browser": {},
+  "ios": {},
+  "windows": {},
+  "defaults": {
+    "app_name": "My sample app",
+    "background_color": "#456789",
+    "theme_color": "#4972ab"
+  }
+}
