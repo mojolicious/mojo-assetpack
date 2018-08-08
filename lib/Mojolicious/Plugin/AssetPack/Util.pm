@@ -1,41 +1,32 @@
 package Mojolicious::Plugin::AssetPack::Util;
 use Mojo::Base 'Exporter';
 
-use Carp 'confess';
+use Carp ();
 use Mojo::Util;
 
 use constant DEBUG   => $ENV{MOJO_ASSETPACK_DEBUG} || 0;
 use constant TESTING => $ENV{HARNESS_IS_VERBOSE}   || 0;
 
-our @EXPORT  = qw(checksum diag dumper has_ro load_module $CWD DEBUG);
+our @EXPORT  = qw(checksum croak diag dumper has_ro load_module $CWD DEBUG);
 our $SUM_LEN = 10;
 our ($TOPIC, %LOADED);
 
 tie our ($CWD), 'Mojolicious::Plugin::AssetPack::Util::_chdir' or die q(Can't tie $CWD);
 
 sub checksum { substr Mojo::Util::sha1_sum($_[0]), 0, $SUM_LEN }
-
-sub diag {
-  my $f = @_ > 1 ? shift : '%s';
-  my ($i, $pkg) = (0);
-  while ($pkg = caller $i++) { $pkg =~ s!.*::(AssetPack::)Pipe::!$1! and last }
-  $pkg = 'AssetPack' unless $pkg;
-  warn sprintf "%s[%s%s] $f\n", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
-}
-
-sub dumper {
-  Data::Dumper->new([@_])->Indent(0)->Sortkeys(1)->Terse(1)->Useqq(1)->Dump;
-}
+sub croak    { Carp::croak(_msg(@_)) }
+sub diag     { warn _msg(@_) . "\n" }
+sub dumper   { Data::Dumper->new([@_])->Indent(0)->Sortkeys(1)->Terse(1)->Useqq(1)->Dump }
 
 sub has_ro {
   my ($name, $builder) = @_;
   my $caller = caller;
 
-  $builder ||= sub { confess qq("$name" is required in constructor') };
+  $builder ||= sub { Carp::confess(qq("$name" is required in constructor')) };
 
   Mojo::Util::monkey_patch(
     $caller => $name => sub {
-      confess qq("$name" is read-only") if @_ > 1;
+      Carp::confess(qq("$name" is read-only")) if @_ > 1;
       $_[0]->{$name} //= $_[0]->$builder();
     }
   );
@@ -43,9 +34,17 @@ sub has_ro {
 
 sub load_module {
   my $module = shift;
-  confess qq(Invalid module name "$module") if ($module || '') !~ /^\w(?:[\w:']*\w)?$/;
+  Carp::confess(qq(Invalid module name "$module")) if ($module || '') !~ /^\w(?:[\w:']*\w)?$/;
   return $module if $LOADED{$module} ||= eval "require $module; 1";
-  confess qq(Could not load "$module": $@);
+  Carp::confess(qq(Could not load "$module": $@));
+}
+
+sub _msg {
+  my $f = @_ > 1 ? shift : '%s';
+  my ($i, $pkg) = (0);
+  while ($pkg = caller $i++) { $pkg =~ s!.*::(AssetPack::)Pipe::!$1! and last }
+  $pkg = 'AssetPack' unless $pkg;
+  return sprintf "%s[%s%s] $f", TESTING ? "# " : "", $pkg, $TOPIC ? "/$TOPIC" : "", @_;
 }
 
 package Mojolicious::Plugin::AssetPack::Util::_chdir;
@@ -86,6 +85,13 @@ L<Mojolicious::Plugin::AssetPack::Util> holds utility functions.
   $str = checksum $bytes;
 
 Used to calculate checksum of C<$bytes>.
+
+=head2 croak
+
+  croak "some message";
+  croak "some %s", "messsage";
+
+Same as L</diag>, but will call L<Carp/croak> instead of just warning to the screen.
 
 =head2 diag
 
