@@ -56,12 +56,12 @@ sub _find_app {
 }
 
 sub _install_node_modules {
-  my $self = shift;
+  my ($self, @modules) = @_;
 
-  $self->run([$self->_find_app([qw(nodejs node)]), $REQUIRE_JS, @_], \undef, \my $status);
+  $self->run([$self->_find_app([qw(nodejs node)]), $REQUIRE_JS, @modules], \undef, \my $status);
   $status = Mojo::JSON::decode_json($status);
 
-  for my $plugin ('rollup', @{$self->modules}, @{$self->plugins}) {
+  for my $plugin (@modules) {
     next unless $status->{$plugin};
     $self->app->log->warn("Installing $plugin... Please wait. (npm install $plugin)");
     $self->run([npm => install => $plugin]);

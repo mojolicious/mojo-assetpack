@@ -2,16 +2,19 @@ package Mojolicious::Plugin::AssetPack::Pipe::RollupJs;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
 use Mojo::File qw(path tempfile);
+use Mojo::JSON qw(encode_json false true);
 use Mojo::Loader;
 use Mojolicious::Plugin::AssetPack::Util qw(diag $CWD DEBUG);
 
 has external => sub { [] };
-has globals  => sub { [] };
+has globals  => sub { {} };
 has modules  => sub { [] };
 has plugins  => sub {
-  my $self    = shift;
-  my @plugins = qw(rollup-plugin-node-resolve rollup-plugin-commonjs);
-  push @plugins, 'rollup-plugin-uglify' if $self->assetpack->minify;
+  my $self = shift;
+  my @plugins;
+  push @plugins, ['rollup-plugin-node-resolve', 'resolve', {}];
+  push @plugins, ['rollup-plugin-commonjs', 'commonjs', {sourceMap => true}];
+  push @plugins, ['rollup-plugin-terser', '{terser}' => {}] if $self->assetpack->minify;
   return \@plugins;
 };
 
@@ -20,14 +23,19 @@ has _rollupjs => sub {
   my $bin = Mojo::Loader::data_section(__PACKAGE__, 'rollup.js');
   my (@import, @plugins);
 
-  for my $plugin (@{$self->plugins}) {
-    my $func = "plugin_$plugin";
-    $func =~ s!\W!_!g;
-    push @import,  "var $func = require('$plugin');\n";
-    push @plugins, "$func()";
+  for (@{$self->plugins}) {
+    my ($plugin, $import, $args) = @$_;
+    my $func = $import;
+    $func =~ s!\{\s*(.+)\s*\}!$1!;
+    push @import, sprintf "const %s = %s;\n", $import,
+      $import =~ m!^\s*\{! ? qq[require("$plugin")] : qq[_interopDefault(require("$plugin"))];
+    push @plugins, sprintf '%s(%s)', $func, defined $args ? encode_json $args : '';
   }
 
-  $bin =~ s!__PLUGINS__!{join '', @import}!e;
+  $bin =~ s!__EXTERNAL__!{encode_json $self->external}!e;
+  $bin =~ s!__GLOBALS__!{encode_json $self->globals}!e;
+  $bin =~ s!__SOURCEMAP__!{$self->app->mode eq 'development' ? 1 : 0}!e;
+  $bin =~ s!__IMPORT__!{join '', @import}!e;
   $bin =~ s!__PLUGINS__!{join ',', @plugins}!e;
 
   if (DEBUG > 2) {
@@ -49,6 +57,8 @@ sub process {
   my $store  = $self->assetpack->store;
   my $file;
 
+  delete $self->{$_} for qw(_rollupjs _rollupjs_src);
+
   $assets->each(sub {
     my ($asset, $index) = @_;
     my $attrs = $asset->TO_JSON;
@@ -63,11 +73,9 @@ sub process {
     local $CWD            = $self->app->home->to_string;
     local $ENV{NODE_ENV}  = $self->app->mode;
     local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
-    local $ENV{ROLLUP_EXTERNAL} = join ',', @{$self->external};
-    local $ENV{ROLLUP_GLOBALS}  = join ',', @{$self->globals};
-    local $ENV{ROLLUP_SOURCEMAP} = $self->app->mode eq 'development' ? 1 : 0 if 0;    # TODO
 
-    $self->_install_node_modules('rollup', @{$self->modules}, @{$self->plugins}) unless $self->{installed}++;
+    $self->_install_node_modules('rollup', @{$self->modules}, map { $_->[0] } @{$self->plugins})
+      unless $self->{installed}++;
     $self->run([@{$self->_rollupjs}, $asset->path, _module_name($asset->name)], undef, \my $js);
     $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
   });
@@ -106,11 +114,12 @@ Comma-separate list of module IDs to exclude.
 
 =head2 globals
 
-  $array_ref = $self->globals;
-  $self = $self->globals(["vue"]);
+  $hash_ref = $self->globals;
+  $self = $self->globals({vue => "Vue"});
 
-Comma-separate list of `module ID:Global` pairs. Any module IDs defined here
-are added to L</external>.
+See L<https://rollupjs.org/guide/en#output-globals-g-globals>.
+
+Any module IDs defined here are added to L</external>.
 
 =head2 modules
 
@@ -122,7 +131,12 @@ List of NPM modules that the JavaScript application depends on.
 =head2 plugins
 
   $array_ref = $self->plugins;
-  $self = $self->plugins(["rollup-plugin-vue", "rollup-plugin-uglify"]);
+  $self = $self->plugins([
+            [$module_name, $import_statement, $import_function_args],
+            ["rollup-plugin-vue", "VuePlugin"],
+            ["rollup-plugin-node-resolve", "resolve", {}],
+            ["rollup-plugin-commonjs", "commonjs", {sourceMap => false}],
+          ]);
 
 List of NPM modules that should be loaded by Rollup.js.
 
@@ -141,16 +155,20 @@ L<Mojolicious::Plugin::AssetPack>.
 __DATA__
 @@ rollup.js
 #!/usr/bin/env node
-'use strict'
+"use strict"
 
-const globals = process.env.ROLLUP_GLOBALS.split(",");
-const external = process.env.ROLLUP_EXTERNAL.split(",");
-const rollup = require('rollup');
+const globals = __GLOBALS__;
+const external = __EXTERNAL__;
+const rollup = require("rollup");
 const stdout = process.stdout;
 
-__PLUGINS__
+function _interopDefault(i) {
+  return i && typeof i === "object" && "default" in i ? i["default"] : i;
+}
 
-globals.forEach(function(g) { external.push(g.split(":")[0]) });
+__IMPORT__
+
+Object.keys(globals).forEach(function(g) { external.push(g) });
 
 const inputOptions = {
   input: process.argv[2],
@@ -174,7 +192,7 @@ async function build() {
   const bundle = await rollup.rollup(inputOptions);
   const { code, map } = await bundle.generate(outputOptions);
   stdout.write(code);
-  if (process.env.ROLLUP_SOURCEMAP) stdout.write("\n//# sourceMappingURL=" + map + "\n");
+  if (__SOURCEMAP__) stdout.write("\n//# sourceMappingURL=" + map + "\n");
 }
 
 build();
