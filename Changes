@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+2.06 Not Released
+ - Fix deprecated coffee-script@1.12.7: CoffeeScript on NPM has moved to coffeescript
+
 2.05 2018-08-01T14:19:35+0800
  - Fix s///r is not supported in older Perls #136
  - Fix Favicon rendering of manifest and browserconfig
