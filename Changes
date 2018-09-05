@@ -1,5 +1,8 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
+2.07 Not Released
+  - Add RollupJs->add_global();
+
 2.06 2018-09-02T22:25:13+0200
  - Fix deprecated coffee-script@1.12.7: CoffeeScript on NPM has moved to coffeescript
  - Fix RollupJs pipe compatible with new rollupjs #138

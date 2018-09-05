@@ -51,6 +51,11 @@ has _rollupjs => sub {
   return [$self->_find_app([qw(nodejs node)]), $self->{_rollupjs_src}->realpath];
 };
 
+sub add_global {
+  $_[0]->globals->{$_[1]} = $_[2];
+  $_[0];
+}
+
 sub process {
   my ($self, $assets) = @_;
   my $minify = $self->assetpack->minify;
@@ -141,6 +146,13 @@ List of NPM modules that the JavaScript application depends on.
 List of NPM modules that should be loaded by Rollup.js.
 
 =head1 METHODS
+
+=head2 add_global
+
+  $self = $self->add_global($key => $value);
+  $self = $self->add_global(qw(vue Vue));
+
+Used to add a key/value pair to L</globals>.
 
 =head2 process
 

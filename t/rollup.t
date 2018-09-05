@@ -17,7 +17,7 @@ $t->get_ok($t->tx->res->dom->at('script')->{src})->status_is(200)->content_like(
 
 # With modules and plugins
 $t = t::Helper->t(pipes => [qw(RollupJs Combine)]);
-$t->app->asset->pipe('RollupJs')->globals->{vue} = 'Vue';
+$t->app->asset->pipe('RollupJs')->add_global(vue => 'Vue');
 push @{$t->app->asset->pipe('RollupJs')->modules}, 'vue-template-compiler';
 push @{$t->app->asset->pipe('RollupJs')->plugins}, ['rollup-plugin-vue', 'vue'];
 $t->app->asset->process('app.js' => 'js/vue-app.js');

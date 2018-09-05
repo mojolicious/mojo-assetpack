@@ -2,13 +2,15 @@
 die "Run $0 from ./mojolicious-plugin-assetpack/ root" unless -d 't/assets';
 use lib 'lib';
 use Mojolicious::Lite;
+use Mojo::File 'path';
 
 plugin 'AssetPack' => {pipes => ['RollupJs']};
-app->asset->store->paths(['t/assets']);
+app->asset->store->paths([path('t/assets')->to_abs]);
 
 # Add Vuejs as dependencies
-push @{app->asset->pipe('RollupJs')->modules}, 'vue';
-unshift @{app->asset->pipe('RollupJs')->plugins}, 'rollup-plugin-vue';
+app->asset->pipe('RollupJs')->add_global(vue => 'Vue');
+push @{app->asset->pipe('RollupJs')->modules}, 'vue-template-compiler';
+push @{app->asset->pipe('RollupJs')->plugins}, ['rollup-plugin-vue', 'vue'];
 
 # Process js/vue-app.js
 app->asset->process('app.js' => 'js/vue-app.js');
