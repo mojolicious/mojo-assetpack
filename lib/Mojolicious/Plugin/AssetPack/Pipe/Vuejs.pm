@@ -1,6 +1,8 @@
 package Mojolicious::Plugin::AssetPack::Pipe::Vuejs;
 use Mojo::Base 'Mojolicious::Plugin::AssetPack::Pipe';
 
+use Mojo::Util 'html_unescape';
+
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
