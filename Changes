@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-2.07 Not Released
+2.07 2019-05-04T23:54:32+0700
   - Add RollupJs->add_global();
   - Add note about Mojolicious::Plugin::AssetPack::Webpack
 
