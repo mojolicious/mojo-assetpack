@@ -218,7 +218,7 @@ sub _serve {
 
 sub _static_asset {
   my ($self, $topic) = @_;
-  my $asset = $self->store->asset($topic) or die qq(No assets registered by topic "$topic".);
+  my $asset  = $self->store->asset($topic) or die qq(No assets registered by topic "$topic".);
   my $assets = Mojo::Collection->new($asset);
   $self->{by_checksum}{$_->checksum} = $_ for @$assets;
   return $assets;
@@ -273,6 +273,14 @@ L<Mojolicious::Plugin::AssetPack> is L<Mojolicious plugin|Mojolicious::Plugin>
 for processing static assets. The idea is that JavaScript and CSS files should
 be served as one minified file to save bandwidth and roundtrip time to the
 server.
+
+Note that the main author have moved on to using
+L<Mojolicious::Plugin::AssetPack::Webpack> instead, which uses
+L<https://webpack.js.org/> under the hood, but is just as convenient to use as
+this plugin. It is very easy to try out
+L<Mojolicious::Plugin::AssetPack::Webpack>, since it will detect your AssetPack
+based project automatically, and migrate them over to webpack once the plugin
+is loaded.
 
 There are many external tools for doing this, but integrating them with
 L<Mojolicious> can be a struggle: You want to serve the source files directly
@@ -441,6 +449,8 @@ See L<Mojo::UserAgent::Proxy/detect> for more information.
 =back
 
 =head1 SEE ALSO
+
+L<Mojolicious::Plugin::AssetPack::Webpack>.
 
 L</GUIDES>,
 L<Mojolicious::Plugin::AssetPack::Asset>,
