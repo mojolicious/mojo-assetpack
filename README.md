@@ -4,7 +4,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 # VERSION
 
-2.07
+2.08
 
 # SYNOPSIS
 
@@ -45,10 +45,10 @@ be served as one minified file to save bandwidth and roundtrip time to the
 server.
 
 Note that the main author have moved on to using
-[Mojolicious::Plugin::AssetPack::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Webpack) instead, which uses
+[Mojolicious::Plugin::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::Webpack) instead, which uses
 [https://webpack.js.org/](https://webpack.js.org/) under the hood, but is just as convenient to use as
 this plugin. It is very easy to try out
-[Mojolicious::Plugin::AssetPack::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Webpack), since it will detect your AssetPack
+[Mojolicious::Plugin::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::Webpack), since it will detect your AssetPack
 based project automatically, and migrate them over to webpack once the plugin
 is loaded.
 
@@ -212,7 +212,7 @@ Used to register the plugin in the application. `%config` can contain:
 
 # SEE ALSO
 
-[Mojolicious::Plugin::AssetPack::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Webpack).
+[Mojolicious::Plugin::Webpack](https://metacpan.org/pod/Mojolicious::Plugin::Webpack).
 
 ["GUIDES"](#guides),
 [Mojolicious::Plugin::AssetPack::Asset](https://metacpan.org/pod/Mojolicious::Plugin::AssetPack::Asset),

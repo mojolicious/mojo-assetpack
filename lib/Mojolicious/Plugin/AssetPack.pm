@@ -6,7 +6,7 @@ use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '2.07';
+our $VERSION = '2.08';
 
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
@@ -234,7 +234,7 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 VERSION
 
-2.07
+2.08
 
 =head1 SYNOPSIS
 
@@ -275,10 +275,10 @@ be served as one minified file to save bandwidth and roundtrip time to the
 server.
 
 Note that the main author have moved on to using
-L<Mojolicious::Plugin::AssetPack::Webpack> instead, which uses
+L<Mojolicious::Plugin::Webpack> instead, which uses
 L<https://webpack.js.org/> under the hood, but is just as convenient to use as
 this plugin. It is very easy to try out
-L<Mojolicious::Plugin::AssetPack::Webpack>, since it will detect your AssetPack
+L<Mojolicious::Plugin::Webpack>, since it will detect your AssetPack
 based project automatically, and migrate them over to webpack once the plugin
 is loaded.
 
@@ -450,7 +450,7 @@ See L<Mojo::UserAgent::Proxy/detect> for more information.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Plugin::AssetPack::Webpack>.
+L<Mojolicious::Plugin::Webpack>.
 
 L</GUIDES>,
 L<Mojolicious::Plugin::AssetPack::Asset>,
