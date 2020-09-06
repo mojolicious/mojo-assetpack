@@ -1,7 +1,7 @@
 package Mojolicious::Plugin::AssetPack;
 use Mojo::Base 'Mojolicious::Plugin';
 
-use Mojo::Util qw(deprecated trim);
+use Mojo::Util qw(deprecated trim xml_escape);
 use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
@@ -33,7 +33,7 @@ sub pipe {
 sub process {
   my ($self, $topic, @input) = @_;
 
-  $self->route unless $self->{route_added}++;
+  $self->route                            unless $self->{route_added}++;
   return $self->_process_from_def($topic) unless @input;
 
   # TODO: The idea with blessed($_) is that maybe the user can pass inn
@@ -187,12 +187,12 @@ sub _render_tags {
   $self->_process($topic => $self->{input}{$topic}) if $self->{lazy};
 
   my $assets = $self->{by_topic}{$topic} ||= $self->_static_asset($topic);
-  my %args = (base_url => $route->pattern->defaults->{base_url} || '', topic => $topic);
+  my %args   = (base_url => $route->pattern->defaults->{base_url} || '', topic => $topic);
   $args{base_url} =~ s!/+$!!;
 
   return Mojo::ByteStream->new(
     join "\n",
-    map { $_->tag_for->($_, $c, \%args, @attrs) }
+    map    { $_->tag_for->($_, $c, \%args, @attrs) }
       grep { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') } @$assets
   );
 }
@@ -213,7 +213,7 @@ sub _serve {
     return $self->store->serve_fallback_for_assets($c, $topic, $assets);
   }
 
-  $c->render(text => "// No such asset '$topic'\n", status => 404);
+  $c->render(text => sprintf("// No such asset '%s'\n", xml_escape $topic), status => 404);
 }
 
 sub _static_asset {

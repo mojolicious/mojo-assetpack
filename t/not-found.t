@@ -25,6 +25,10 @@ $t->get_ok('/asset/aaaaaaaaaa/foo.css')->status_is(404)->content_is("// No such 
 $t->get_ok('/asset/aaaaaaaaaa/something.png')->status_is(302)->header_like(Location => qr{^/asset/\w+/something.png$});
 $t->get_ok($t->tx->res->headers->location)->status_is(200);
 
+# XSS attack
+$t->get_ok('/asset/aaaaaaaaaa/foo.xml%3Cscript%3Ealert(\'ouch\')%3C/script%3E')->status_is(404)
+  ->content_is("// No such asset 'foo.xml&lt;script&gt;alert(&#39;ouch&#39;)&lt;/script&gt;'\n");
+
 done_testing;
 
 __DATA__
