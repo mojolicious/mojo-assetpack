@@ -14,7 +14,7 @@ $TAG_TEMPLATE{$_} = [qw(img src)]    for qw(gif jpg jpeg png svg);
 $TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
-has format => sub {
+has format   => sub {
   my $self = shift;
   my $name = $self->url =~ /^https?:/ ? Mojo::URL->new($self->url)->path->[-1] : (split m!(\\|/)!, $self->url)[-1];
 
@@ -27,7 +27,7 @@ has tag_for  => sub { \&_default_tag_for };
 
 has _asset => sub {
   my $self = shift;
-  return $self->content(delete $self->{content})->_asset if $self->{content};
+  return $self->content(delete $self->{content})->_asset      if $self->{content};
   return Mojo::Asset::File->new(path => delete $self->{path}) if $self->{path};
   return Mojo::Asset::Memory->new;
 };
@@ -40,7 +40,7 @@ has_ro name => sub {
     my $url = Mojo::URL->new($self->url);
     my $qs  = $url->query->to_string;
     $name = $url->path->[-1];
-    $qs =~ s!\W!_!g;
+    $qs   =~ s!\W!_!g;
     $name =~ s!\.\w+$!!;
     $name .= "_$qs" if $qs;
   }
@@ -80,7 +80,7 @@ sub content {
 sub path {
   my $self = shift;
   return $self->_asset(Mojo::Asset::File->new(path => $_[0])) if $_[0];
-  return Mojo::File->new($self->_asset->path) if $self->_asset->isa('Mojo::Asset::File');
+  return Mojo::File->new($self->_asset->path)                 if $self->_asset->isa('Mojo::Asset::File');
   return undef;
 }
 
@@ -90,7 +90,7 @@ sub url_for { $_[1]->url_for(assetpack => $_[0]->TO_JSON); }
 
 sub _default_tag_for {
   my ($asset, $c, $args, @attrs) = @_;
-  my $url = $asset->url_for($c);
+  my $url      = $asset->url_for($c);
   my @template = @{$TAG_TEMPLATE{$asset->format} || $TAG_TEMPLATE{css}};
   splice @template, 1, 0, type => $c->app->types->type($asset->format) if $template[0] eq 'source';
   return $c->tag(@template, Mojo::URL->new("$args->{base_url}$url"), @attrs);
@@ -178,9 +178,7 @@ The L<Mojolicious::Controller> object used for this request.
 =item * C<%args>
 
 A hash-ref with "base_url" and
-L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic>. See
-L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
-of example "base_url".
+L<topic|Mojolicious::Plugin::AssetPack::Pipe/topic>.
 
 =item * C<@attrs>
 

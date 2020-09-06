@@ -12,13 +12,13 @@ my $SOURCE_MAP_PLACEHOLDER = sprintf '__%s__', __PACKAGE__;
 
 $SOURCE_MAP_PLACEHOLDER =~ s!::!_!g;
 
-has functions => sub { +{} };
+has functions           => sub { +{} };
 has generate_source_map => sub { shift->app->mode eq 'development' ? 1 : 0 };
 
 sub process {
   my ($self, $assets) = @_;
   my $store = $self->assetpack->store;
-  my %opts = (include_paths => [undef, @{$self->assetpack->store->paths}]);
+  my %opts  = (include_paths => [undef, @{$self->assetpack->store->paths}]);
   my $file;
 
   for my $name (keys %{$self->functions}) {
@@ -27,7 +27,7 @@ sub process {
   }
 
   if ($self->generate_source_map) {
-    $opts{source_map_file} = $SOURCE_MAP_PLACEHOLDER;
+    $opts{source_map_file}      = $SOURCE_MAP_PLACEHOLDER;
     $opts{source_map_file_urls} = $self->app->mode eq 'development' ? 1 : 0;
   }
 
@@ -72,7 +72,7 @@ sub process {
 
 sub _add_source_map_asset {
   my ($self, $asset, $css, $stats) = @_;
-  my $data = decode_json $stats->{source_map_string};
+  my $data       = decode_json $stats->{source_map_string};
   my $source_map = Mojolicious::Plugin::AssetPack::Asset->new(url => sprintf('%s.css.map', $asset->name));
 
   # override "stdin" with real file
@@ -134,7 +134,7 @@ SEARCH:
 
 sub _include_path {
   my $asset = shift;
-  return $asset->url if $asset->url =~ m!^https?://!;
+  return $asset->url           if $asset->url =~ m!^https?://!;
   return $asset->path->dirname if $asset->path;
   return '';
 }
@@ -217,10 +217,6 @@ L<Mojolicious/mode> is "development".
 See also L<http://thesassway.com/intermediate/using-source-maps-with-sass> and
 L<https://robots.thoughtbot.com/sass-source-maps-chrome-magic> for more
 information about the usefulness.
-
-See also Mojolicious::Plugin::AssetPack::Guides::Developing/Faster development
-cycle> for how to reload the page when changes are done inside the browser's
-dev tools.
 
 =head1 METHODS
 

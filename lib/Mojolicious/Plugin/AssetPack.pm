@@ -269,57 +269,12 @@ Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascrip
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack> is L<Mojolicious plugin|Mojolicious::Plugin>
-for processing static assets. The idea is that JavaScript and CSS files should
-be served as one minified file to save bandwidth and roundtrip time to the
-server.
-
-Note that the main author have moved on to using
-L<Mojolicious::Plugin::Webpack> instead, which uses
-L<https://webpack.js.org/> under the hood, but is just as convenient to use as
-this plugin. It is very easy to try out
-L<Mojolicious::Plugin::Webpack>, since it will detect your AssetPack
-based project automatically, and migrate them over to webpack once the plugin
-is loaded.
-
-There are many external tools for doing this, but integrating them with
-L<Mojolicious> can be a struggle: You want to serve the source files directly
-while developing, but a minified version in production. This assetpack plugin
-will handle all of that automatically for you.
-
-Your application creates and refers to an asset by its topic (virtual asset
-name).  The process of building actual assets from their components is
-delegated to "pipe objects". Please see
-L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete list.
-
-=head1 BREAKING CHANGES
-
-=head2 assetpack.db (v1.47)
-
-C<assetpack.db> no longer track files downloaded from the internet. It will
-mostly "just work", but in some cases version 1.47 might download assets that
-have already been downloaded with AssetPack version 1.46 and earlier.
-
-The goal is to remove C<assetpack.db> completely.
-
-=head1 GUIDES
-
-=over 2
-
-=item * L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>
-
-The tutorial will give an introduction to how AssetPack can be used.
-
-=item * L<Mojolicious::Plugin::AssetPack::Guides::Developing>
-
-The "developing" guide will give insight on how to do effective development with
-AssetPack and more details about the internals in this plugin.
-
-=item * L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>
-
-The cookbook has various receipes on how to cook with AssetPack.
-
-=back
+The main author have moved on to using L<Mojolicious::Plugin::Webpack> instead,
+which uses L<https://webpack.js.org/> under the hood, but is just as convenient
+to use as this plugin. It is very easy to try out
+L<Mojolicious::Plugin::Webpack>, since it will detect your AssetPack based
+project automatically, and migrate them over to webpack once the plugin is
+loaded.
 
 =head1 HELPERS
 
@@ -336,8 +291,6 @@ access the L<Mojolicious::Plugin::AssetPack> instance or as a tag helper.
 The helper name "asset" can be customized by specifying "helper" when
 L<registering|/register> the plugin.
 
-See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial> for more details.
-
 =head1 ATTRIBUTES
 
 =head2 minify
@@ -347,9 +300,6 @@ See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial> for more details.
 
 Set this to true to combine and minify the assets. Defaults to false if
 L<Mojolicious/mode> is "development" and true otherwise.
-
-See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Application mode>
-for more details.
 
 =head2 route
 
@@ -363,9 +313,6 @@ to serve the asset.
 
 The default route will be built and added to the L<application|Mojolicious>
 when L</process> is called the first time.
-
-See L<Mojolicious::Plugin::AssetPack::Guides::Cookbook/ASSETS FROM CUSTOM DOMAIN>
-for an example on how to customize this route.
 
 =head2 store
 
@@ -401,9 +348,7 @@ Will return a registered pipe by C<$name> or C<undef> if none could be found.
   $self = $self->process($definition_file);
 
 Used to process assets. A C<$definition_file> can be used to define C<$topic>
-and C<@assets> in a separate file. See
-L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Process assets> for more
-details.
+and C<@assets> in a separate file.
 
 C<$definition_file> defaults to "assetpack.def".
 
@@ -434,9 +379,6 @@ needed. Example:
 
   $app->plugin(AssetPack => {pipes => [qw(Sass Css Combine)]);
 
-See L<Mojolicious::Plugin::AssetPack::Guides::Tutorial/Pipes> for a complete
-list of available pipes.
-
 =item * proxy
 
 A hash of proxy settings. Set this to C<0> to disable proxy detection.
@@ -452,14 +394,9 @@ See L<Mojo::UserAgent::Proxy/detect> for more information.
 
 L<Mojolicious::Plugin::Webpack>.
 
-L</GUIDES>,
-L<Mojolicious::Plugin::AssetPack::Asset>,
-L<Mojolicious::Plugin::AssetPack::Pipe> and
-L<Mojolicious::Plugin::AssetPack::Store>.
-
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014, Jan Henning Thorsen
+Copyright (C) 2020, Jan Henning Thorsen
 
 This program is free software, you can redistribute it and/or modify it under
 the terms of the Artistic License version 2.0.
