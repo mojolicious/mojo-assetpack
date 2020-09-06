@@ -8,6 +8,7 @@ my %WriteMakefileArgs = (
   ABSTRACT_FROM  => 'lib/Mojolicious/Plugin/AssetPack.pm',
   VERSION_FROM   => 'lib/Mojolicious/Plugin/AssetPack.pm',
   EXE_FILES      => [qw()],
+  OBJECT         => '',
   BUILD_REQUIRES => {},
   TEST_REQUIRES  => {'Test::More' => '0.88'},
   PREREQ_PM      => {'File::Which' => '1.21', 'IPC::Run3' => '0.048', 'Mojolicious' => '7.17'},

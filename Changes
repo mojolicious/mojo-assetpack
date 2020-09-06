@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojolicious-Plugin-AssetPack
 
-2.09 Not Released
+2.09 2020-09-07T08:56:50+0900
  - Prevent JavaScript from runnning in 404 assets #140
  - Slimmed down the bundled documentation
 
