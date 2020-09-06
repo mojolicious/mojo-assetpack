@@ -232,49 +232,27 @@ sub _static_asset {
 
 Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
 
-=head1 VERSION
-
-2.08
-
-=head1 SYNOPSIS
-
-=head2 Application
-
-  use Mojolicious::Lite;
-
-  # Load plugin and pipes in the right order
-  plugin AssetPack => {
-    pipes => [qw(Less Sass Css CoffeeScript Riotjs JavaScript Combine)]
-  };
-
-  # define asset
-  app->asset->process(
-    # virtual name of the asset
-    "app.css" => (
-
-      # source files used to create the asset
-      "sass/bar.scss",
-      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss",
-    )
-  );
-
-=head2 Template
-
-  <html>
-    <head>
-      %= asset "app.css"
-    </head>
-    <body><%= content %></body>
-  </html>
-
 =head1 DESCRIPTION
 
-The main author have moved on to using L<Mojolicious::Plugin::Webpack> instead,
-which uses L<https://webpack.js.org/> under the hood, but is just as convenient
-to use as this plugin. It is very easy to try out
-L<Mojolicious::Plugin::Webpack>, since it will detect your AssetPack based
-project automatically, and migrate them over to webpack once the plugin is
-loaded.
+L<Mojolicious::Plugin::AssetPack> has a very limited feature set, especially
+when it comes to processing JavaScript. It is recommended that you switch to
+L<Mojolicious::Plugin::Webpack> if you want to write modern JavaScript code.
+
+=head2 Existing user?
+
+It is I<very> simple to migrate from L<Mojolicious::Plugin::AssetPack> to
+L<Mojolicious::Plugin::Webpack>. Just check out the one line change in
+L<Mojolicious::Plugin::Webpack/MIGRATING-FROM-ASSETPACK>.
+
+=head2 Don't want to switch?
+
+Your existing code will probably continue to work for a long time, but it will
+get more and more difficult to write I<new> working JavaScript with
+L<Mojolicious::Plugin::AssetPack> as time goes by.
+
+=head2 New user?
+
+Look no further. Just jump over to L<Mojolicious::Plugin::Webpack>.
 
 =head1 HELPERS
 
