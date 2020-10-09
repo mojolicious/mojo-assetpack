@@ -335,8 +335,7 @@ C<$definition_file> defaults to "assetpack.def".
   $collection = $self->processed($topic);
 
 Can be used to retrieve a L<Mojo::Collection> object, with zero or more
-L<Mojolicious::Plugin::AssetPack::Asset> objects. Returns undef if C<$topic> is
-not defined with L</process>.
+L<Mojolicious::Plugin::AssetPack::Asset> objects.
 
 =head2 register
 
