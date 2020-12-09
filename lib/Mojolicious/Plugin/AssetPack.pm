@@ -11,7 +11,7 @@ our $VERSION = '2.09';
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
 has route => sub {
-  shift->_app->routes->route('/asset/:checksum/*name')->via(qw(HEAD GET))->name('assetpack')->to(cb => \&_serve);
+  shift->_app->routes->any([qw(HEAD GET)] => '/asset/:checksum/*name')->name('assetpack')->to(cb => \&_serve);
 };
 
 has store => sub {
