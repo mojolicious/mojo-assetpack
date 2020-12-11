@@ -105,8 +105,7 @@ and `@assets` in a separate file.
     $collection = $self->processed($topic);
 
 Can be used to retrieve a [Mojo::Collection](https://metacpan.org/pod/Mojo%3A%3ACollection) object, with zero or more
-[Mojolicious::Plugin::AssetPack::Asset](https://metacpan.org/pod/Mojolicious%3A%3APlugin%3A%3AAssetPack%3A%3AAsset) objects. Returns undef if `$topic` is
-not defined with ["process"](#process).
+[Mojolicious::Plugin::AssetPack::Asset](https://metacpan.org/pod/Mojolicious%3A%3APlugin%3A%3AAssetPack%3A%3AAsset) objects.
 
 ## register
 

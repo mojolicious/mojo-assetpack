@@ -6,7 +6,7 @@ use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '2.09';
+our $VERSION = '2.10';
 
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
