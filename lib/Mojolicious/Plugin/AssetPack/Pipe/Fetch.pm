@@ -41,7 +41,7 @@ sub process {
 
     while ($content =~ /$re/g) {
       my @matches = ($2, $1);
-      my $url = $matches[0];
+      my $url     = $matches[0];
 
       next if $url =~ /^(?:\#|data:)/;    # Avoid "data:image/svg+xml..." and "#foo"
 

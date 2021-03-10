@@ -76,7 +76,7 @@ sub _add_source_map_asset {
   my $source_map = Mojolicious::Plugin::AssetPack::Asset->new(url => sprintf('%s.css.map', $asset->name));
 
   # override "stdin" with real file
-  $data->{file} = sprintf 'file://%s', $asset->path if $asset->path;
+  $data->{file}       = sprintf 'file://%s', $asset->path if $asset->path;
   $data->{sources}[0] = $data->{file};
   $source_map->content(encode_json $data);
 

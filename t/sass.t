@@ -23,7 +23,7 @@ $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_like(q
 
 if (-e '.test-everything') {
   my @content = split /[\r?\n]/, $t->tx->res->text;
-  is $content[0], '.sass{color:#aaa}', 'line1';
+  is $content[0], '.sass{color:#aaa}',                                                  'line1';
   is $content[1], 'body{background:#fff}.scss{color:#aaa}.scss .nested{color:#939393}', 'line2';
 }
 

@@ -14,14 +14,14 @@ sub process {
 
     if ($asset->content =~ m!<script[^>]*>(.+)</script>!s) {
       $script = $1;
-      $vue = "$1$vue" if $script =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
+      $vue    = "$1$vue" if $script =~ s!^(.*)\s?module\.exports\s*=\s*\{!!s;
       $script =~ s!\s*\}\s*;?\s*$!!s;
       $vue .= $script;
     }
 
     if ($asset->content =~ m!<template[^>]*>(.+)</template>!s) {
       $template = $1;
-      $template =~ s!"!\\"!g;    # escape all double quotes
+      $template =~ s!"!\\"!g;       # escape all double quotes
       $template =~ s!^\s*!!s;
       $template =~ s!\r?\n!\\n!g;
       $vue .= qq',\n' if $script;

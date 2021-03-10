@@ -79,8 +79,8 @@ sub _build_design {
       picture_aspect         => 'circle',
       manifest               => {app_description => '', app_name => $name, developer_name => '', developer_url => '',}
     },
-    ios => {background_color => $bg_color, margin => '4', picture_aspect => 'background_and_margin',},
-    safari_pinned_tab => {picture_aspect => 'black_and_white', threshold => 60, theme_color => $theme_color,},
+    ios               => {background_color => $bg_color, margin => '4', picture_aspect => 'background_and_margin',},
+    safari_pinned_tab => {picture_aspect   => 'black_and_white', threshold => 60, theme_color => $theme_color,},
     windows           => {
       background_color => $theme_color,
       picture_aspect   => "white_silhouette",
@@ -118,7 +118,7 @@ sub _request {
       api_key        => $self->api_key,
       favicon_design => $self->design,
       settings       => $self->settings,
-      files_location => {type => 'path', path => '/'},
+      files_location => {type    => 'path',                                  path => '/'},
       master_picture => {content => Mojo::Util::b64_encode($asset->content), type => 'inline'}
     }
   };

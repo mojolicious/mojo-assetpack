@@ -12,15 +12,15 @@ has modules  => sub { [] };
 has plugins  => sub {
   my $self = shift;
   my @plugins;
-  push @plugins, ['rollup-plugin-node-resolve', 'resolve', {}];
-  push @plugins, ['rollup-plugin-commonjs', 'commonjs', {sourceMap => true}];
-  push @plugins, ['rollup-plugin-terser', '{terser}' => {}] if $self->assetpack->minify;
+  push @plugins, ['rollup-plugin-node-resolve', 'resolve',  {}];
+  push @plugins, ['rollup-plugin-commonjs',     'commonjs', {sourceMap => true}];
+  push @plugins, ['rollup-plugin-terser',       '{terser}' => {}] if $self->assetpack->minify;
   return \@plugins;
 };
 
 has _rollupjs => sub {
   my $self = shift;
-  my $bin = Mojo::Loader::data_section(__PACKAGE__, 'rollup.js');
+  my $bin  = Mojo::Loader::data_section(__PACKAGE__, 'rollup.js');
   my (@import, @plugins);
 
   for (@{$self->plugins}) {

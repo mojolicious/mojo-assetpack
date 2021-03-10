@@ -52,7 +52,7 @@ package Mojolicious::Plugin::AssetPack::Util::_chdir;
 use Cwd ();
 use File::Spec;
 sub TIESCALAR { bless [Cwd::getcwd], $_[0] }
-sub FETCH { $_[0]->[0] }
+sub FETCH     { $_[0]->[0] }
 
 sub STORE {
   defined $_[1] or return;

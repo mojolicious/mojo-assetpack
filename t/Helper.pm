@@ -10,7 +10,7 @@ use Test::Mojo;
 use Test::More ();
 
 $ENV{MOJO_LOG_LEVEL} = $ENV{HARNESS_IS_VERBOSE} ? 'debug' : 'error';
-$ENV{TEST_HOME} = path(__FILE__)->to_abs->dirname;
+$ENV{TEST_HOME}      = path(__FILE__)->to_abs->dirname;
 
 END { cleanup() }
 

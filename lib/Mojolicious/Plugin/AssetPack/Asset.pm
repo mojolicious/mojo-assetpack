@@ -10,8 +10,8 @@ my %TAG_TEMPLATE;
 $TAG_TEMPLATE{css} = [qw(link rel stylesheet href)];
 $TAG_TEMPLATE{ico} = [qw(link rel icon href)];
 $TAG_TEMPLATE{js}  = [qw(script src)];
-$TAG_TEMPLATE{$_} = [qw(img src)]    for qw(gif jpg jpeg png svg);
-$TAG_TEMPLATE{$_} = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
+$TAG_TEMPLATE{$_}  = [qw(img src)]    for qw(gif jpg jpeg png svg);
+$TAG_TEMPLATE{$_}  = [qw(source src)] for qw(mp3 mp4 ogg ogv webm);
 
 has checksum => sub { Mojolicious::Plugin::AssetPack::Util::checksum(shift->content) };
 has format   => sub {

@@ -20,8 +20,8 @@ sub process {
     return $asset->content($file)->FROM_JSON($attrs) if $file = $store->load($attrs);
     local $CWD = $self->app->home->to_string;
     local $ENV{NODE_PATH} = $self->app->home->rel_file('node_modules');
-    $self->run([qw(riot --version)], undef, \undef) unless $self->{installed}++;
-    $self->run($self->_riotjs, \$asset->content, \my $js);
+    $self->run([qw(riot --version)], undef,            \undef) unless $self->{installed}++;
+    $self->run($self->_riotjs,       \$asset->content, \my $js);
     $asset->content($store->save(\$js, $attrs))->FROM_JSON($attrs);
   });
 }

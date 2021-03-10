@@ -13,7 +13,7 @@ use constant CACHE_DIR => 'cache';
 
 # MOJO_ASSETPACK_DB_FILE is used in tests
 use constant DB_FILE => $ENV{MOJO_ASSETPACK_DB_FILE} || 'assetpack.db';
-our %DB_KEYS = map { $_ => 1 } qw(checksum format minified rel);
+our %DB_KEYS            = map { $_ => 1 } qw(checksum format minified rel);
 our %FALLBACK_TEMPLATES = %{data_section(__PACKAGE__)};
 
 for my $name (keys %FALLBACK_TEMPLATES) {
@@ -128,7 +128,7 @@ sub persist {
 sub save {
   my ($self, $ref, $attrs) = @_;
   my $path = path($self->paths->[0], $self->_cache_path($attrs));
-  my $dir = $path->dirname;
+  my $dir  = $path->dirname;
 
   # Do not care if this fail. Can fallback to temp files.
   mkdir $dir if !-d $dir and -w $dir->dirname;
@@ -185,8 +185,8 @@ sub serve_fallback_for_assets {
 
 sub _already_downloaded {
   my ($self, $url) = @_;
-  my $asset = $self->asset_class->new(url => "$url");
-  my @dirname = $self->_url2path($url, '');
+  my $asset    = $self->asset_class->new(url => "$url");
+  my @dirname  = $self->_url2path($url, '');
   my $basename = pop @dirname;
 
   for my $path (map { path $_, @dirname } @{$self->paths}) {
@@ -234,7 +234,7 @@ sub _db_get {
   my ($self, $attrs) = @_;
   my $db = $self->_db;
   return undef unless my $data = $db->{$attrs->{url}};
-  return undef unless $data = $data->{$attrs->{key}};
+  return undef unless $data    = $data->{$attrs->{key}};
   return {%$attrs, %$data};
 }
 
