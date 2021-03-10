@@ -6,7 +6,7 @@ use Mojolicious::Plugin::AssetPack::Asset::Null;
 use Mojolicious::Plugin::AssetPack::Store;
 use Mojolicious::Plugin::AssetPack::Util qw(diag has_ro load_module DEBUG);
 
-our $VERSION = '2.11';
+our $VERSION = '2.12';
 
 has minify => sub { shift->_app->mode eq 'development' ? 0 : 1 };
 
@@ -230,29 +230,49 @@ sub _static_asset {
 
 =head1 NAME
 
-Mojolicious::Plugin::AssetPack - Compress and convert css, less, sass, javascript and coffeescript files
+Mojolicious::Plugin::AssetPack - Compress and convert CSS, Less, Sass, JavaScript and CoffeeScript files
+
+=head1 SYNOPSIS
+
+=head2 Application
+
+  use Mojolicious::Lite;
+
+  # Load plugin and pipes in the right order
+  plugin AssetPack => {pipes => [qw(Less Sass Css CoffeeScript Riotjs JavaScript Combine)]};
+
+  # define asset
+  app->asset->process(
+    # virtual name of the asset
+    "app.css" => (
+
+      # source files used to create the asset
+      "sass/bar.scss",
+      "https://github.com/Dogfalo/materialize/blob/master/sass/materialize.scss",
+    )
+  );
+
+=head2 Template
+
+  <html>
+    <head>
+      %= asset "app.css"
+    </head>
+    <body><%= content %></body>
+  </html>
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::AssetPack> has a very limited feature set, especially
-when it comes to processing JavaScript. It is recommended that you switch to
-L<Mojolicious::Plugin::Webpack> if you want to write modern JavaScript code.
+L<Mojolicious::Plugin::AssetPack> is a L<Mojolicious plugin|Mojolicious::Plugin> for processing static assets. The idea
+is that JavaScript and CSS files should be served as one minified file to save bandwidth and roundtrip time to the
+server.
 
-=head2 Existing user?
+There are many external tools for doing this, but integrating them with L<Mojolicious> can be a struggle: You want to
+serve the source files directly while developing, but a minified version in production. This assetpack plugin will
+handle all of that automatically for you.
 
-It is I<very> simple to migrate from L<Mojolicious::Plugin::AssetPack> to
-L<Mojolicious::Plugin::Webpack>. Just check out the one line change in
-L<Mojolicious::Plugin::Webpack/MIGRATING-FROM-ASSETPACK>.
-
-=head2 Don't want to switch?
-
-Your existing code will probably continue to work for a long time, but it will
-get more and more difficult to write I<new> working JavaScript with
-L<Mojolicious::Plugin::AssetPack> as time goes by.
-
-=head2 New user?
-
-Look no further. Just jump over to L<Mojolicious::Plugin::Webpack>.
+Your application creates and refers to an asset by its topic (virtual asset name).  The process of building actual
+assets from their components is delegated to "pipe objects".
 
 =head1 HELPERS
 
