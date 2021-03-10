@@ -26,7 +26,7 @@ __DATA__
 %= asset 'app.css'
 @@ assetpack.def
 # there should be a whitespace after "! app.css"
-# https://github.com/jhthorsen/mojolicious-plugin-assetpack/issues/93
+# https://github.com/mojolicious/mojo-assetpack/issues/93
 ! app.css 
 < development.css [mode==development] [minify==0]
 < production.css  [mode=production]

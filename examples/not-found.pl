@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-die "Run $0 from ./mojolicious-plugin-assetpack/ root" unless -d 't/assets';
+die "Run $0 from ./mojo-assetpack/ root" unless -d 't/assets';
 use lib 'lib';
 use Mojolicious::Lite;
 

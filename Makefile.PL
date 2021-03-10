@@ -17,12 +17,12 @@ WriteMakefile(
     'dynamic_config' => 0,
     'meta-spec'      => {version => 2},
     'resources'      => {
-      bugtracker => {web => 'https://github.com/mojolicious/mojolicious-plugin-assetpack/issues'},
-      homepage   => 'https://github.com/mojolicious/mojolicious-plugin-assetpack',
+      bugtracker => {web => 'https://github.com/mojolicious/mojo-assetpack/issues'},
+      homepage   => 'https://github.com/mojolicious/mojo-assetpack',
       repository => {
         type => 'git',
-        url  => 'https://github.com/mojolicious/mojolicious-plugin-assetpack.git',
-        web  => 'https://github.com/mojolicious/mojolicious-plugin-assetpack',
+        url  => 'https://github.com/mojolicious/mojo-assetpack.git',
+        web  => 'https://github.com/mojolicious/mojo-assetpack',
       },
     },
   },

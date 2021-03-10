@@ -1,5 +1,5 @@
 
-# Mojolicious::Plugin::AssetPack [![](https://github.com/mojolicious/mojolicious-plugin-assetpack/workflows/linux/badge.svg)](https://github.com/mojolicious/mojolicious-plugin-assetpack/actions)
+# Mojolicious::Plugin::AssetPack [![](https://github.com/mojolicious/mojo-assetpack/workflows/linux/badge.svg)](https://github.com/mojolicious/mojo-assetpack/actions)
 
   Compress and convert CSS, Less, Sass, JavaScript and CoffeeScript files.
 
