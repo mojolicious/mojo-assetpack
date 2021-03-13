@@ -29,6 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           cpanm -n --installdeps .
+          cpanm -n CSS::Minifier::XS JavaScript::Minifier::XS
           cpanm -n Test::Pod Test::Pod::Coverage
       - name: Run tests
         run: prove -l t
