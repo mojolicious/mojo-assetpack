@@ -274,6 +274,25 @@ handle all of that automatically for you.
 Your application creates and refers to an asset by its topic (virtual asset name).  The process of building actual
 assets from their components is delegated to "pipe objects".
 
+=head1 GUIDES
+
+=over 2
+
+=item L<Mojolicious::Plugin::AssetPack::Guides::Tutorial>
+
+The tutorial will give an introduction to how AssetPack can be used.
+
+=item L<Mojolicious::Plugin::AssetPack::Guides::Developing>
+
+The "developing" guide will give insight on how to do effective development with AssetPack and more details about the
+internals in this plugin.
+
+=item L<Mojolicious::Plugin::AssetPack::Guides::Cookbook>
+
+The cookbook has various receipes on how to cook with AssetPack.
+
+=back
+
 =head1 HELPERS
 
 =head2 asset
