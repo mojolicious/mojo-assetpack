@@ -11,7 +11,7 @@ my $t = Test::Mojo->new(Mojolicious->new);
 delete $t->app->log->{$_} for qw(path handle);
 $t->app->plugin(AssetPack => {helper => 'foo', pipes => ['Css']});
 isa_ok $t->app->foo, 'Mojolicious::Plugin::AssetPack';
-is $t->app->foo->ua->server->app, $t->app, 'app';
+is $t->app->foo->ua->server->app, $t->app,       'app';
 is $t->app->foo->ua->proxy->http, 'example.com', 'proxy http';
 
 $t->app->foo->process('x.css' => 'a.css');
