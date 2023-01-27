@@ -1,5 +1,6 @@
 
-2.14  2021-03-14
+2.14  2023-01-27
+  - Added support for multiple download attempts for assets that need to be fetched.
 
 2.13  2021-03-13
   - Restored documentation.
