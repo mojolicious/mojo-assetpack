@@ -8,6 +8,7 @@ use Mojo::URL;
 use Mojolicious::Types;
 use Mojolicious::Plugin::AssetPack::Asset;
 use Mojolicious::Plugin::AssetPack::Util qw(diag checksum has_ro DEBUG);
+use Time::HiRes                          qw(sleep);
 
 use constant CACHE_DIR => 'cache';
 
@@ -26,6 +27,8 @@ has asset_class        => 'Mojolicious::Plugin::AssetPack::Asset';
 has default_headers    => sub { +{"Cache-Control" => "max-age=31536000"} };
 has fallback_headers   => sub { +{"Cache-Control" => "max-age=60"} };
 has fallback_templates => sub { +{%FALLBACK_TEMPLATES} };
+has retry_delay        => 3;
+has retries            => 0;
 
 has _types => sub {
   my $t = Mojolicious::Types->new;
@@ -257,14 +260,22 @@ sub _download {
 
   return $asset if $attrs{url}->host ne 'local' and $asset = $self->_already_downloaded($url);
 
-  my $tx = $self->ua->get($url);
-  my $h  = $tx->res->headers;
+  my $tx;
+  my $retries = $self->retries;
+  while (1) {
+    $tx = $self->ua->get($url);
+    last unless my $err = $tx->error;
 
-  if (my $err = $tx->error) {
+    if ($retries-- > 0) {
+      sleep $self->retry_delay;
+      next;
+    }
+
     $self->_log->warn("[AssetPack] Unable to download $url: $err->{message}");
     return undef;
   }
 
+  my $h  = $tx->res->headers;
   my $ct = $h->content_type || '';
   if ($ct ne 'text/plain') {
     $ct =~ s!;.*$!!;
@@ -387,6 +398,20 @@ This is currently an EXPERIMENTAL feature.
   $self = $self->paths([$app->home->rel_file("assets")]);
 
 See L<Mojolicious::Static/paths> for details.
+
+=head2 retry_delay
+
+  my $delay = $self->retry_delay;
+  $self     = $self->retry_delay(0.5);
+
+Delay in seconds between download attempts for assets that need to be fetched, defaults to C<3>.
+
+=head2 retries
+
+  my $retries = $self->retries;
+  $self       = $self->retries(5);
+
+Number of times asset downloads will be attempted for assets that need to be fetched, defaults to C<0>.
 
 =head2 ua
 
