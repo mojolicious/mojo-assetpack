@@ -14,7 +14,7 @@ my $t        = t::Helper->t(pipes => [qw(Css Combine)]);
 my @assets   = qw(one.css recreate.css);
 my $recreate = path(qw(t assets recreate.css));
 
-$recreate->spurt(".recreate { color: #aaa }\n");
+$recreate->spew(".recreate { color: #aaa }\n");
 
 $t->app->asset->process('app.css' => @assets);
 
@@ -28,7 +28,7 @@ $t->get_ok('/')->status_is(200);
 is $t->tx->res->dom->at('link')->{href}, $link, 'same link href';
 
 # recreate
-$recreate->spurt(".recreate { color: #bbb }\n");
+$recreate->spew(".recreate { color: #bbb }\n");
 my $tr = t::Helper->t(pipes => [qw(Css Combine)]);
 $tr->app->asset->process('app.css' => @assets);
 $tr->get_ok('/')->status_is(200);
@@ -36,7 +36,7 @@ isnt $tr->tx->res->dom->at('link')->{href}, $link, 'changed link href';
 $tr->get_ok($tr->tx->res->dom->at('link')->{href})->status_is(200)->content_like(qr{color:\#bbb});
 
 # reset asset
-$recreate->spurt(".recreate { color: #aaa }\n");
+$recreate->spew(".recreate { color: #aaa }\n");
 
 done_testing;
 __DATA__

@@ -17,11 +17,11 @@ END { cleanup() }
 my %CREATED_FILES;
 
 unless ($ENV{TEST_KEEP_FILES}) {
-  my $spurt = \&Mojo::File::spurt;
+  my $spew = \&Mojo::File::spew;
   Mojo::Util::monkey_patch(
-    'Mojo::File' => spurt => sub {
+    'Mojo::File' => spew => sub {
       $CREATED_FILES{$_[0]} = 1 unless -e $_[0];
-      goto $spurt;
+      goto $spew;
     }
   );
 }

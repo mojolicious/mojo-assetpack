@@ -139,7 +139,7 @@ sub save {
 
   return $self->asset_class->new(%$attrs, content => $$ref) unless -w $dir;
 
-  $path->spurt($$ref);
+  $path->spew($$ref);
   $self->_db_set(%$attrs);
   return $self->asset_class->new(%$attrs, path => $path);
 }
@@ -288,7 +288,7 @@ sub _download {
     $path = path($self->paths->[0], $self->_url2path($attrs{url}, $attrs{format}));
     $self->_log->info(qq(Caching "$url" to "$path".));
     $path->dirname->make_path unless -d $path->dirname;
-    $path->spurt($tx->res->body);
+    $path->spew($tx->res->body);
   }
 
   $attrs{url} = "$attrs{url}";
