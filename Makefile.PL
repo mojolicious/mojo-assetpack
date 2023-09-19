@@ -12,7 +12,7 @@ WriteMakefile(
   ABSTRACT_FROM => 'lib/Mojolicious/Plugin/AssetPack.pm',
   VERSION_FROM  => 'lib/Mojolicious/Plugin/AssetPack.pm',
   TEST_REQUIRES => {'Test::More'  => '0.88'},
-  PREREQ_PM     => {'File::Which' => '1.21', 'IPC::Run3' => '0.048', 'Mojolicious' => '9.0'},
+  PREREQ_PM     => {'File::Which' => '1.21', 'IPC::Run3' => '0.048', 'Mojolicious' => '9.34'},
   META_MERGE    => {
     'dynamic_config' => 0,
     'meta-spec'      => {version => 2},
