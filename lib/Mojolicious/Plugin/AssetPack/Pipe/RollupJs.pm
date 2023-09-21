@@ -46,7 +46,7 @@ has _rollupjs => sub {
     $self->{_rollupjs_src} = tempfile(SUFFIX => '.js');
   }
 
-  $self->{_rollupjs_src}->spurt($bin);
+  $self->{_rollupjs_src}->spew($bin);
 
   return [$self->_find_app([qw(nodejs node)]), $self->{_rollupjs_src}->realpath];
 };
