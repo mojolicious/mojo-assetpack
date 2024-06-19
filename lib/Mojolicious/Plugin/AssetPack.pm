@@ -192,7 +192,7 @@ sub _render_tags {
 
   return Mojo::ByteStream->new(
     join "\n",
-    map    { $_->tag_for->($_, $c, \%args, @attrs) }
+    map { $_->tag_for->($_, $c, \%args, @attrs) }
       grep { !$_->isa('Mojolicious::Plugin::AssetPack::Asset::Null') } @$assets
   );
 }
