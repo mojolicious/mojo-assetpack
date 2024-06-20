@@ -61,9 +61,15 @@ sub process {
       $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
     }
     else {
-      my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
-      push @args, '--scss'          if $asset->format eq 'scss';
-      push @args, qw(-t compressed) if $attrs->{minified};
+      my @args;
+      if ($ENV{MOJO_PLUGIN_ASSETPACK_SASSC}) {
+        @args = (qw(sassc -s), map { ('-I', $_) } @{$opts{include_paths}});
+      }
+      else {
+        @args = (qw(sass -s --trace), map { ('-I', $_) } @{$opts{include_paths}});
+        push @args, '--scss'          if $asset->format eq 'scss';
+        push @args, qw(-t compressed) if $attrs->{minified};
+      }
       $self->run(\@args, \$content, \my $css, undef);
       $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
     }
