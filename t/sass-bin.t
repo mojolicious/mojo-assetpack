@@ -16,13 +16,19 @@ $t->get_ok($html->at('link:nth-of-child(1)')->{href})->status_is(200)->content_l
 
 $t->get_ok($html->at('link:nth-of-child(2)')->{href})->status_is(200)->content_like(qr{footer.*\#aaa.*body.*\#222}s);
 
+# Processing invalid sass file should fail as it does with CSS::Sass
+$t = t::Helper->t(pipes => [qw(Sass)]);
+$t->app->asset->pipe('Sass')->{has_module} = '';                                  # make sure CSS::Sass is not used
+ok((not eval { $t->app->asset->process('invalid.css' => 'sass-invalid.sass') }), 'compile invalid sass file');
+like $@, qr/Undefined variable/, 'sass complains about undefined variable';
+
 $ENV{MOJO_MODE} = 'Test_minify_from_here';
 $t = t::Helper->t(pipes => [qw(Sass Css Combine)]);
-$t->app->asset->pipe('Sass')->{has_module} = '';    # make sure CSS::Sass is not used
+$t->app->asset->pipe('Sass')->{has_module} = '';                                  # make sure CSS::Sass is not used
 $t->app->asset->process('app.css' => ('sass.sass', 'sass/sass-1.scss'));
 $t->get_ok('/')->status_is(200);
 $t->get_ok($t->tx->res->dom->at('link')->{href})->status_is(200)->content_unlike(qr/[ ]/)
-  ;                                                 # No spaces in minified version
+  ;                                                                               # No spaces in minified version
 
 done_testing;
 
@@ -33,3 +39,6 @@ __DATA__
 $color: #aaa
 .sass
   color: $color
+@@ sass-invalid.sass
+.sass
+  color: $undefined
