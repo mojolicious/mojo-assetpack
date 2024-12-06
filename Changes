@@ -1,5 +1,11 @@
 
-2.15  2023-01-28
+2.15  2024-12-06
+  - Fixed reporting of sass errors.
+    Contributor: Jan Baier
+  - Use sass trace for easier error detection.
+    Contributor: Tina Mueller
+  - Updates for latest Mojolicious.
+    Contributor: Oliver Kurz
 
 2.14  2023-01-27
   - Added support for multiple download attempts for assets that need to be fetched.
