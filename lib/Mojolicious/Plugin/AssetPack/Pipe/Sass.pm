@@ -64,7 +64,11 @@ sub process {
       my @args = (qw(sass -s), map { ('-I', $_) } @{$opts{include_paths}});
       push @args, '--scss'          if $asset->format eq 'scss';
       push @args, qw(-t compressed) if $attrs->{minified};
-      $self->run(\@args, \$content, \my $css, undef);
+      $self->run(\@args, \$content, \my $css, \my $err);
+      my $exit = $? > 0 ? $? >> 8 : $?;
+      if ($exit) {
+        die sprintf '[Pipe::Sass] Could not compile "%s" with opts=%s: %s', $asset->url, dumper(\%opts), $err;
+      }
       $asset->content($store->save(\$css, $attrs))->FROM_JSON($attrs);
     }
   });
